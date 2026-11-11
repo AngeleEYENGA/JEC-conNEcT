@@ -96,3 +96,44 @@ Un service payant n'est pas automatiquement sûr : chaque fournisseur est évalu
 
 ## 12. Évolutions
 Enrichir la frise avec les archives des différentes générations, après collecte et validation. Ajouter des outils éditoriaux permettant aux responsables habilités de proposer, documenter, faire relire et publier de nouveaux jalons.
+
+
+## 13. Bilinguisme français / anglais
+La plateforme doit proposer une interface disponible en français et en anglais, au minimum pour les parcours publics, l'accueil, la connexion, la découverte du mouvement, l'agenda et les ressources. Le choix de langue est mémorisé par utilisateur ou dans le navigateur. Les contenus sources conservent leur langue d'origine ; les traductions sont identifiées et ne remplacent pas la source primaire.
+
+## 14. Patrimoine musical : chants et hymnes de la JEC
+Créer une bibliothèque musicale accessible depuis le portail et les espaces membres.
+- Chant de ralliement avec tous les couplets et le refrain dans leur ordre validé.
+- Hymne de la JEC en français et en anglais.
+- Versions et variantes validées, auteur(s), compositeur(s), date et provenance lorsqu'ils sont documentés.
+- Paroles structurées en refrain, couplets, ponts et variantes, sans réécriture non autorisée.
+- Fichiers audio associés, préécoute et lecteur intégré.
+- Filtres par chant, langue, version, type et disponibilité audio.
+- Téléchargement éventuel soumis aux droits de diffusion et de reproduction.
+- Historique des versions, statut de validation et personne/service ayant validé.
+- Possibilité pour les responsables habilités de proposer une nouvelle version, sans publication automatique.
+
+Aucune parole complète ni aucun enregistrement ne doit être inventé. Les textes, traductions et enregistrements doivent être fournis ou validés par la JEC, et les droits de reproduction, de traduction, de diffusion et de stockage doivent être vérifiés. Les brouillons de démonstration restent locaux et sont clairement signalés comme non publiés ; ils ne sont pas synchronisés entre utilisateurs tant qu'un backend sécurisé n'est pas disponible.
+
+## 15. Images, illustrations et médias
+Le produit doit être visuellement vivant, avec une iconographie cohérente et des visuels utiles :
+- illustrations de la vie étudiante, des rencontres et de la musique ;
+- photos d'événements uniquement lorsqu'elles sont autorisées et sourcées ;
+- vignettes de catégories d'actualités ;
+- visuels pour l'histoire, la chronologie, les chants, les formations et les événements ;
+- galerie d'archives et médiathèque avec provenance, date, droits et crédits.
+
+Les images générées ou d'illustration ne doivent jamais être présentées comme des photographies historiques ou des preuves d'un événement réel. Les photographies d'archives doivent être datées et documentées.
+
+## 16. Authentification et OAuth — état du prototype
+Le code prévoit l'inscription/connexion par e-mail et mot de passe, la réinitialisation du mot de passe et Google OAuth via Supabase Auth en flux PKCE. Le callback échange le code côté serveur et le proxy Next.js actualise les sessions par cookies.
+
+Pour activer réellement les connexions, les prérequis sont :
+- NEXT_PUBLIC_SUPABASE_URL ;
+- NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY (ou clé anon publique héritée si le projet l'utilise encore) ;
+- fournisseur Google activé dans Supabase Auth ;
+- identifiant client et secret OAuth Google renseignés dans Supabase depuis Google Cloud Console ;
+- URI de callback Supabase ajoutée dans Google Cloud ;
+- URL de callback de l'application ajoutée dans la liste des redirections autorisées Supabase, pour localhost, Preview et production.
+
+L'authentification ne doit être déclarée opérationnelle qu'après tests de création de compte, confirmation e-mail, connexion par mot de passe, Google OAuth, réinitialisation, déconnexion et renouvellement de session. La présence d'un bouton Google ne prouve pas que le fournisseur est activé.
