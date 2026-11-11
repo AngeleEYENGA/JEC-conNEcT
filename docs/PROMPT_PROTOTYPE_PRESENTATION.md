@@ -145,3 +145,31 @@ Prévoir des outils de synthèse, de rédaction de brouillons, d'aide au reporti
 - Cahier des charges distinct pour l'infrastructure de production.
 
 Avant d'ajouter tout fait, vérifie la source, la date, le périmètre (France/international), la précision et le lien. La fiabilité éditoriale prime sur la quantité de contenus.
+
+
+## 13. Bilinguisme français / anglais
+Prévoir un sélecteur FR / EN cohérent et persistant dans l'interface. Traduire les navigations, boutons, états vides, pages publiques, formulaires, connexion et pages de découverte. Conserver les titres d'articles, citations et publications dans leur langue d'origine lorsqu'il s'agit de la source officielle ; proposer un résumé traduit clairement identifié si nécessaire.
+
+## 14. Bibliothèque musicale JEC
+Créer un espace « Chants & hymnes » comprenant :
+- le chant de ralliement et tous ses couplets, son refrain et ses éventuelles variantes ;
+- l'hymne JEC en français et en anglais ;
+- une fiche par chant avec auteur, compositeur, source, version, langue et statut de validation lorsque l'information est connue ;
+- paroles structurées couplet par couplet ;
+- lecteur audio intégré, avec enregistrements associés ;
+- filtres par chant et langue.
+
+Ne jamais inventer, compléter de mémoire ou paraphraser les paroles officielles. Si les textes ne sont pas encore fournis, afficher un état vide et une zone de brouillon explicitement non publiée. Les versions définitives doivent être fournies ou validées par la JEC et les droits de reproduction, de traduction, de stockage et de diffusion doivent être confirmés. Les brouillons locaux ne sont pas présentés comme officiels et ne sont pas synchronisés entre utilisateurs.
+
+## 15. Direction artistique et médias
+L'interface ne doit pas être uniquement composée de blocs de texte. Prévoir des visuels et illustrations pertinents : vie étudiante, rassemblements, musique, formation, patrimoine, actualités et événements. Employer les illustrations originales du dossier public/images. Utiliser des photographies d'archives uniquement lorsqu'elles sont réelles, sourcées, datées et autorisées. Les images générées doivent être présentées comme des illustrations, jamais comme une preuve historique ou une photographie d'un événement JEC.
+
+## 16. OAuth et configuration vérifiable
+L'authentification Google doit suivre le flux PKCE avec Supabase Auth :
+- appel signInWithOAuth provider google ;
+- redirectTo exact vers /auth/callback ;
+- échange du code côté serveur avec cookies sécurisés ;
+- rafraîchissement de session dans proxy.ts pour Next.js 16 ;
+- affichage d'une erreur explicite lorsque la clé publique Supabase manque, que Google n'est pas activé ou que l'URL de retour n'est pas autorisée.
+
+Ne jamais présenter OAuth comme opérationnel tant que la clé publique Supabase, le fournisseur Google, les identifiants OAuth Google et les URL de redirection ne sont pas configurés et testés sur local, Preview et Production.
