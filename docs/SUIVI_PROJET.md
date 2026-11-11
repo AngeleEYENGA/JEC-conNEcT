@@ -56,3 +56,14 @@ Chaque fonctionnalité doit comporter un statut, une priorité, un responsable, 
 4. Recevoir les enregistrements audio officiels, les crédits et les autorisations de diffusion.
 5. Vérifier les traductions anglaises avec une personne bilingue de la JEC.
 6. Tester le parcours de langue sur mobile et ordinateur.
+
+
+### Patrimoine musical — sources disponibles
+
+Les quatre textes transmis dans la bibliothèque documentaire ont été intégrés à l'écran Chants & hymnes :
+- Chant de ralliement FR : Chant_de_ralliement_JEC_avec_logo.docx.
+- Chant de ralliement EN : YCS_Rallying_Chant_EN.docx.
+- Hymne principal FR : Hymne_principal_JEC.docx.
+- Hymne principal EN : YCS_Main_Hymn_EN.docx.
+
+Les textes restent modifiables par l'utilisateur en brouillon local. Le fichier source peut être restauré. Aucun fichier audio officiel n'a été identifié dans la bibliothèque consultée ; le lecteur accepte une préécoute locale de fichier, mais aucun audio n'est publié ou synchronisé à ce stade.
