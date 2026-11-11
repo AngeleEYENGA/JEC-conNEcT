@@ -37,3 +37,22 @@
 
 ## Règles de suivi
 Chaque fonctionnalité doit comporter un statut, une priorité, un responsable, une date cible et des critères d'acceptation. Chaque décision doit être datée, attribuée à l'instance compétente et reliée à son compte rendu. Le prototype utilise exclusivement des données fictives.
+
+
+## Mise à jour — interface bilingue, chants et visuels
+
+| Chantier | État | Commentaire |
+|---|---|---|
+| Interface FR / EN | En cours | Sélecteur de langue partagé ajouté ; accueil, connexion, découverte et bibliothèque musicale disposent de traductions. Vérifier l'ensemble des libellés et contenus avant validation. |
+| Bibliothèque musicale | Première interface | Chant de ralliement et hymne JEC prévus en FR/EN ; éditeur de couplets et écoute locale de fichiers audio. Paroles et audios officiels non encore chargés faute de fichiers validés. |
+| Illustrations | Enrichi | Illustrations originales pour la communauté, la musique et trois catégories d'actualités. Les photos d'archives authentiques restent à fournir avec leurs droits. |
+| Icône navigateur | Corrigée | Remplacement du logo source JEC France par une icône propre à JEC-conNEcT. |
+| OAuth Google | Blocage de configuration | Le code PKCE serveur et le proxy de session sont en place. La clé publique Supabase manque dans Vercel et le fournisseur Google doit être activé dans Supabase. Voir GOOGLE_AUTH_SETUP.md. |
+
+## Actions complémentaires
+1. Récupérer la clé publishable Supabase et la renseigner dans Vercel.
+2. Activer Google OAuth dans Supabase avec le Client ID / Secret Google Cloud et tester les redirections.
+3. Recevoir les paroles validées de tous les couplets du chant de ralliement et l'hymne en français et en anglais.
+4. Recevoir les enregistrements audio officiels, les crédits et les autorisations de diffusion.
+5. Vérifier les traductions anglaises avec une personne bilingue de la JEC.
+6. Tester le parcours de langue sur mobile et ordinateur.
