@@ -119,6 +119,9 @@ const pillars = [
 ];
 
 export default function DecouvrirPage() {
+  const {lang}=useLanguage();
+  const en=lang==="en";
+  const t=(fr:string,english:string)=>en?english:fr;
   const [scope, setScope] = useState<"Tous" | "France" | "International">("Tous");
   const [selected, setSelected] = useState("jec-1929-origins");
   const visible = useMemo(
