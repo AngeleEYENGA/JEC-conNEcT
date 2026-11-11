@@ -20,7 +20,7 @@ const nav = [
 
 const initialPosts = [
   { initials: "BN", name: "Bureau national", role: "Communication officielle", time: "Il y a 2 h", tag: "ANNONCE NATIONALE", color: "violet", text: "Bienvenue sur JEC-conNEcT, le nouvel espace de démonstration de notre communauté ! Ici, nous pourrons partager les nouvelles du mouvement, retrouver les ressources et faire avancer nos projets ensemble.", likes: 24, comments: 8 },
-  { initials: "IDF", name: "AGEC Île-de-France", role: "Actualité régionale", time: "Hier", tag: "VIE DES RÉGIONS", color: "blue", text: "La préparation de notre prochaine rencontre régionale avance. Retrouvez bientôt le programme et les modalités de participation dans l'espace Événements.", likes: 16, comments: 4 },
+  { initials: "IDF", name: "JEC Île-de-France", role: "Actualité régionale", time: "Hier", tag: "VIE DES RÉGIONS", color: "blue", text: "La préparation de notre prochaine rencontre régionale avance. Retrouvez bientôt le programme et les modalités de participation dans l'espace Événements.", likes: 16, comments: 4 },
   { initials: "COM", name: "Commission Formation", role: "Ressource partagée", time: "Il y a 2 jours", tag: "FORMATION", color: "orange", text: "Nouvelle ressource disponible : introduction à la démarche Voir – Juger – Agir et outils pour animer un temps de réflexion en équipe.", likes: 31, comments: 6 }
 ];
 
@@ -102,7 +102,7 @@ export default function Home() {
 
               <section className="widget-card"><div className="widget-heading"><h3>Mes espaces</h3><button onClick={()=>setActive("Équipes & canaux")}>Explorer</button></div>
                 <div className="team-item"><div className="team-icon purple">BN</div><div><strong>Bureau national</strong><small>12 membres · 4 canaux</small></div><span className="online-dot"/></div>
-                <div className="team-item"><div className="team-icon blue">IDF</div><div><strong>AGEC Île-de-France</strong><small>18 membres · 3 canaux</small></div></div>
+                <div className="team-item"><div className="team-icon blue">IDF</div><div><strong>JEC Île-de-France</strong><small>18 membres · 3 canaux</small></div></div>
                 <div className="team-item"><div className="team-icon orange">COM</div><div><strong>Communication</strong><small>7 membres · 2 canaux</small></div></div>
                 <button className="widget-link" onClick={()=>setActive("Équipes & canaux")}>Voir toutes les équipes →</button>
               </section>
