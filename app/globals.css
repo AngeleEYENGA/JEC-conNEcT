@@ -277,3 +277,12 @@
 
 .news-thumb{display:block;width:100%;height:150px;object-fit:cover;border-radius:9px;margin:10px 0 11px;background:#f4f0f8}
 @media(max-width:760px){.news-thumb{height:125px}}
+
+
+.lyrics-footer{align-items:flex-start;flex-wrap:wrap;gap:14px}
+.lyrics-source-meta{display:flex;flex-direction:column;gap:5px;max-width:62%}
+.lyrics-source-meta strong{font-size:9px;color:#665282;overflow-wrap:anywhere}
+.lyrics-source-meta small{font-size:8px;line-height:1.55;color:#9691a0}
+.lyrics-actions{display:flex;gap:7px;align-items:center;flex-wrap:wrap}
+.verse-block>span{display:inline-block;max-width:100%;overflow-wrap:anywhere}
+@media(max-width:650px){.lyrics-source-meta{max-width:100%}.lyrics-actions{width:100%}.lyrics-actions button{flex:1}}
