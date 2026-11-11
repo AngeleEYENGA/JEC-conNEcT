@@ -1,19 +1,16 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
-  <defs>
-    <clipPath id="tile"><rect x="3" y="3" width="122" height="122" rx="26"/></clipPath>
-    <linearGradient id="shine" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fff" stop-opacity=".24"/><stop offset="1" stop-color="#202A46" stop-opacity=".15"/></linearGradient>
-  </defs>
-  <g clip-path="url(#tile)">
-    <rect width="128" height="128" fill="#202A46"/>
-    <path d="M0 0H64V64H0Z" fill="#F0CB1B"/>
-    <path d="M64 0H128V64H64Z" fill="#A72176"/>
-    <path d="M0 64H64V128H0Z" fill="#00A6D5"/>
-    <path d="M64 64H128V128H64Z" fill="#007D43"/>
-    <path d="M32 0H96V128H32Z" fill="#E98233" opacity=".42"/>
-    <path d="M0 32H128V96H0Z" fill="#E00079" opacity=".23"/>
-    <path d="M0 0H128V128H0Z" fill="url(#shine)"/>
-    <path d="M15 15H113V113H15Z" fill="none" stroke="#fff" stroke-opacity=".20" stroke-width="2"/>
+  <defs><clipPath id="round"><rect x="3" y="3" width="122" height="122" rx="27"/></clipPath></defs>
+  <g clip-path="url(#round)">
+    <rect width="128" height="128" fill="#A72176"/>
+    <path d="M64 64L64 0A64 64 0 0 1 119.1 31.4Z" fill="#E00079"/>
+    <path d="M64 64L119.1 31.4A64 64 0 0 1 119.1 96.6Z" fill="#E98233"/>
+    <path d="M64 64L119.1 96.6A64 64 0 0 1 64 128Z" fill="#007D43"/>
+    <path d="M64 64L64 128A64 64 0 0 1 8.9 96.6Z" fill="#0C67AE"/>
+    <path d="M64 64L8.9 96.6A64 64 0 0 1 8.9 31.4Z" fill="#00A6D5"/>
+    <path d="M64 64L8.9 31.4A64 64 0 0 1 64 0Z" fill="#F0CB1B"/>
+    <rect width="128" height="128" fill="#202A46" opacity=".13"/>
+    <path d="M0 43H128M0 86H128M43 0V128M86 0V128" stroke="#fff" stroke-opacity=".18" stroke-width="2"/>
   </g>
-  <text x="64" y="80" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="39" font-weight="800" letter-spacing="-3" fill="#fff" stroke="#202A46" stroke-opacity=".12" stroke-width="1">JEC</text>
-  <path d="M101 15l3.8 9.2L115 28l-10.2 3.8L101 42l-3.8-10.2L87 28l10.2-3.8Z" fill="#fff"/>
+  <text x="64" y="78" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="36" font-weight="800" letter-spacing="-2.6" fill="#fff">JEC</text>
+  <path d="M104 14l3.5 8.5L116 26l-8.5 3.5L104 38l-3.5-8.5L92 26l8.5-3.5Z" fill="#fff"/>
 </svg>
