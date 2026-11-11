@@ -105,6 +105,7 @@ export default function Home() {
   );
 
   function renderContent() {
+    if (active === "Chants & hymnes") { return <section className="songs-preview-card"><div className="songs-preview-art"><span>♫</span><i>♪</i><b>JEC</b></div><div className="songs-preview-copy"><p className="eyebrow">PATRIMOINE MUSICAL</p><h2>Les chants et hymnes du mouvement</h2><p>Retrouve le chant de ralliement et l’hymne JEC en français et en anglais. Consulte les paroles, ajoute les couplets validés et écoute les enregistrements.</p><Link href="/chants" className="primary-button">Ouvrir la bibliothèque musicale →</Link></div></section>; }
     if (active === "Actualités JEC") {
       return (
         <section>
