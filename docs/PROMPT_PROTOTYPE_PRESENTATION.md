@@ -91,7 +91,7 @@ Si OAuth n'est pas configuré, expliquer que le bouton attend l'activation du fo
 - JEC AI et reporting ;
 - Administration.
 
-N'utiliser que les appellations confirmées dans les sources ou validées par la JEC. Ne pas employer le sigle AGEC.
+Employer uniquement les appellations officielles confirmées dans les sources ou validées par la JEC France.
 
 ## 5. Module phare — Frise chronologique de la JEC
 Créer une frise interactive, responsive et éditorialement soignée. Elle doit distinguer clairement :
