@@ -36,7 +36,7 @@
 8. Préparer le dossier de décision du Bureau national.
 
 ## Règles de suivi
-Chaque fonctionnalité doit comporter un statut, une priorité, un responsable, une date cible et des critères d'acceptation. Chaque décision doit être datée, attribuée à l'instance compétente et reliée à son compte rendu. Le prototype utilise exclusivement des données fictives.
+Chaque fonctionnalité doit comporter un statut, une priorité, un responsable, une date cible et des critères d'acceptation. Chaque décision doit être datée, attribuée à l'instance compétente et reliée à son compte rendu. Le prototype utilise des contenus publics vérifiables et sourcés. Les comptes de test et brouillons locaux sont explicitement identifiés comme tels ; aucune donnée interne confidentielle n'est chargée.
 
 
 ## Mise à jour — interface bilingue, chants et visuels
