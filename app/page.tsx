@@ -92,6 +92,8 @@ function NewsCard({ item }: { item: typeof news[number] }) {
 }
 
 export default function Home() {
+  const {lang}=useLanguage();
+  const en=lang==="en";
   const [active, setActive] = useState("Vue d'ensemble");
   const [liked, setLiked] = useState<number[]>([]);
   const [search, setSearch] = useState("");
