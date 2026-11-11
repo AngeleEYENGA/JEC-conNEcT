@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from "next/server";
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get("code");
+  const oauthError = requestUrl.searchParams.get("error");
   const requestedNext = requestUrl.searchParams.get("next") ?? "/";
   const next = requestedNext.startsWith("/") && !requestedNext.startsWith("//")
     ? requestedNext
@@ -15,6 +16,10 @@ export async function GET(request: NextRequest) {
   const supabaseKey =
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ??
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  if (oauthError) {
+    return NextResponse.redirect(new URL("/login?error=access_denied", origin));
+  }
 
   if (!supabaseUrl || !supabaseKey || !code) {
     return NextResponse.redirect(new URL("/login?error=oauth_config_or_code_missing", origin));
