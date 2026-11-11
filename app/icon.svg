@@ -1,8 +1,19 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
-  <defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#202A46"/><stop offset="1" stop-color="#49336D"/></linearGradient><linearGradient id="tiles" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#F0CB1B"/><stop offset=".22" stop-color="#E00079"/><stop offset=".48" stop-color="#E98233"/><stop offset=".72" stop-color="#0C67AE"/><stop offset="1" stop-color="#007D43"/></linearGradient></defs>
-  <rect x="2" y="2" width="124" height="124" rx="27" fill="url(#bg)"/><rect x="9" y="9" width="110" height="110" rx="22" fill="url(#tiles)" opacity=".96"/>
-  <path d="M0 47h128M0 82h128M43 0v128M86 0v128" stroke="#fff" stroke-opacity=".18" stroke-width="1.5"/>
-  <g fill="none" stroke="#fff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"><path d="M25 35c9 0 13 13 24 13s15-13 25-13 15 13 28 13"/><path d="M25 62h17m14 0h17m14 0h17"/></g>
-  <g fill="#fff"><circle cx="24" cy="62" r="6"/><circle cx="50" cy="62" r="6"/><circle cx="76" cy="62" r="6"/><circle cx="104" cy="62" r="6"/><path d="M101 22l2.8 7.2L111 32l-7.2 2.8L101 42l-2.8-7.2L91 32l7.2-2.8z"/></g>
-  <text x="64" y="101" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="25" font-weight="800" letter-spacing="-1.4" fill="#fff">JEC</text>
+  <defs>
+    <clipPath id="tile"><rect x="3" y="3" width="122" height="122" rx="26"/></clipPath>
+    <linearGradient id="shine" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fff" stop-opacity=".24"/><stop offset="1" stop-color="#202A46" stop-opacity=".15"/></linearGradient>
+  </defs>
+  <g clip-path="url(#tile)">
+    <rect width="128" height="128" fill="#202A46"/>
+    <path d="M0 0H64V64H0Z" fill="#F0CB1B"/>
+    <path d="M64 0H128V64H64Z" fill="#A72176"/>
+    <path d="M0 64H64V128H0Z" fill="#00A6D5"/>
+    <path d="M64 64H128V128H64Z" fill="#007D43"/>
+    <path d="M32 0H96V128H32Z" fill="#E98233" opacity=".42"/>
+    <path d="M0 32H128V96H0Z" fill="#E00079" opacity=".23"/>
+    <path d="M0 0H128V128H0Z" fill="url(#shine)"/>
+    <path d="M15 15H113V113H15Z" fill="none" stroke="#fff" stroke-opacity=".20" stroke-width="2"/>
+  </g>
+  <text x="64" y="80" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="39" font-weight="800" letter-spacing="-3" fill="#fff" stroke="#202A46" stroke-opacity=".12" stroke-width="1">JEC</text>
+  <path d="M101 15l3.8 9.2L115 28l-10.2 3.8L101 42l-3.8-10.2L87 28l10.2-3.8Z" fill="#fff"/>
 </svg>
