@@ -273,3 +273,7 @@
 .discover-header-actions{display:flex;align-items:center;gap:18px}
 @media(max-width:800px){.songs-hero-illustration{right:-115px;top:38px;width:330px;opacity:.45}}
 @media(max-width:540px){.discover-header-actions{gap:8px}.songs-hero-illustration{right:-170px;width:290px;opacity:.35}}
+
+
+.news-thumb{display:block;width:100%;height:150px;object-fit:cover;border-radius:9px;margin:10px 0 11px;background:#f4f0f8}
+@media(max-width:760px){.news-thumb{height:125px}}
