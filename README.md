@@ -35,3 +35,16 @@ Next.js, TypeScript, Supabase Auth (après configuration) et Vercel. L'architect
 
 ## Icônes et marque
 Le logo fourni sert de base à l'icône Next.js dans `app/icon.png`. Les variantes de marque et formats complémentaires sont réunis dans le dossier de livrables du projet.
+
+
+## Bibliothèque musicale
+Une première interface est disponible sur https://jec-connect-abessangel-8638.vercel.app/chants. Elle prévoit le chant de ralliement, l'hymne JEC, les paroles en français et en anglais, la gestion des couplets et l'écoute de fichiers audio. Les textes et enregistrements officiels restent à fournir et valider ; aucun couplet n'est inventé.
+
+## Français / English
+Un sélecteur FR / EN est intégré au portail, à la connexion, à la page de découverte et à la bibliothèque musicale. Les contenus institutionnels conservent leur source et leur langue d'origine.
+
+## Contenus de démonstration
+Le portail public privilégie les informations vérifiables issues de sources existantes et les relie à leur publication d'origine. Les illustrations graphiques sont des créations d'interface, pas des photographies d'événements réels. Les espaces internes restent vides ou en brouillon local tant que la JEC n'a pas fourni et validé les données correspondantes.
+
+## Icône et illustrations
+L'icône navigateur dédiée à JEC-conNEcT est définie par app/icon.svg. Les illustrations originales sont dans public/images/.
