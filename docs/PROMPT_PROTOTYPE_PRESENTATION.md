@@ -173,3 +173,13 @@ L'authentification Google doit suivre le flux PKCE avec Supabase Auth :
 - affichage d'une erreur explicite lorsque la clé publique Supabase manque, que Google n'est pas activé ou que l'URL de retour n'est pas autorisée.
 
 Ne jamais présenter OAuth comme opérationnel tant que la clé publique Supabase, le fournisseur Google, les identifiants OAuth Google et les URL de redirection ne sont pas configurés et testés sur local, Preview et Production.
+
+
+### Documents de chants déjà fournis
+Les paroles initiales doivent provenir des documents fournis par la JEC :
+- `Chant_de_ralliement_JEC_avec_logo.docx` (français) ;
+- `YCS_Rallying_Chant_EN.docx` (anglais) ;
+- `Hymne_principal_JEC.docx` (français) ;
+- `YCS_Main_Hymn_EN.docx` (anglais).
+
+Reproduire les paroles sans compléter de mémoire. Chaque version doit conserver l'indication de son document source. Les modifications faites par un utilisateur sont des brouillons locaux, distingués du texte source. Prévoir un bouton de restauration du texte source. Ne pas inventer d'audio : n'afficher un lecteur audio public que lorsqu'un enregistrement fourni et autorisé est disponible.
