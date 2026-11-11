@@ -62,6 +62,7 @@ const nav = [
   { label: "Projets", icon: "◫" },
   { label: "Documents", icon: "▱" },
   { label: "Archives JEC", icon: "▤" },
+  { label: "Chants & hymnes", icon: "♫" },
   { label: "JEC AI", icon: "✧" }
 ];
 
