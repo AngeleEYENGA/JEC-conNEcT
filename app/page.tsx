@@ -7,6 +7,7 @@ import { LanguageSwitcher, useLanguage } from "@/components/language-provider";
 const news = [
   {
     date: "13 avril 2026",
+    image: "/images/news-wellbeing.svg",
     category: "Santé et mieux-vivre",
     categoryEn: "Health & well-being",
     title: "3 vidéos pour un mieux-être et un mieux-vivre ensemble !",
@@ -17,6 +18,7 @@ const news = [
   },
   {
     date: "7 avril 2026",
+    image: "/images/news-learning.svg",
     category: "Ressources pédagogiques",
     categoryEn: "Learning resources",
     title: "Un jeu pour découvrir l’utilisation des compétences psychosociales",
@@ -27,6 +29,7 @@ const news = [
   },
   {
     date: "7 avril 2026",
+    image: "/images/news-leaders.svg",
     category: "Vie du mouvement",
     categoryEn: "Movement life",
     title: "Les responsables se rencontrent et se forment !",
