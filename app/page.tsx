@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { LanguageSwitcher, useLanguage } from "@/components/language-provider";
 
 const news = [
   {
