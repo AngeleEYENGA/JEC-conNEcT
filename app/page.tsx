@@ -121,7 +121,7 @@ export default function Home() {
           <div className="timeline-row"><b>1929</b><span>Premiers groupes et lancement du mouvement en France, autour notamment de Louis Chaudron et Paul Vignaux.</span></div>
           <div className="timeline-row"><b>1930</b><span>Lancement de <i>L’Appel</i>, organe mensuel de la JEC, selon la page historique de JEC France.</span></div>
           <div className="timeline-row"><b>1946</b><span>Fondation de la coordination internationale JECI / IYCS, après la Seconde Guerre mondiale.</span></div>
-          <div className="discover-actions"><Link href="/decouvrir" className="primary-button">Explorer l'histoire et la démarche →</Link><SourceLink href="https://jecfrance.org/notre-histoire/">Source historique JEC France</SourceLink></div>
+          <div className="discover-actions"><Link href="/decouvrir#frise-chronologique" className="primary-button">Explorer la frise chronologique interactive →</Link><SourceLink href="https://jecfrance.org/notre-histoire/">Source historique JEC France</SourceLink></div>
         </section>
       );
     }
