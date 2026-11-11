@@ -8,6 +8,9 @@ Plateforme numérique collaborative destinée à la JEC France, pensée pour cen
 - [Ouvrir JEC-conNEcT](https://jec-connect-abessangel-8638.vercel.app)
 - [Inscription et connexion](https://jec-connect-abessangel-8638.vercel.app/login)
 
+## Histoire et frise chronologique
+Une frise interactive est disponible sur la page [Découvrir la JEC](https://jec-connect-abessangel-8638.vercel.app/decouvrir#frise-chronologique). Les premiers jalons sont documentés dans [le registre des sources publiques](docs/REGISTRE_SOURCES_PUBLIQUES.md). Les dates et niveaux de précision respectent les sources ; l'histoire française est distinguée de l'histoire internationale JECI/IYCS.
+
 ## Authentification
 Le prototype prévoit la création de compte par e-mail/mot de passe et la connexion directe avec Google via Supabase Auth (OAuth). Le bouton et le flux OAuth sont intégrés au code ; l'activation réelle nécessite encore la configuration du fournisseur Google dans Supabase et les identifiants OAuth dans Google Cloud. Voir [docs/GOOGLE_AUTH_SETUP.md](docs/GOOGLE_AUTH_SETUP.md).
 
