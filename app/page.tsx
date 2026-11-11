@@ -253,6 +253,7 @@ export default function Home() {
           <div className="top-actions">
             <label className="search-box"><span>⌕</span><input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Rechercher dans les sources publiques"/><kbd>⌘ K</kbd></label>
             <button className="icon-button notification-button" aria-label="Notifications" onClick={()=>setNotifOpen(!notifOpen)}>♧</button>
+            <LanguageSwitcher/>
             <Link className="top-login" href="/login">Connexion</Link>
           </div>
         </header>
