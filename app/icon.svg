@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#202A46"/><stop offset="1" stop-color="#49336D"/></linearGradient><linearGradient id="tiles" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#F0CB1B"/><stop offset=".22" stop-color="#E00079"/><stop offset=".48" stop-color="#E98233"/><stop offset=".72" stop-color="#0C67AE"/><stop offset="1" stop-color="#007D43"/></linearGradient></defs>
+  <rect x="2" y="2" width="124" height="124" rx="27" fill="url(#bg)"/><rect x="9" y="9" width="110" height="110" rx="22" fill="url(#tiles)" opacity=".96"/>
+  <path d="M0 47h128M0 82h128M43 0v128M86 0v128" stroke="#fff" stroke-opacity=".18" stroke-width="1.5"/>
+  <g fill="none" stroke="#fff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"><path d="M25 35c9 0 13 13 24 13s15-13 25-13 15 13 28 13"/><path d="M25 62h17m14 0h17m14 0h17"/></g>
+  <g fill="#fff"><circle cx="24" cy="62" r="6"/><circle cx="50" cy="62" r="6"/><circle cx="76" cy="62" r="6"/><circle cx="104" cy="62" r="6"/><path d="M101 22l2.8 7.2L111 32l-7.2 2.8L101 42l-2.8-7.2L91 32l7.2-2.8z"/></g>
+  <text x="64" y="101" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="25" font-weight="800" letter-spacing="-1.4" fill="#fff">JEC</text>
+</svg>
