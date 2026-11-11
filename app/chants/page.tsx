@@ -96,6 +96,7 @@ export default function ChantsPage() {
           <div className="songs-hero-pills"><span>♫ {lang==="fr"?"Chants de rassemblement":"Gathering songs"}</span><span>♪ {lang==="fr"?"Hymnes":"Anthems"}</span><span>FR · EN</span></div>
         </div>
         <div className="songs-hero-art" aria-hidden="true">
+          <img src="/images/jec-music-illustration.svg" alt="" className="songs-hero-illustration"/>
           <div className="music-orbit orbit-a"/><div className="music-orbit orbit-b"/>
           <div className="music-disc"><span>♫</span></div>
           <i className="note note-a">♪</i><i className="note note-b">♫</i><i className="note note-c">♪</i>
