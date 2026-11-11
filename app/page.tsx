@@ -1,265 +1,148 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { LanguageSwitcher, useLanguage } from "@/components/language-provider";
 
 const news = [
   {
     date: "13 avril 2026",
     category: "Santé et mieux-vivre",
+    categoryEn: "Health & well-being",
     title: "3 vidéos pour un mieux-être et un mieux-vivre ensemble !",
+    titleEn: "Three videos for well-being and living better together",
     summary: "La JEC France présente trois vidéos consacrées à la santé mentale et aux compétences psychosociales, issues d'un travail mené au sein du mouvement.",
-    url: "https://jecfrance.org/3-videos-pour-un-mieux-etre-et-un-mieux-vivre-ensemble/",
-    source: "JEC France",
-    sourceUrl: "https://jecfrance.org/"
+    summaryEn: "JEC France presents three videos about mental health and psychosocial skills, produced as part of the movement’s work.",
+    url: "https://jecfrance.org/3-videos-pour-un-mieux-etre-et-un-mieux-vivre-ensemble/"
   },
   {
     date: "7 avril 2026",
     category: "Ressources pédagogiques",
+    categoryEn: "Learning resources",
     title: "Un jeu pour découvrir l’utilisation des compétences psychosociales",
+    titleEn: "A game to discover psychosocial skills",
     summary: "Un outil conçu dans le cadre d'un partenariat avec la JEC du Liban, pour sensibiliser les jeunes aux différentes situations de crise.",
-    url: "https://jecfrance.org/un-jeu-pour-decouvrir-lutilisation-des-competences-psycho-sociales/",
-    source: "JEC France",
-    sourceUrl: "https://jecfrance.org/"
+    summaryEn: "A tool developed with JEC Lebanon to help young people understand and respond to different crisis situations.",
+    url: "https://jecfrance.org/un-jeu-pour-decouvrir-lutilisation-des-competences-psycho-sociales/"
   },
   {
     date: "7 avril 2026",
     category: "Vie du mouvement",
+    categoryEn: "Movement life",
     title: "Les responsables se rencontrent et se forment !",
+    titleEn: "JEC leaders meet and learn together",
     summary: "La JEC France revient sur une rencontre de responsables d'équipes organisée le 21 février à Chevilly-Larue, autour de sujets liés à leur engagement et à leur rôle.",
-    url: "https://jecfrance.org/les-responsables-se-rencontrent-et-se-forment/",
-    source: "JEC France",
-    sourceUrl: "https://jecfrance.org/"
+    summaryEn: "JEC France reports on a team leaders’ gathering held on 21 February in Chevilly-Larue, focusing on their commitment and responsibilities.",
+    url: "https://jecfrance.org/les-responsables-se-rencontrent-et-se-forment/"
   }
 ];
 
 const structures = [
-  { name: "Équipe nationale", detail: "Coordination et animation au niveau national", icon: "EN", color: "purple" },
-  { name: "Fédération de Paris", detail: "Rencontres et débats autour des sujets de société", icon: "PA", color: "blue" },
-  { name: "Fédération de Metz", detail: "Rencontres régulières à la Maison diocésaine", icon: "ME", color: "orange" },
-  { name: "Fédération de Rouen", detail: "Rencontres, films-débats, actions caritatives et événements culturels", icon: "RO", color: "green" },
-  { name: "Fédération de Nancy", detail: "Rencontres, débats et partage autour de l'engagement", icon: "NA", color: "pink" }
-];
-
-const sources = [
-  { label: "Histoire de la JEC France", url: "https://jecfrance.org/notre-histoire/" },
-  { label: "Démarche Voir-Juger-Agir", url: "https://jecfrance.org/notre-demarche/" },
-  { label: "Équipes et fédérations", url: "https://jecfrance.org/nos-equipes/" },
-  { label: "Orientations de la JEC France", url: "https://jecfrance.org/nos-orientations/" },
-  { label: "JECI / IYCS — présentation officielle", url: "https://www.laityfamilylife.va/content/laityfamilylife/fr/associazioni-e-movimenti/repertorio/gioventu-studentesca-cattolica-internazionale-.html" }
+  {name:"Équipe nationale",nameEn:"National team",detail:"Coordination et animation au niveau national",detailEn:"National coordination and animation",icon:"EN",color:"purple"},
+  {name:"Fédération de Paris",nameEn:"Paris federation",detail:"Rencontres et débats autour des sujets de société",detailEn:"Meetings and discussions on social issues",icon:"PA",color:"blue"},
+  {name:"Fédération de Metz",nameEn:"Metz federation",detail:"Rencontres régulières à la Maison diocésaine",detailEn:"Regular meetings at the diocesan centre",icon:"ME",color:"orange"},
+  {name:"Fédération de Rouen",nameEn:"Rouen federation",detail:"Rencontres, films-débats, actions caritatives et événements culturels",detailEn:"Meetings, film discussions, charitable actions and cultural events",icon:"RO",color:"green"},
+  {name:"Fédération de Nancy",nameEn:"Nancy federation",detail:"Rencontres, débats et partage autour de l'engagement",detailEn:"Meetings, discussions and sharing around commitment",icon:"NA",color:"pink"}
 ];
 
 const nav = [
-  { label: "Vue d'ensemble", icon: "▦", group: "ESPACE PUBLIC" },
-  { label: "Actualités JEC", icon: "◉" },
-  { label: "Découvrir la JEC", icon: "✳" },
-  { label: "Structures", icon: "◎" },
-  { label: "Agenda public", icon: "▣" },
-  { label: "Workspace", icon: "⌘", group: "ESPACE MEMBRE" },
-  { label: "Messagerie", icon: "▤" },
-  { label: "Réunions", icon: "▣" },
-  { label: "Projets", icon: "◫" },
-  { label: "Documents", icon: "▱" },
-  { label: "Archives JEC", icon: "▤" },
-  { label: "Chants & hymnes", icon: "♫" },
-  { label: "JEC AI", icon: "✧" }
+  ["Vue d'ensemble","Overview","▦","ESPACE PUBLIC"],
+  ["Actualités JEC","JEC News","◉",""],
+  ["Découvrir la JEC","Discover JEC","✳",""],
+  ["Structures","Structures","◎",""],
+  ["Agenda public","Public calendar","▣",""],
+  ["Workspace","Workspace","⌘","COLLABORATION"],
+  ["Messagerie","Messages","▤",""],
+  ["Réunions","Meetings","▣",""],
+  ["Projets","Projects","◫",""],
+  ["Documents","Documents","▱",""],
+  ["Archives JEC","JEC Archives","▤","PATRIMOINE"],
+  ["Chants & hymnes","Songs & anthems","♫",""],
+  ["JEC AI","JEC AI","✧",""]
 ];
 
-function SourceLink({ href, children }: { href: string; children: React.ReactNode }) {
+function SourceLink({href,children}:{href:string;children:React.ReactNode}) {
   return <a className="source-link" href={href} target="_blank" rel="noreferrer">{children} ↗</a>;
-}
-
-function NewsCard({ item }: { item: typeof news[number] }) {
-  return (
-    <article className="post-card verified-news-card">
-      <div className="post-header">
-        <div className="avatar violet">JEC</div>
-        <div className="post-author">
-          <strong>{item.source}</strong>
-          <small>Publication publique vérifiée · {item.date}</small>
-        </div>
-        <span className="verified-pill">Source</span>
-      </div>
-      <span className="post-tag violet">{item.category}</span>
-      <h3 className="verified-news-title">{item.title}</h3>
-      <p className="post-text">{item.summary}</p>
-      <div className="source-footer">
-        <span>Publié sur le site officiel</span>
-        <SourceLink href={item.url}>Lire l'article</SourceLink>
-      </div>
-    </article>
-  );
 }
 
 export default function Home() {
   const {lang}=useLanguage();
   const en=lang==="en";
-  const [active, setActive] = useState("Vue d'ensemble");
-  const [liked, setLiked] = useState<number[]>([]);
-  const [search, setSearch] = useState("");
-  const [notifOpen, setNotifOpen] = useState(false);
+  const t=(fr:string,english:string)=>en?english:fr;
+  const [active,setActive]=useState("Vue d'ensemble");
+  const [search,setSearch]=useState("");
+  const [notificationsOpen,setNotificationsOpen]=useState(false);
 
-  const filteredNews = news.filter(item =>
-    (item.title + " " + item.summary + " " + item.category).toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredNews=useMemo(()=>news.filter(item=>
+    (item.title+" "+item.titleEn+" "+item.summary+" "+item.summaryEn+" "+item.category).toLowerCase().includes(search.toLowerCase())
+  ),[search]);
 
-  function renderContent() {
-    if (active === "Chants & hymnes") { return <section className="songs-preview-card"><div className="songs-preview-art"><span>♫</span><i>♪</i><b>JEC</b></div><div className="songs-preview-copy"><p className="eyebrow">PATRIMOINE MUSICAL</p><h2>Les chants et hymnes du mouvement</h2><p>Retrouve le chant de ralliement et l’hymne JEC en français et en anglais. Consulte les paroles, ajoute les couplets validés et écoute les enregistrements.</p><Link href="/chants" className="primary-button">Ouvrir la bibliothèque musicale →</Link></div></section>; }
-    if (active === "Actualités JEC") {
-      return (
-        <section>
-          <div className="section-heading"><div><p className="eyebrow">PUBLICATIONS SOURCÉES</p><h2>Actualités publiées par la JEC France</h2></div><span className="source-count">{filteredNews.length} articles</span></div>
-          <p className="section-intro">Les contenus ci-dessous proviennent du site public de la JEC France. Chaque carte conserve sa date de publication et son lien d'origine.</p>
-          {filteredNews.map(item => <NewsCard key={item.url} item={item}/>)}
-          <p className="source-note">Périmètre : publications officielles accessibles lors de la vérification du 11 novembre 2026. Ce prototype n'agrège pas encore automatiquement le flux du site.</p>
-        </section>
-      );
-    }
-
-    if (active === "Découvrir la JEC") {
-      return (
-        <section className="widget-card discover-panel">
-          <p className="eyebrow">HISTOIRE · MISSION · DÉMARCHE</p>
-          <h2>Découvrir la Jeunesse Étudiante Chrétienne</h2>
-          <p>La JEC France se présente comme un mouvement de jeunes, par les jeunes et pour les jeunes. Son histoire française remonte à 1929 ; sa démarche éducative s'appuie notamment sur le Voir-Juger-Agir.</p>
-          <div className="timeline-row"><b>1929</b><span>Premiers groupes et lancement du mouvement en France, autour notamment de Louis Chaudron et Paul Vignaux.</span></div>
-          <div className="timeline-row"><b>1930</b><span>Lancement de <i>L’Appel</i>, organe mensuel de la JEC, selon la page historique de JEC France.</span></div>
-          <div className="timeline-row"><b>1946</b><span>Fondation de la coordination internationale JECI / IYCS, après la Seconde Guerre mondiale.</span></div>
-          <div className="discover-actions"><Link href="/decouvrir#frise-chronologique" className="primary-button">Explorer la frise chronologique interactive →</Link><SourceLink href="https://jecfrance.org/notre-histoire/">Source historique JEC France</SourceLink></div>
-        </section>
-      );
-    }
-
-    if (active === "Structures") {
-      return (
-        <section>
-          <div className="section-heading"><div><p className="eyebrow">REPÈRES PUBLICS</p><h2>Structures référencées par JEC France</h2></div></div>
-          <p className="section-intro">Cette liste reprend les structures citées sur la page publique « Nos équipes ». Elle ne constitue pas un annuaire actualisé des membres ni une validation de l'activité opérationnelle à cette date.</p>
-          <div className="structure-grid">
-            {structures.map(s => <article className="widget-card structure-card" key={s.name}><div className={"team-icon "+s.color}>{s.icon}</div><h3>{s.name}</h3><p>{s.detail}</p></article>)}
-          </div>
-          <p className="source-note"><SourceLink href="https://jecfrance.org/nos-equipes/">Consulter la page officielle des équipes</SourceLink></p>
-        </section>
-      );
-    }
-
-    if (active === "Agenda public") {
-      return (
-        <section>
-          <div className="section-heading"><div><p className="eyebrow">RENDEZ-VOUS PUBLICS</p><h2>Agenda et événements à suivre</h2></div></div>
-          <article className="event-feature">
-            <div className="event-feature-date"><span>29 JUIL.</span><b>—</b><span>08 AOÛT</span><small>2027</small></div>
-            <div className="event-feature-body">
-              <span className="post-tag blue">ÉVÉNEMENT INTERNATIONAL · SOURCE EXTERNE</span>
-              <h3>Journées Mondiales de la Jeunesse — Séoul 2027</h3>
-              <p>Le site JMJ 2027 en France annonce le rendez-vous du 29 juillet au 8 août 2027 à Séoul, en Corée du Sud. Les dates précises de départ et de retour peuvent dépendre du groupe organisateur.</p>
-              <SourceLink href="https://www.jmj2027.fr/">Consulter le site officiel JMJ 2027 France</SourceLink>
-            </div>
-          </article>
-          <p className="source-note">Aucune réunion interne de la JEC France n'est affichée ici sans annonce publique vérifiable. Les événements internes seront ajoutés par les responsables habilités dans la future version authentifiée.</p>
-        </section>
-      );
-    }
-
-    if (active !== "Vue d'ensemble") {
-      return (
-        <section className="module-placeholder widget-card">
-          <div className="module-icon">✧</div>
-          <p className="eyebrow">MODULE EN CONCEPTION</p>
-          <h2>{active}</h2>
-          <p>Ce module fait partie du périmètre fonctionnel de JEC-conNEcT. Il sera activé progressivement après validation des besoins, des droits d'accès et des règles de gouvernance par la JEC France.</p>
-          <div className="prototype-banner">Aucune donnée interne ou confidentielle n'est utilisée dans cette démonstration.</div>
-        </section>
-      );
-    }
-
-    return (
-      <>
-        <section className="welcome-banner">
-          <div className="welcome-copy">
-            <p className="eyebrow light">UN MOUVEMENT DE JEUNES, PAR LES JEUNES ET POUR LES JEUNES</p>
-            <h1>La JEC, son histoire et son actualité.</h1>
-            <p>Un espace pour découvrir le mouvement, retrouver les informations publiques et préparer une communauté mieux connectée.</p>
-            <div className="welcome-actions">
-              <button className="white-button" onClick={()=>setActive("Découvrir la JEC")}>Découvrir la JEC</button>
-              <button className="outline-light" onClick={()=>setActive("Actualités JEC")}>Voir les actualités →</button>
-            </div>
-          </div>
-          <div className="banner-art"><div className="orbit orbit-one"/><div className="orbit orbit-two"/><div className="orbit-core">JEC<br/><span>✳</span></div><div className="orbit-dot dot-one"/><div className="orbit-dot dot-two"/><div className="orbit-dot dot-three"/></div>
-        </section>
-
-        <div className="content-grid">
-          <section className="feed-column">
-            <div className="section-heading"><div><p className="eyebrow">PUBLICATIONS OFFICIELLES</p><h2>Les dernières actualités repérées</h2></div><button className="text-button" onClick={()=>setActive("Actualités JEC")}>Toutes les actualités ↗</button></div>
-            {news.map(item=><NewsCard key={item.url} item={item}/>)}
-            <div className="widget-card source-directory">
-              <div className="widget-heading"><h3>Sources publiques de référence</h3></div>
-              {sources.map(s=><div className="source-directory-row" key={s.url}><span>{s.label}</span><SourceLink href={s.url}>Ouvrir</SourceLink></div>)}
-            </div>
-          </section>
-
-          <aside className="right-column">
-            <section className="widget-card">
-              <div className="widget-heading"><h3>Repères vérifiés</h3><button onClick={()=>setActive("Découvrir la JEC")}>Histoire</button></div>
-              <div className="fact-item"><b>1929</b><div><strong>Origines de la JEC en France</strong><small>Premiers groupes autour de Louis Chaudron et Paul Vignaux.</small></div></div>
-              <div className="fact-item"><b>1930</b><div><strong>Lancement de L’Appel</strong><small>Organe mensuel historique du mouvement.</small></div></div>
-              <div className="fact-item"><b>1946</b><div><strong>Coordination internationale</strong><small>Fondation de la JECI / IYCS.</small></div></div>
-              <SourceLink href="https://jecfrance.org/notre-histoire/">Histoire JEC France</SourceLink>
-            </section>
-
-            <section className="widget-card">
-              <div className="widget-heading"><h3>Événement à suivre</h3><button onClick={()=>setActive("Agenda public")}>Agenda</button></div>
-              <div className="event-item"><div className="event-date"><b>2027</b><span>JUIL.–AOÛT</span></div><div><strong>JMJ Séoul 2027</strong><small>29 juillet – 8 août · Corée du Sud</small><SourceLink href="https://www.jmj2027.fr/">Site officiel</SourceLink></div></div>
-              <p className="source-note">Événement public externe — aucune participation de la JEC France n'est présumée.</p>
-            </section>
-
-            <section className="widget-card">
-              <div className="widget-heading"><h3>Structures référencées</h3><button onClick={()=>setActive("Structures")}>Explorer</button></div>
-              {structures.slice(0,4).map(s=><div className="team-item" key={s.name}><div className={"team-icon "+s.color}>{s.icon}</div><div><strong>{s.name}</strong><small>Référencée sur le site public JEC France</small></div></div>)}
-              <SourceLink href="https://jecfrance.org/nos-equipes/">Source : JEC France</SourceLink>
-            </section>
-
-            <section className="ai-card"><div className="ai-spark">✧</div><p className="eyebrow">JEC CONNECT</p><h3>Un espace à construire ensemble</h3><p>La future plateforme réunira actualités, coordination, réunions, documents et mémoire institutionnelle.</p><button onClick={()=>setActive("Workspace")}>Découvrir les modules <span>→</span></button></section>
-            <p className="prototype-note">Prototype de présentation · Informations publiques sourcées<br/>Les espaces privés ne sont pas encore opérationnels.</p>
-          </aside>
-        </div>
-      </>
-    );
+  function NewsCard({item}:{item:typeof news[number]}) {
+    return <article className="post-card verified-news-card">
+      <div className="post-header">
+        <div className="avatar violet">JEC</div>
+        <div className="post-author"><strong>JEC France</strong><small>{t("Publication publique vérifiée","Verified public publication")} · {item.date}</small></div>
+        <span className="verified-pill">{t("Source","Source")}</span>
+      </div>
+      <span className="post-tag violet">{en?item.categoryEn:item.category}</span>
+      <h3 className="verified-news-title">{en?item.titleEn:item.title}</h3>
+      <p className="post-text">{en?item.summaryEn:item.summary}</p>
+      <div className="source-footer"><span>{t("Publié sur le site officiel","Published on the official website")}</span><SourceLink href={item.url}>{t("Lire l'article","Read article")}</SourceLink></div>
+    </article>;
   }
 
-  return (
-    <div className="app-shell">
-      <aside className="sidebar">
-        <Link href="/" className="brand-lockup side-brand"><div className="brand-mark"><span>JEC</span><i>✳</i></div><span>conNEcT</span></Link>
-        <div className="workspace-switch"><div className="workspace-avatar">J</div><div><strong>JEC France</strong><small>Portail public</small></div><span className="chevron">⌄</span></div>
-        <nav className="main-nav">
-          {nav.map((item) => <div key={item.label}>
-            {item.group && <p className="nav-group">{item.group}</p>}
-            <button onClick={()=>setActive(item.label)} className={active===item.label?"nav-item active":"nav-item"}>
-              <span className={item.label==="JEC AI"?"nav-icon sparkle":"nav-icon"}>{item.icon}</span><span>{item.label}</span>
-            </button>
-          </div>)}
-        </nav>
-        <div className="sidebar-bottom">
-          <div className="help-card"><div className="help-icon">✧</div><strong>Sources vérifiables</strong><p>Les faits publics affichés renvoient à leurs publications d'origine.</p><button onClick={()=>setActive("Actualités JEC")}>Voir les sources →</button></div>
-          <div className="profile-mini"><div className="avatar user">VP</div><div><strong>Visiteur</strong><small>Aperçu public · non connecté</small></div><span>•••</span></div>
-        </div>
-      </aside>
+  function renderContent() {
+    if(active==="Chants & hymnes") return <section className="songs-preview-card">
+      <div className="songs-preview-art"><span>♫</span><i>♪</i><b>JEC</b></div>
+      <div className="songs-preview-copy"><p className="eyebrow">{t("PATRIMOINE MUSICAL","MUSICAL HERITAGE")}</p><h2>{t("Les chants et hymnes du mouvement","Songs and anthems of the movement")}</h2><p>{t("Retrouve le chant de ralliement et l’hymne JEC en français et en anglais. Consulte les paroles, ajoute les couplets validés et écoute les enregistrements lorsqu’ils sont disponibles.","Find the rallying song and the JEC anthem in French and English. Explore the lyrics, add approved verses and listen to recordings when available.")}</p><Link href="/chants" className="primary-button">{t("Ouvrir la bibliothèque musicale →","Open the music library →")}</Link></div>
+    </section>;
 
-      <main className="main-area">
-        <header className="topbar">
-          <div className="breadcrumb">JEC France <span>/</span> <strong>{active}</strong></div>
-          <div className="top-actions">
-            <label className="search-box"><span>⌕</span><input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Rechercher dans les sources publiques"/><kbd>⌘ K</kbd></label>
-            <button className="icon-button notification-button" aria-label="Notifications" onClick={()=>setNotifOpen(!notifOpen)}>♧</button>
-            <LanguageSwitcher/>
-            <Link className="top-login" href="/login">Connexion</Link>
-          </div>
-        </header>
-        {notifOpen && <div className="notification-popover"><strong>Notifications</strong><p>Les notifications personnelles seront disponibles après activation de l'espace membre.</p><p className="muted">Aucune notification individuelle n'est simulée sur cette page publique.</p></div>}
-        <div className="page-content">{renderContent()}</div>
-      </main>
-    </div>
-  );
+    if(active==="Actualités JEC") return <section>
+      <div className="section-heading"><div><p className="eyebrow">{t("PUBLICATIONS SOURCÉES","SOURCED PUBLICATIONS")}</p><h2>{t("Actualités publiées par la JEC France","News published by JEC France")}</h2></div><span className="source-count">{filteredNews.length} {t("articles","articles")}</span></div>
+      <p className="section-intro">{t("Ces contenus proviennent du site public de la JEC France. Chaque carte conserve sa date de publication et son lien d'origine.","These items come from JEC France’s public website. Each card keeps its publication date and original source link.")}</p>
+      {filteredNews.map(item=><NewsCard key={item.url} item={item}/>)}
+      <p className="source-note">{t("Vérification initiale : 11 novembre 2026. L'agrégation automatique des flux n'est pas encore activée.","Initial verification: 11 November 2026. Automatic feed aggregation is not yet enabled.")}</p>
+    </section>;
+
+    if(active==="Découvrir la JEC") return <section className="discover-preview">
+      <div className="discover-preview-art"><img src="/images/jec-community-illustration.svg" alt={t("Illustration de jeunes qui échangent et apprennent ensemble","Illustration of young people learning and sharing together")}/></div>
+      <div className="discover-preview-copy"><p className="eyebrow">{t("HISTOIRE · MISSION · DÉMARCHE","HISTORY · MISSION · APPROACH")}</p><h2>{t("Découvrir la Jeunesse Étudiante Chrétienne","Discover the Young Christian Students")}</h2><p>{t("Des premiers groupes en France en 1929 à la coordination internationale, explore les repères historiques, la pédagogie Voir-Juger-Agir et les piliers du mouvement.","From the first groups in France in 1929 to the international coordination, explore the timeline, the See-Judge-Act approach and the movement’s pillars.")}</p><Link href="/decouvrir#frise-chronologique" className="primary-button">{t("Explorer la frise chronologique →","Explore the interactive timeline →")}</Link></div>
+    </section>;
+
+    if(active==="Structures") return <section>
+      <div className="section-heading"><div><p className="eyebrow">{t("REPÈRES PUBLICS","PUBLIC INFORMATION")}</p><h2>{t("Structures référencées par JEC France","Structures listed by JEC France")}</h2></div></div>
+      <p className="section-intro">{t("Cette sélection reprend les structures citées sur la page publique « Nos équipes ». Elle ne constitue pas un annuaire actualisé des membres.","This selection reflects structures listed on the public “Our teams” page. It is not an up-to-date member directory.")}</p>
+      <div className="structure-grid">{structures.map(item=><article className="widget-card structure-card" key={item.name}><div className={"team-icon "+item.color}>{item.icon}</div><h3>{en?item.nameEn:item.name}</h3><p>{en?item.detailEn:item.detail}</p></article>)}</div>
+      <p className="source-note"><SourceLink href="https://jecfrance.org/nos-equipes/">{t("Consulter la page officielle des équipes","View the official teams page")}</SourceLink></p>
+    </section>;
+
+    if(active==="Agenda public") return <section>
+      <div className="section-heading"><div><p className="eyebrow">{t("RENDEZ-VOUS PUBLICS","PUBLIC EVENTS")}</p><h2>{t("Agenda et événements à suivre","Upcoming events and dates")}</h2></div></div>
+      <article className="event-feature"><div className="event-feature-date"><span>29 JUL.</span><b>—</b><span>08 AUG.</span><small>2027</small></div><div className="event-feature-body"><span className="post-tag blue">{t("ÉVÉNEMENT INTERNATIONAL · SOURCE EXTERNE","INTERNATIONAL EVENT · EXTERNAL SOURCE")}</span><h3>{t("Journées Mondiales de la Jeunesse — Séoul 2027","World Youth Day — Seoul 2027")}</h3><p>{t("Le site JMJ 2027 en France annonce le rendez-vous du 29 juillet au 8 août 2027 à Séoul, en Corée du Sud. Aucune participation de la JEC France n'est présumée.","The French WYD 2027 website lists the event from 29 July to 8 August 2027 in Seoul, South Korea. No participation by JEC France is implied.")}</p><SourceLink href="https://www.jmj2027.fr/">{t("Site officiel JMJ 2027 France","Official WYD 2027 France website")}</SourceLink></div></article>
+    </section>;
+
+    return <section className="module-placeholder widget-card"><div className="module-icon">✧</div><p className="eyebrow">{t("MODULE EN CONCEPTION","MODULE IN DEVELOPMENT")}</p><h2>{nav.find(item=>item[0]===active)?.[en?1:0]??active}</h2><p>{t("Ce module fait partie du périmètre de JEC-conNEcT. Il sera activé progressivement après validation des besoins, des droits d'accès et des règles de gouvernance par la JEC France.","This module is part of JEC-conNEcT. It will be activated progressively after JEC France validates requirements, access rights and governance rules.")}</p><div className="prototype-banner">{t("Aucune donnée interne ou confidentielle n'est utilisée dans cette démonstration.","No internal or confidential information is used in this demonstration.")}</div></section>;
+  }
+
+  return <div className="app-shell">
+    <aside className="sidebar">
+      <Link href="/" className="brand-lockup side-brand"><div className="brand-mark"><span>JEC</span><i>✳</i></div><span>conNEcT</span></Link>
+      <div className="workspace-switch"><div className="workspace-avatar">J</div><div><strong>JEC France</strong><small>{t("Portail public","Public portal")}</small></div><span className="chevron">⌄</span></div>
+      <nav className="main-nav">{nav.map(([fr,english,icon,group])=><div key={fr}>{group&&<p className="nav-group">{t(group==="ESPACE PUBLIC"?"ESPACE PUBLIC":group==="COLLABORATION"?"COLLABORATION":"PATRIMOINE",group==="ESPACE PUBLIC"?"PUBLIC SPACE":group==="COLLABORATION"?"COLLABORATION":"HERITAGE")}</p>}<button onClick={()=>setActive(fr)} className={active===fr?"nav-item active":"nav-item"}><span className={fr==="JEC AI"?"nav-icon sparkle":"nav-icon"}>{icon}</span><span>{en?english:fr}</span></button></div>)}</nav>
+      <div className="sidebar-bottom"><div className="help-card"><div className="help-icon">✧</div><strong>{t("Sources vérifiables","Verifiable sources")}</strong><p>{t("Les faits publics renvoient à leurs publications d'origine.","Public facts link to their original publications.")}</p><button onClick={()=>setActive("Actualités JEC")}>{t("Voir les sources →","Browse sources →")}</button></div><div className="profile-mini"><div className="avatar user">VP</div><div><strong>{t("Visiteur","Visitor")}</strong><small>{t("Aperçu public · non connecté","Public preview · signed out")}</small></div><span>•••</span></div></div>
+    </aside>
+    <main className="main-area">
+      <header className="topbar"><div className="breadcrumb">JEC France <span>/</span> <strong>{en?(nav.find(item=>item[0]===active)?.[1]??active):active}</strong></div><div className="top-actions"><label className="search-box"><span>⌕</span><input value={search} onChange={e=>setSearch(e.target.value)} placeholder={t("Rechercher dans les sources publiques","Search public sources")}/><kbd>⌘ K</kbd></label><button className="icon-button notification-button" aria-label={t("Notifications","Notifications")} onClick={()=>setNotificationsOpen(!notificationsOpen)}>♧</button><LanguageSwitcher/><Link className="top-login" href="/login">{t("Connexion","Sign in")}</Link></div></header>
+      {notificationsOpen&&<div className="notification-popover"><strong>{t("Notifications","Notifications")}</strong><p>{t("Les notifications personnelles seront disponibles après activation de l'espace membre.","Personal notifications will be available when the member area is enabled.")}</p><p className="muted">{t("Aucune notification individuelle n'est simulée sur cette page publique.","No personal notifications are simulated on this public page.")}</p></div>}
+      <div className="page-content">
+        {active==="Vue d'ensemble"?<>
+          <section className="welcome-banner"><div className="welcome-copy"><p className="eyebrow light">{t("UN MOUVEMENT DE JEUNES, PAR LES JEUNES ET POUR LES JEUNES","A MOVEMENT OF YOUNG PEOPLE, BY YOUNG PEOPLE, FOR YOUNG PEOPLE")}</p><h1>{t("La JEC, son histoire et son actualité.","JEC: its story and its news.")}</h1><p>{t("Un espace pour découvrir le mouvement, retrouver les informations publiques et préparer une communauté mieux connectée.","Discover the movement, explore verified public information and build a more connected community.")}</p><div className="welcome-actions"><button className="white-button" onClick={()=>setActive("Découvrir la JEC")}>{t("Découvrir la JEC","Discover JEC")}</button><button className="outline-light" onClick={()=>setActive("Actualités JEC")}>{t("Voir les actualités →","Explore news →")}</button></div></div><div className="banner-art"><img className="home-community-image" src="/images/jec-community-illustration.svg" alt={t("Des jeunes échangent, apprennent et font de la musique ensemble","Young people learn, share ideas and make music together")}/><div className="orbit orbit-one"/><div className="orbit orbit-two"/><div className="orbit-core">JEC<br/><span>✳</span></div><div className="orbit-dot dot-one"/><div className="orbit-dot dot-two"/><div className="orbit-dot dot-three"/></div></section>
+          <div className="content-grid"><section className="feed-column"><div className="section-heading"><div><p className="eyebrow">{t("PUBLICATIONS OFFICIELLES","OFFICIAL PUBLICATIONS")}</p><h2>{t("Les dernières actualités repérées","Latest verified news")}</h2></div><button className="text-button" onClick={()=>setActive("Actualités JEC")}>{t("Toutes les actualités ↗","All news ↗")}</button></div>{filteredNews.slice(0,3).map(item=><NewsCard key={item.url} item={item}/>)}</section>
+          <aside className="right-column"><section className="widget-card"><div className="widget-heading"><h3>{t("Repères historiques","Historical milestones")}</h3><button onClick={()=>setActive("Découvrir la JEC")}>{t("Explorer","Explore")}</button></div><div className="fact-item"><b>1929</b><div><strong>{t("Origines de la JEC en France","Origins of JEC in France")}</strong><small>{t("Premiers groupes autour de Louis Chaudron et Paul Vignaux.","First groups around Louis Chaudron and Paul Vignaux.")}</small></div></div><div className="fact-item"><b>1946</b><div><strong>{t("Coordination internationale","International coordination")}</strong><small>{t("Fondation de la JECI / IYCS.","Foundation of JECI / IYCS.")}</small></div></div><Link className="widget-link" href="/decouvrir#frise-chronologique">{t("Voir la frise chronologique →","Explore the timeline →")}</Link></section>
+          <section className="widget-card"><div className="widget-heading"><h3>{t("Événement à suivre","Event to follow")}</h3><button onClick={()=>setActive("Agenda public")}>{t("Agenda","Calendar")}</button></div><div className="event-item"><div className="event-date"><b>2027</b><span>JUL–AUG</span></div><div><strong>{t("JMJ Séoul 2027","WYD Seoul 2027")}</strong><small>29 juillet – 8 août · Corée du Sud</small><SourceLink href="https://www.jmj2027.fr/">{t("Site officiel","Official website")}</SourceLink></div></div></section>
+          <section className="ai-card"><div className="ai-spark">✧</div><p className="eyebrow">JEC CONNECT</p><h3>{t("Un espace à construire ensemble","A space to build together")}</h3><p>{t("La future plateforme réunira actualités, coordination, réunions, documents et mémoire institutionnelle.","The platform will bring together news, coordination, meetings, documents and institutional memory.")}</p><button onClick={()=>setActive("Workspace")}>{t("Découvrir les modules →","Explore modules →")}</button></section><p className="prototype-note">{t("Prototype de présentation · Contenus publics sourcés","Presentation prototype · Public sourced content")}<br/>{t("Les espaces privés ne sont pas encore opérationnels.","Private areas are not yet active.")}</p></aside></div>
+        </>:renderContent()}
+      </div>
+    </main>
+  </div>;
 }
