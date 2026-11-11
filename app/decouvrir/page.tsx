@@ -133,7 +133,7 @@ export default function DecouvrirPage() {
         </div>
       </section>
 
-      <section className="discover-public-section chronology-section">
+      <section id="frise-chronologique" className="discover-public-section chronology-section">
         <div className="discover-public-section-heading">
           <p className="eyebrow">MÉMOIRE DU MOUVEMENT</p>
           <h2>La frise chronologique de la JEC</h2>
