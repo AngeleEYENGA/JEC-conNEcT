@@ -76,7 +76,7 @@ export default function LoginPage() {
     if(!supabase){setError(en?"Supabase is not configured yet.":"Supabase n’est pas encore configuré.");return;}
     setLoading(true);
     const {error:authError}=await supabase.auth.resetPasswordForEmail(email,{
-      redirectTo:`${window.location.origin}/update-password`
+      redirectTo:`${window.location.origin}/auth/callback?next=/update-password`
     });
     if(authError)setError(authErrorText(authError.message));
     else setMessage(en?"If the address is registered, a password-reset email has been sent.":"Si cette adresse est enregistrée, un e-mail de réinitialisation vient d’être envoyé.");
