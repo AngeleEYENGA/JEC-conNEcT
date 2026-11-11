@@ -228,3 +228,16 @@
 .songs-disclaimer{text-align:center;font-size:8px;color:#aaa5b2;line-height:1.6;margin-top:13px}
 @media(max-width:800px){.songs-hero{min-height:280px;padding:42px 25px}.songs-hero-art{right:-140px;opacity:.4}.songs-intro-row{align-items:flex-start;flex-direction:column;gap:8px}.song-workspace-grid{grid-template-columns:1fr}.audio-panel{max-width:none}.song-detail{padding:15px}.song-detail-heading{align-items:flex-start}.songs-content{padding:25px 15px 40px}}
 @media(max-width:540px){.songs-header{padding:0 14px;height:62px}.songs-header-actions{gap:8px}.songs-header .brand-lockup{font-size:17px}.songs-hero h1{font-size:34px}.song-selector{grid-template-columns:1fr}.song-detail-heading{flex-direction:column}.language-choice{align-items:flex-start}.lyrics-footer small{max-width:100%}}
+
+
+.songs-preview-card{display:grid;grid-template-columns:minmax(190px,.72fr) minmax(280px,1.28fr);gap:22px;align-items:stretch;background:#fff;border:1px solid #ebe7f0;border-radius:15px;padding:17px;overflow:hidden}
+.songs-preview-art{min-height:235px;border-radius:11px;background:linear-gradient(145deg,#302b59,#644296 60%,#a64f83);display:grid;place-items:center;position:relative;overflow:hidden;color:#f5d746}
+.songs-preview-art:before,.songs-preview-art:after{content:"";position:absolute;width:240px;height:130px;border:1px solid #ffffff3d;border-radius:50%;transform:rotate(-28deg)}
+.songs-preview-art:after{width:200px;height:180px;transform:rotate(42deg)}
+.songs-preview-art span{font-size:76px;z-index:1;text-shadow:0 8px 24px #1d123c70}
+.songs-preview-art i{position:absolute;right:21%;top:15%;font-size:31px;font-style:normal;color:#f1a8cd}
+.songs-preview-art b{position:absolute;bottom:14px;right:18px;color:#ffffffbd;font:800 11px Manrope;letter-spacing:2px}
+.songs-preview-copy{padding:17px 15px;display:flex;flex-direction:column;align-items:flex-start;justify-content:center}
+.songs-preview-copy h2{font:800 22px Manrope;letter-spacing:-.6px;margin:3px 0 10px}
+.songs-preview-copy>p:not(.eyebrow){font-size:11px;line-height:1.8;color:#77778a;max-width:620px;margin:0 0 18px}
+@media(max-width:700px){.songs-preview-card{grid-template-columns:1fr}.songs-preview-art{min-height:155px}}
