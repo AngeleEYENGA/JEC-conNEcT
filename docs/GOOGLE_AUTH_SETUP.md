@@ -57,3 +57,30 @@ L'inscription e-mail utilise `signUp` avec confirmation par e-mail. La connexion
 - Ne pas utiliser le prototype pour des données personnelles ou confidentielles réelles.
 
 Référence : documentation officielle Supabase « Sign in with Google » et « Redirect URLs ».
+
+
+## 6. État de configuration de la démonstration
+
+Le dépôt contient désormais :
+- le bouton de connexion Google ;
+- l'appel Supabase Auth avec provider Google ;
+- la route serveur /auth/callback pour échanger le code PKCE ;
+- un proxy Next.js pour actualiser les sessions par cookies ;
+- la page de réinitialisation du mot de passe.
+
+Le projet Vercel possède actuellement NEXT_PUBLIC_SUPABASE_URL, mais la variable NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY n'est pas encore renseignée. C'est pourquoi la connexion réelle ne peut pas fonctionner sur le déploiement à ce stade.
+
+À faire :
+1. Copier la clé publishable du projet Supabase depuis Project Settings > API Keys (ou l'onglet Connect selon l'interface).
+2. Dans Vercel > Project > Settings > Environment Variables, ajouter NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY avec cette valeur pour Production, Preview et Development.
+3. Dans Supabase > Authentication > Sign In / Providers > Google, activer Google et configurer le Client ID et le Client Secret créés dans Google Cloud Console.
+4. Dans Supabase > Authentication > URL Configuration, ajouter exactement :
+   - https://jec-connect-abessangel-8638.vercel.app/auth/callback
+   - http://localhost:3000/auth/callback
+   - les URLs Preview Vercel exactes nécessaires aux tests.
+5. Redéployer Vercel et tester avec un compte Google de test.
+
+L'URI à placer dans Google Cloud Authorized redirect URIs reste celle du projet Supabase :
+https://acznzodljeaxzkhrivmm.supabase.co/auth/v1/callback
+
+La clé publishable est conçue pour être utilisée côté client, mais ne remplace pas les politiques RLS. Le secret OAuth Google ne doit jamais être ajouté à GitHub, GitLab, au navigateur ou dans une variable NEXT_PUBLIC_*.
