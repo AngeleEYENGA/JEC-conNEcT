@@ -2,60 +2,33 @@
 
 **Connecter. Collaborer. Construire ensemble.**
 
-La plateforme numérique collaborative de la Jeunesse Étudiante Chrétienne (JEC).
+Plateforme numérique collaborative destinée à la JEC France, pensée pour centraliser la vie communautaire, les communications, les réunions, les projets, les documents et la mémoire du mouvement.
 
-## Démonstration en ligne
+## Démonstration
+- [Ouvrir JEC-conNEcT](https://jec-connect-abessangel-8638.vercel.app)
+- [Inscription et connexion](https://jec-connect-abessangel-8638.vercel.app/login)
 
-- Application : https://jec-connect-abessangel-8638.vercel.app
-- Connexion / inscription : https://jec-connect-abessangel-8638.vercel.app/login
+## Authentification
+Le prototype prévoit la création de compte par e-mail/mot de passe et la connexion directe avec Google via Supabase Auth (OAuth). Le bouton et le flux OAuth sont intégrés au code ; l'activation réelle nécessite encore la configuration du fournisseur Google dans Supabase et les identifiants OAuth dans Google Cloud. Voir [docs/GOOGLE_AUTH_SETUP.md](docs/GOOGLE_AUTH_SETUP.md).
 
-Le prototype utilise des données fictives. Les écrans de connexion e-mail et Google sont intégrés au code, mais l'authentification réelle attend la configuration des variables Supabase et des identifiants OAuth Google. Voir [le guide de configuration](docs/GOOGLE_AUTH_SETUP.md).
+## Produit
+- Site institutionnel et actualités
+- Communauté et publications
+- Workspace : équipes, canaux et messagerie
+- Réunions, calendrier et comptes rendus
+- Projets et événements
+- Documents et archives
+- Gouvernance et consultations
+- Formation et ressources
+- Veille et actualités externes
+- Assistant IA et reporting
+- Administration et droits d'accès
 
-## Vision
+## Sécurité du prototype
+Le prototype est un environnement de démonstration avec des données fictives. Ne pas y déposer de données personnelles réelles, documents comptables, procès-verbaux confidentiels, transcriptions réelles ou informations électorales. Il ne constitue pas le service de production de la JEC.
 
-Centraliser la communication, les actualités, les événements, les espaces de travail, les documents et la mémoire institutionnelle de la JEC France, avec une architecture extensible vers les mouvements JEC internationaux.
+## Technologies de présentation
+Next.js, TypeScript, Supabase Auth (après configuration) et Vercel. L'architecture et les fournisseurs du produit définitif seront réévalués après validation et financement.
 
-## Périmètre du prototype
-
-Le prototype de démonstration sert à tester les parcours et l'ergonomie. Il ne doit contenir aucune donnée personnelle réelle ni document confidentiel.
-
-## Authentification prévue
-
-- Création de compte par adresse e-mail et mot de passe.
-- Connexion et déconnexion classiques.
-- Vérification de l'adresse e-mail et réinitialisation du mot de passe (à finaliser dans le parcours produit).
-- Connexion directe avec Google via OAuth 2.0 / OpenID Connect, intégrée avec Supabase Auth.
-- Gestion du profil et des sessions.
-
-La connexion Google doit être activée côté Supabase et configurée avec un client OAuth Google. Les URL de redirection autorisées (locales et domaines Vercel de prévisualisation/production) doivent être déclarées dans Supabase et Google Cloud Console. Aucun secret OAuth ne doit être commité dans ce dépôt.
-
-## Architecture du produit
-
-- JEC Community — actualités et publications
-- JEC Workspace — équipes, canaux et messagerie
-- JEC Meetings — réunions, visioconférence et comptes rendus
-- JEC Projects — projets, activités et événements
-- JEC Documents — bibliothèque documentaire et archives
-- JEC Governance — consultations et processus électoraux
-- JEC Knowledge — histoire, formation et ressources
-- JEC News — veille et actualités externes
-- JEC AI — assistance rédactionnelle, synthèse et reporting
-- JEC Admin — administration, rôles et pilotage
-
-## Stack du prototype
-
-Next.js, TypeScript, CSS responsive et Supabase Auth. Le déploiement de démonstration est relié à Vercel et au dépôt GitHub. Les choix de production feront l'objet d'une analyse de sécurité, de coûts et de conformité avant mise en service.
-
-## Principes de sécurité
-
-- Accès selon les rôles et les organisations.
-- Principe du moindre privilège.
-- Séparation des données par organisation.
-- Documents confidentiels dans un stockage privé.
-- Protection des secrets via variables d'environnement.
-- Traçabilité des opérations sensibles.
-- Validation humaine des productions IA et des documents officiels.
-
-## Avertissement
-
-Le prototype et ses données de démonstration ne constituent pas un système opérationnel de gestion des membres, des finances, des élections ou des archives officielles. Aucun traitement de données réelles de la JEC ne doit y être effectué avant validation de la sécurité et de la conformité.
+## Icônes et marque
+Le logo fourni sert de base à l'icône Next.js dans `app/icon.png`. Les variantes de marque et formats complémentaires sont réunis dans le dossier de livrables du projet.
