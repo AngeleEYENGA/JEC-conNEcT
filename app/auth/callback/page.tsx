@@ -1,12 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
 export default function AuthCallbackPage() {
   const router = useRouter();
-  const params = useSearchParams();
   const [message, setMessage] = useState("Finalisation de la connexion…");
 
   useEffect(() => {
@@ -17,7 +16,7 @@ export default function AuthCallbackPage() {
         setMessage("Configuration Supabase manquante. Reviens à l'écran de connexion.");
         return;
       }
-      const code = params.get("code");
+      const code = new URLSearchParams(window.location.search).get("code");
       if (code) {
         const { error } = await supabase.auth.exchangeCodeForSession(code);
         if (error) {
@@ -32,7 +31,7 @@ export default function AuthCallbackPage() {
     }
     finish();
     return () => { active = false; };
-  }, [params, router]);
+  }, [router]);
 
   return <main className="callback-shell"><div className="callback-card"><div className="brand-mark"><span>JEC</span><i>✳</i></div><h1>JEC-conNEcT</h1><p>{message}</p><a href="/login">Retour à la connexion</a></div></main>;
 }
