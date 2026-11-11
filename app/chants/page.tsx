@@ -7,6 +7,28 @@ import { LanguageSwitcher, useLanguage } from "@/components/language-provider";
 type SongId = "rally" | "anthem";
 type Copy = { en: string; fr: string };
 
+const officialLyrics: Record<SongId, Record<"fr"|"en", string>> = {
+  "rally": {
+    "fr": "UN MÊME ÉLAN • UNE MÊME FOI • UN MÊME ENGAGEMENT\n\nNous irons jusqu'au bout du monde.\nLa JEC ne périra pas ! (bis)\n\nLa JEC : oui, oui, oui.\nLa JEC : oui, c'est vrai.\nLa JEC : ne périra pas ! (bis)\n\nLA JEC NE PÉRIRA PAS !\nVoir • Juger • Agir",
+    "en": "ONE MOVEMENT • ONE FAITH • ONE COMMITMENT\n\nWe will go to the ends of the earth.\nThe YCS will never perish! (twice)\n\nYCS: yes, yes, yes!\nYCS: yes, that's true!\nYCS: will never perish! (twice)"
+  },
+  "anthem": {
+    "fr": "REFRAIN\n\nChantons amis la vie est belle\nPour nos cœurs joyeux et fervents\nJécistes le Christ nous appelle (bis)\nVers l'avenir, en avant (bis)\n\nCOUPLET 1\n\nNous sommes la jeunesse ardente\nPhalange sans regret ni peur\nEt dans nos poitrines vibrantes\nBat le cœur du Christ Rédempteur\n\nPortons à travers nos écoles\nSon nom, sa joie, sa charité\nQue tous entendent ses paroles\nQu'ils naissent à la vérité\n\nREFRAIN — À REPRENDRE\n\nChantons amis la vie est belle\nPour nos cœurs joyeux et fervents\nJécistes le Christ nous appelle (bis)\nVers l'avenir, en avant (bis)\n\nVERS L'AVENIR, EN AVANT",
+    "en": "CHORUS\n\nCome, friends, let us sing: life is beautiful,\nWith joyful and fervent hearts.\nYoung Christian Students, Christ calls us (twice),\nForward into the future, onward! (twice)\n\nVERSE 1\n\nWe are a passionate, youthful band,\nA fearless company, steadfast and strong;\nAnd in our hearts, alive and vibrant,\nBeats the heart of Christ our Redeemer.\n\nLet us carry through our schools\nHis name, His joy, His charity;\nMay all hear His words resounding,\nAnd be born anew into truth.\n\nCHORUS — REPEAT\n\nCome, friends, let us sing: life is beautiful,\nWith joyful and fervent hearts.\nYoung Christian Students, Christ calls us (twice),\nForward into the future, onward! (twice)\n\nSEE • JUDGE • ACT"
+  }
+};
+
+const officialSources: Record<SongId, Record<"fr"|"en", string>> = {
+  "rally": {
+    "fr": "Chant_de_ralliement_JEC_avec_logo.docx",
+    "en": "YCS_Rallying_Chant_EN.docx"
+  },
+  "anthem": {
+    "fr": "Hymne_principal_JEC.docx",
+    "en": "YCS_Main_Hymn_EN.docx"
+  }
+};
+
 const labels: Record<string,Copy> = {
   songs:{fr:"Chants et hymnes",en:"Songs & anthems"},
   subtitle:{fr:"La mémoire vivante de nos chants, à transmettre et à faire vivre.",en:"The living memory of our songs, to share and keep alive."},
@@ -23,7 +45,12 @@ const labels: Record<string,Copy> = {
   verses:{fr:"Couplets",en:"Verses"},
   audio:{fr:"Version audio",en:"Audio version"},
   uploadAudio:{fr:"Importer un fichier audio",en:"Upload an audio file"},
-  missing:{fr:"Les paroles validées n'ont pas encore été intégrées.",en:"The approved lyrics have not been added yet."},
+  missing:{fr:"Le texte issu du document JEC est affiché ci-dessous.",en:"The text from the JEC source document is shown below."},
+  sourceLabel:{fr:"Document source",en:"Source document"},
+  sourceValidation:{fr:"Texte transcrit depuis le document fourni ; la validation éditoriale finale reste à confirmer.",en:"Transcribed from the supplied document; final editorial approval remains to be confirmed."},
+  restore:{fr:"Revenir au texte source",en:"Restore source text"},
+  draftSaved:{fr:"Modifications locales enregistrées",en:"Local changes saved"},
+  officialText:{fr:"Texte source",en:"Source text"},
   missingAudio:{fr:"Aucun enregistrement officiel n'est disponible dans cette démonstration.",en:"No official recording is available in this demo yet."},
   sourceNote:{fr:"Espace patrimonial en construction. Les versions officielles, les auteurs et les droits de diffusion seront renseignés après validation.",en:"Music archive in progress. Official versions, authorship and distribution rights will be added after validation."},
   frVersion:{fr:"Français",en:"French"},
@@ -54,8 +81,8 @@ export default function ChantsPage() {
   const storageKey = `jec-connect-song-${selected}-${lyricsLang}`;
 
   useEffect(()=>{
-    const stored=window.localStorage.getItem(storageKey) ?? "";
-    setLyrics(stored);
+    const stored=window.localStorage.getItem(storageKey);
+    setLyrics(stored ?? officialLyrics[selected][lyricsLang]);
     setEditing(false);
     setSaved(Boolean(stored));
   },[storageKey]);
@@ -78,6 +105,13 @@ export default function ChantsPage() {
   function saveLyrics() {
     window.localStorage.setItem(storageKey,lyrics);
     setSaved(true);
+    setEditing(false);
+  }
+
+  function restoreOfficialLyrics() {
+    window.localStorage.removeItem(storageKey);
+    setLyrics(officialLyrics[selected][lyricsLang]);
+    setSaved(false);
     setEditing(false);
   }
 
@@ -124,19 +158,19 @@ export default function ChantsPage() {
 
           <div className="song-workspace-grid">
             <section className="lyrics-panel">
-              <div className="panel-title"><div><p className="eyebrow">{tr("lyrics",lang).toUpperCase()}</p><h3>{lyricsLang==="fr"?tr("frVersion",lang):tr("enVersion",lang)}</h3></div><span className="lyrics-state">{verses.length? `${verses.length} ${tr("verses",lang).toLowerCase()}`:tr("localOnly",lang)}</span></div>
+              <div className="panel-title"><div><p className="eyebrow">{tr("lyrics",lang).toUpperCase()}</p><h3>{lyricsLang==="fr"?tr("frVersion",lang):tr("enVersion",lang)}</h3></div><span className="lyrics-state">{saved?tr("draftSaved",lang):tr("officialText",lang)}</span></div>
               {editing ? (
                 <div className="lyrics-editor">
                   <textarea value={lyrics} onChange={e=>setLyrics(e.target.value)} placeholder={tr("needLyrics",lang)} rows={12}/>
-                  <div className="editor-actions"><button className="quiet-button" onClick={()=>{setLyrics(window.localStorage.getItem(storageKey)??"");setEditing(false);}}>{tr("cancel",lang)}</button><button className="primary-button" onClick={saveLyrics}>{tr("save",lang)}</button></div>
+                  <div className="editor-actions"><button className="quiet-button" onClick={()=>{setLyrics(window.localStorage.getItem(storageKey)??officialLyrics[selected][lyricsLang]);setEditing(false);}}>{tr("cancel",lang)}</button><button className="primary-button" onClick={saveLyrics}>{tr("save",lang)}</button></div>
                   <small>{tr("needLyrics",lang)}</small>
                 </div>
               ) : verses.length ? (
-                <div className="verses-list">{verses.map((verse,i)=><article className="verse-block" key={i}><span>{i===0?(lang==="fr"?"Refrain / Couplets":"Chorus / Verse"):`${tr("verses",lang)} ${i+1}`}</span><p>{verse}</p></article>)}</div>
+                <div className="verses-list">{verses.map((verse,i)=><article className="verse-block" key={i}><span>{tr("verses",lang)} {i+1}</span><p>{verse}</p></article>)}</div>
               ) : (
                 <div className="empty-lyrics"><div className="lyrics-note-icon">♪</div><h4>{tr("missing",lang)}</h4><p>{tr("needLyrics",lang)}</p><span>{tr("localOnly",lang)}</span></div>
               )}
-              {!editing && <div className="lyrics-footer"><button className="primary-button" onClick={()=>setEditing(true)}>{verses.length?tr("edit",lang):tr("uploadLyrics",lang)}</button><small>{tr("sourceNote",lang)}</small></div>}
+              {!editing && <div className="lyrics-footer"><div className="lyrics-source-meta"><strong>{tr("sourceLabel",lang)} : {officialSources[selected][lyricsLang]}</strong><small>{tr("sourceValidation",lang)}</small><small>{tr("sourceNote",lang)}</small></div><div className="lyrics-actions"><button className="quiet-button" onClick={restoreOfficialLyrics}>{tr("restore",lang)}</button><button className="primary-button" onClick={()=>setEditing(true)}>{tr("edit",lang)}</button></div></div>}
             </section>
 
             <aside className="audio-panel">
