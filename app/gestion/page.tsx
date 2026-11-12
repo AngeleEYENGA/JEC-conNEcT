@@ -6,6 +6,7 @@ import { LanguageSwitcher, useLanguage } from "@/components/language-provider";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
 type PendingMember={user_id:string;membership_status:string;structure_name:string|null;jec_profiles:{first_name:string|null;last_name:string|null;display_name:string|null}|null};
+type DirectoryDraft={id:string;full_name:string;role_title:string;category:string;structure_name:string|null;visibility:string};
 
 export default function AdminPage(){
   const {lang}=useLanguage();
@@ -13,6 +14,7 @@ export default function AdminPage(){
   const [loading,setLoading]=useState(true);
   const [isAdmin,setIsAdmin]=useState(false);
   const [members,setMembers]=useState<PendingMember[]>([]);
+  const [directoryDrafts,setDirectoryDrafts]=useState<DirectoryDraft[]>([]);
   const [error,setError]=useState("");
   const [message,setMessage]=useState("");
   const [category,setCategory]=useState("bureau_national");
@@ -37,6 +39,9 @@ export default function AdminPage(){
       .order("created_at");
     if(membersError)setError(membersError.message);
     setMembers((data??[]) as unknown as PendingMember[]);
+    const {data:drafts,error:draftsError}=await supabase.from("jec_directory_entries").select("id,full_name,role_title,category,structure_name,visibility").eq("is_published",false).order("created_at",{ascending:false});
+    if(draftsError)setError(draftsError.message);
+    setDirectoryDrafts((drafts??[]) as DirectoryDraft[]);
     setLoading(false);
   }
 
@@ -70,7 +75,7 @@ export default function AdminPage(){
       created_by:user?.id??null
     });
     if(insertError)setError(insertError.message);
-    else {setMessage(en?"Draft directory entry created. Publish it after validation.":"Fiche d'annuaire créée en brouillon. Elle pourra être publiée après validation.");setFullName("");setRoleTitle("");setStructure("");setDescription("");setContact("");}
+    else {setMessage(en?"Draft directory entry created. Publish it after validation.":"Fiche d'annuaire créée en brouillon. Elle pourra être publiée après validation.");setFullName("");setRoleTitle("");setStructure("");setDescription("");setContact("");await load();}
   }
 
   async function publishEntry(id:string){
@@ -89,7 +94,7 @@ export default function AdminPage(){
       <p className="eyebrow">{en?"GOVERNANCE":"GOUVERNANCE"}</p><h1>{en?"JEC-conNEcT administration":"Administration JEC-conNEcT"}</h1>
       {loading?<p className="muted">{en?"Checking permissions…":"Vérification des permissions…"}</p>:!isAdmin?<section className="admin-locked"><h2>{en?"Administrator access required":"Accès administrateur requis"}</h2><p>{en?"Your account is connected, but it has not been granted JEC-conNEcT administrator privileges. Membership verification and administrator authorization are separate decisions.":"Ton compte est connecté, mais il ne dispose pas des droits d'administration de JEC-conNEcT. La validation de l'adhésion et l'autorisation d'administration sont deux décisions distinctes."}</p><p>{en?"The first administrator must be explicitly added by a project owner in the Supabase SQL Editor after checking the person's account email.":"Le premier administrateur doit être ajouté explicitement par le propriétaire du projet dans l'éditeur SQL Supabase, après vérification de l'adresse e-mail du compte."}</p></section>:<>
         <section className="admin-section"><div className="directory-section-heading"><div><p className="eyebrow">{en?"MEMBERSHIP":"ADHÉSIONS"}</p><h2>{en?"Membership requests":"Demandes d'adhésion"}</h2></div><span>{members.length} {en?"pending":"en attente"}</span></div>
-          {members.length?members.map(m=><article className="admin-member-row" key={m.user_id}><div><strong>{m.jec_profiles?.display_name||[m.jec_profiles?.first_name,m.jec_profiles?.last_name].filter(Boolean).join(" ")||en?"New account":"Nouveau compte"}</strong><small>{m.user_id}</small>{m.structure_name&&<small>{m.structure_name}</small>}</div><div><button className="primary-button" onClick={()=>validateMember(m.user_id,"verified")}>{en?"Verify member":"Valider le membre"}</button><button className="quiet-button" onClick={()=>validateMember(m.user_id,"rejected")}>{en?"Decline":"Refuser"}</button></div></article>):<div className="directory-empty compact"><p>{en?"No pending membership request.":"Aucune demande d'adhésion en attente."}</p></div>}
+          {members.length?members.map(m=><article className="admin-member-row" key={m.user_id}><div><strong>{m.jec_profiles?.display_name||[m.jec_profiles?.first_name,m.jec_profiles?.last_name].filter(Boolean).join(" ")||(en?"New account":"Nouveau compte")}</strong><small>{m.user_id}</small>{m.structure_name&&<small>{m.structure_name}</small>}</div><div><button className="primary-button" onClick={()=>validateMember(m.user_id,"verified")}>{en?"Verify member":"Valider le membre"}</button><button className="quiet-button" onClick={()=>validateMember(m.user_id,"rejected")}>{en?"Decline":"Refuser"}</button></div></article>):<div className="directory-empty compact"><p>{en?"No pending membership request.":"Aucune demande d'adhésion en attente."}</p></div>}
         </section>
         <section className="admin-section"><p className="eyebrow">{en?"INSTITUTIONAL DIRECTORY":"ANNUAIRE INSTITUTIONNEL"}</p><h2>{en?"Create an official role":"Créer une fonction officielle"}</h2><p className="admin-help">{en?"Enter only names and responsibilities confirmed by JEC France. New entries are drafts and are not visible until published.":"Saisis uniquement des noms et responsabilités confirmés par la JEC France. Les nouvelles fiches sont des brouillons invisibles avant publication."}</p>
           <form className="account-form" onSubmit={createDirectoryEntry}>
@@ -102,6 +107,7 @@ export default function AdminPage(){
             <label>{en?"Visibility":"Visibilité"}<select value={visibility} onChange={e=>setVisibility(e.target.value as "public"|"members")}><option value="public">{en?"Public":"Publique"}</option><option value="members">{en?"Verified members only":"Membres vérifiés uniquement"}</option></select></label>
             <button className="primary-button">{en?"Save draft":"Enregistrer le brouillon"}</button>
           </form>
+          <div className="admin-drafts"><h3>{en?"Unpublished directory entries":"Fiches d'annuaire non publiées"}</h3>{directoryDrafts.length?directoryDrafts.map(d=><article className="admin-member-row" key={d.id}><div><strong>{d.role_title} · {d.full_name}</strong><small>{roleLabels[d.category]??d.category}{d.structure_name?" · "+d.structure_name:""} · {d.visibility==="public"?(en?"Public":"Publique"):(en?"Members only":"Membres")}</small></div><button className="primary-button" onClick={()=>publishEntry(d.id)}>{en?"Publish":"Publier"}</button></article>):<p className="muted">{en?"No unpublished directory entry.":"Aucune fiche non publiée."}</p>}</div>
         </section>
       </>}
       {error&&<p className="alert error">{error}</p>}{message&&<p className="alert success">{message}</p>}
