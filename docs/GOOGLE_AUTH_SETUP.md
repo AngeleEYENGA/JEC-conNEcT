@@ -59,19 +59,23 @@ Le service e-mail intégré de Supabase est réservé aux essais : il est limit�
 
 Prévoir un SMTP transactionnel géré par JEC France, avec domaine d'envoi vérifié, SPF, DKIM et DMARC. Ne pas utiliser l'adresse personnelle d'un membre comme expéditeur institutionnel.
 
-## 5. Tests de validation à effectuer
+## 5. Tests de validation
 
-Le test de connexion Google a réussi le 12 novembre 2026. Restent les tests et réglages du parcours e-mail et de la mise en service publique :
-1. Inscrire un compte de test autorisé.
-2. Vérifier la réception et le lien de confirmation.
-3. Se connecter par e-mail et mot de passe.
-4. Demander une réinitialisation et vérifier le parcours complet.
-5. Google OAuth : test de connexion réussi sur le déploiement de production le 12 novembre 2026. Refaire un test après toute modification du domaine ou du fournisseur.
-6. Vérifier qu'un utilisateur authentifié peut déposer un brouillon audio dans son dossier privé.
-7. Vérifier qu'un autre utilisateur ne peut pas lire ce brouillon.
-8. Vérifier que les médias ne sont pas publiquement accessibles.
+Tests confirmés par la porteuse du projet le 12 novembre 2026 :
+- Connexion Google : réussie.
+- Inscription par e-mail : réussie.
+- Confirmation de l'adresse e-mail : réussie.
+- Réinitialisation du mot de passe : réussie.
 
-La connexion Google est validée par un test réel. L'authentification globale (notamment inscription e-mail, confirmation, réinitialisation, SMTP, déconnexion et renouvellement de session) ne sera considérée comme validée de bout en bout qu'après ces autres tests réels. Les rôles JEC (administrateur, responsable, membre, etc.) et les profils institutionnels devront faire l'objet d'une conception et de règles RLS dédiées, sans se baser sur les métadonnées modifiables par l'utilisateur.
+Ces tests valident les principaux parcours fonctionnels dans l'environnement actuellement utilisé. Restent les contrôles et réglages de mise en production institutionnelle :
+1. Refaire les tests d'inscription, de confirmation et de réinitialisation après tout changement du fournisseur e-mail ou du domaine.
+2. Google OAuth : test de connexion réussi sur le déploiement de production le 12 novembre 2026. Refaire un test après toute modification du domaine ou du fournisseur.
+3. Vérifier qu'un utilisateur authentifié peut déposer un brouillon audio dans son dossier privé.
+4. Vérifier qu'un autre utilisateur ne peut pas lire ce brouillon.
+5. Vérifier que les médias ne sont pas publiquement accessibles.
+6. Configurer un SMTP transactionnel institutionnel pour la mise en production ouverte à toute la JEC ; vérifier domaine expéditeur, SPF, DKIM, DMARC, délivrabilité, quotas et surveillance.
+
+Les parcours Google OAuth, inscription e-mail, confirmation d'adresse et réinitialisation du mot de passe ont été testés avec succès le 12 novembre 2026. La mise en production institutionnelle demande encore le SMTP dédié, les tests d'accès audio multi-comptes, la déconnexion, le renouvellement de session et une revue des paramètres de sécurité. Les rôles JEC (administrateur, responsable, membre, etc.) et les profils institutionnels devront faire l'objet d'une conception et de règles RLS dédiées, sans se baser sur les métadonnées modifiables par l'utilisateur.
 
 ## 6. Références
 
