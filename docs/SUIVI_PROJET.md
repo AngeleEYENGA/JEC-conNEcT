@@ -6,7 +6,7 @@
 |---|---|---|
 | Cadrage produit | En cours | Vision et modules définis ; arbitrages du Bureau à obtenir. |
 | Dépôt GitHub / Vercel | Démarré | Dépôt connecté et prévisualisation déployée. |
-| Authentification | Partiellement intégrée | E-mail/mot de passe et Google OAuth préparés ; configuration Supabase/Google à finaliser. |
+| Authentification | Configuration technique raccordée, validation utilisateur à faire | Projet Supabase dédié créé ; URL et clé publique configurées dans Vercel ; parcours e-mail/mot de passe et Google OAuth préparés. URL Auth, fournisseur Google et SMTP transactionnel à finaliser. |
 | Identité visuelle | Première proposition | Palette et déclinaisons dérivées du logo fourni ; validation communication requise. |
 | Frise chronologique | Intégrée au prototype | Frise interactive France / international avec six repères datés, détails et liens vers les sources institutionnelles. À enrichir après vérification d'archives complémentaires. |
 | Registre des sources | Créé | Sources historiques, niveau de précision et précautions éditoriales documentés dans `REGISTRE_SOURCES_PUBLIQUES.md`. |
@@ -74,7 +74,7 @@ Les textes restent modifiables par l'utilisateur en brouillon local. Le fichier 
 | Chantier | État | Commentaire |
 |---|---|---|
 | Sauvegarde des audios | Première version intégrée | Bouton « Enregistrer l'audio » ; fichiers stockés dans IndexedDB et restaurés lors du retour sur la page. Sauvegarde limitée au navigateur et à l'appareil. |
-| Stockage cloud partagé | À faire | Nécessite authentification opérationnelle, bucket privé Supabase Storage, règles RLS et gestion des droits de publication des fichiers musicaux. |
+| Stockage cloud des audios | Infrastructure créée | Bucket privé jec-audio, table jec_song_audio et politiques RLS appliqués sur le projet dédié. Test upload/téléchargement entre comptes à effectuer après activation des comptes. |
 | Téléchargement / installation | PWA en place | Manifeste, service worker, cache initial et bouton « Installer l'application » ajoutés. Instructions spécifiques iOS et navigateurs sans prompt disponibles. |
 | Responsive mobile/tablette | Refonte engagée | Navigation inférieure défilante sur téléphone, grilles empilées, contrôles audio et pages historiques adaptés aux écrans étroits. Tests réels à compléter sur iOS, Android, tablette et desktop. |
 
@@ -89,4 +89,15 @@ Les textes restent modifiables par l'utilisateur en brouillon local. Le fichier 
 
 
 ### Stockage cloud des audios — préparation
-Le code sait désormais synchroniser un audio vers le bucket privé Supabase `jec-audio` pour un utilisateur authentifié, avec une métadonnée `jec_song_audio`. La migration SQL est disponible dans `supabase/migrations/202611120001_create_jec_audio_library.sql`. **Elle n'a pas encore été exécutée dans le projet Supabase** et les variables d'authentification Vercel sont encore incomplètes ; l'envoi cloud n'est donc pas encore opérationnel. En attendant, IndexedDB conserve l'audio sur l'appareil.
+Le code synchronise un audio vers le bucket privé Supabase `jec-audio` pour un utilisateur authentifié, avec une métadonnée `jec_song_audio`. Les migrations `202611120001_create_jec_audio_library.sql` et `202611120002_optimize_jec_audio_access_policies.sql` ont été appliquées au nouveau projet Supabase JEC-conNEcT. Les variables publiques Supabase sont désormais configurées dans Vercel. La validation réelle de la connexion, de la confirmation e-mail et du transfert cloud reste à effectuer après réglage des URL Auth et du SMTP.
+
+## Mise à jour — 12 novembre 2026 : séparation et raccordement Supabase
+
+- Création du projet Supabase dédié JEC-conNEcT (réf. fivgqfsfdkkuaybahufb, région Europe — Irlande). Le projet NaVigue est resté intact.
+- Configuration dans Vercel des variables publiques NEXT_PUBLIC_SUPABASE_URL et NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY sur Development, Preview et Production.
+- Mise à jour de .env.example vers le nouveau projet.
+- Application et vérification des migrations de stockage audio privé ; RLS activée sur public.jec_song_audio.
+- Vérifications Supabase : aucune alerte de sécurité ou de santé ; recommandations de performance initiales traitées par un index et des expressions (select auth.uid()).
+- Déploiement Vercel de production : état READY sur le commit de configuration.
+
+Restant avant validation complète de l'authentification : URL Site/Redirect dans Supabase, SMTP transactionnel pour les adresses hors équipe, identifiants Google OAuth, puis tests réels inscription/confirmation/connexion/récupération et upload audio avec deux comptes distincts.
