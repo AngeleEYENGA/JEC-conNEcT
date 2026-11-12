@@ -1,4 +1,4 @@
-const CACHE_NAME = "jec-connect-shell-v2";
+const CACHE_NAME = "jec-connect-shell-v3";
 const APP_SHELL = ["/", "/chants", "/decouvrir", "/icon.svg", "/images/jec-community-illustration.svg", "/images/jec-music-illustration.svg"];
 
 self.addEventListener("install", event => {
