@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { LanguageProvider } from "@/components/language-provider";
 
@@ -7,7 +7,6 @@ export const metadata: Metadata = {
   description: "La plateforme collaborative, communautaire et institutionnelle de la Jeunesse Étudiante Chrétienne.",
   applicationName: "JEC-conNEcT",
   manifest: "/manifest.webmanifest",
-  themeColor: "#202A46",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
@@ -18,6 +17,13 @@ export const metadata: Metadata = {
     shortcut: "/icon.svg",
     apple: "/icon.svg"
   }
+};
+
+export const viewport: Viewport = {
+  themeColor: "#202A46",
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover"
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
