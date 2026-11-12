@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { LanguageSwitcher, useLanguage } from "@/components/language-provider";
 import { PWAInstallButton } from "@/components/pwa-install-button";
 import { getAudioLocally, removeAudioLocally, saveAudioLocally } from "@/lib/audio-db";
+import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
 type SongId = "rally" | "anthem";
 type Copy = { en: string; fr: string };
@@ -63,6 +64,9 @@ const labels: Record<string,Copy> = {
   addAudioHint:{fr:"Enregistre le fichier pour le conserver sur cet appareil, même après avoir quitté la page ou rechargé le site.",en:"Save the file to keep it on this device, even after leaving the page or reloading the site."},
   saveAudio:{fr:"Enregistrer l’audio",en:"Save audio"},
   audioSaved:{fr:"Audio enregistré sur cet appareil",en:"Audio saved on this device"},
+  audioCloudSaved:{fr:"Audio synchronisé dans le stockage privé JEC-conNEcT.",en:"Audio synced to JEC-conNEcT private storage."},
+  cloudPending:{fr:"La synchronisation cloud sera disponible après activation de Supabase Auth et du stockage audio.",en:"Cloud sync will be available after Supabase Auth and audio storage are enabled."},
+  audioCloudPrivate:{fr:"Brouillon privé envoyé dans ton espace.",en:"Private draft uploaded to your space."},
   removeAudio:{fr:"Supprimer l’audio enregistré",en:"Remove saved audio"},
   downloadAudio:{fr:"Télécharger",en:"Download"},
   localStorageLimit:{fr:"Cette sauvegarde reste liée à ce navigateur et à cet appareil. La synchronisation entre plusieurs membres sera activée avec le stockage cloud sécurisé de la plateforme.",en:"This save stays in this browser and on this device. Cross-device member sync will be enabled with the platform’s secure cloud storage."},
@@ -90,7 +94,7 @@ export default function ChantsPage() {
   const audioInput=useRef<HTMLInputElement>(null);
 
   const storageKey = `jec-connect-song-${selected}-${lyricsLang}`;
-  const audioStorageKey = `jec-connect-audio-${selected}`;
+  const audioStorageKey = `jec-connect-audio-${selected}-${lyricsLang}`;
 
   useEffect(()=>{
     const stored=window.localStorage.getItem(storageKey);
@@ -117,6 +121,36 @@ export default function ChantsPage() {
           setAudioUrl("");
           setAudioSaved(false);
           setAudioStatus("");
+          const supabase=getSupabaseBrowserClient();
+          if(supabase){
+            const {data:{user}}=await supabase.auth.getUser();
+            if(user){
+              const {data:rows}=await supabase.from("jec_song_audio")
+                .select("storage_path,file_name,mime_type")
+                .eq("song_id",selected)
+                .eq("language",lyricsLang)
+                .order("created_at",{ascending:false})
+                .limit(1);
+              const row=rows?.[0];
+              if(row){
+                const {data:signed}=await supabase.storage.from("jec-audio").createSignedUrl(row.storage_path,3600);
+                if(signed?.signedUrl){
+                  const response=await fetch(signed.signedUrl);
+                  if(response.ok){
+                    const blob=await response.blob();
+                    const file=new File([blob],row.file_name,{type:row.mime_type||blob.type||"audio/mpeg"});
+                    if(cancelled) return;
+                    setAudioFile(file);
+                    setAudioName(file.name);
+                    setAudioUrl(URL.createObjectURL(file));
+                    setAudioSaved(true);
+                    setAudioStatus(tr("audioCloudSaved",lang));
+                    return;
+                  }
+                }
+              }
+            }
+          }
         }
       } catch {
         if(!cancelled) setAudioStatus(lang==="fr"?"Le stockage local n'est pas disponible dans ce navigateur.":"Local storage is not available in this browser.");
@@ -152,6 +186,42 @@ export default function ChantsPage() {
       await saveAudioLocally(audioStorageKey,audioFile);
       setAudioSaved(true);
       setAudioStatus(tr("audioSaved",lang));
+      const supabase=getSupabaseBrowserClient();
+      if(!supabase){
+        setAudioStatus(tr("audioSaved",lang)+" · "+tr("cloudPending",lang));
+        return;
+      }
+      const {data:{user}}=await supabase.auth.getUser();
+      if(!user){
+        setAudioStatus(tr("audioSaved",lang)+" · "+tr("cloudPending",lang));
+        return;
+      }
+      const safeName=audioFile.name.normalize("NFKD").replace(/[^a-zA-Z0-9._-]+/g,"_").slice(-100) || "audio";
+      const storagePath=user.id+"/"+selected+"/"+lyricsLang+"/"+Date.now()+"-"+safeName;
+      const {error:uploadError}=await supabase.storage.from("jec-audio").upload(storagePath,audioFile,{
+        contentType:audioFile.type||"application/octet-stream",
+        upsert:false
+      });
+      if(uploadError){
+        setAudioStatus(tr("audioSaved",lang)+" · "+uploadError.message);
+        return;
+      }
+      const {error:metadataError}=await supabase.from("jec_song_audio").insert({
+        song_id:selected,
+        language:lyricsLang,
+        storage_path:storagePath,
+        file_name:audioFile.name,
+        mime_type:audioFile.type,
+        file_size:audioFile.size,
+        uploaded_by:user.id,
+        is_published:false
+      });
+      if(metadataError){
+        await supabase.storage.from("jec-audio").remove([storagePath]);
+        setAudioStatus(tr("audioSaved",lang)+" · "+metadataError.message);
+        return;
+      }
+      setAudioStatus(tr("audioCloudPrivate",lang));
     } catch(error) {
       setAudioSaved(false);
       setAudioStatus(error instanceof Error ? error.message : (lang==="fr"?"Impossible d'enregistrer cet audio.":"Unable to save this audio."));
