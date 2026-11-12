@@ -72,5 +72,17 @@ Ne pas exécuter cette requête si elle retire le dernier administrateur. Le mai
 - Aucun compte n'est promu administrateur automatiquement par cette procédure documentaire.
 - Les nouveaux comptes commencent avec une adhésion `pending` ; un administrateur valide explicitement l'adhésion.
 - L'annuaire institutionnel reste vide tant que les fonctions, noms et coordonnées officiels n'ont pas été saisis et validés.
-- Les audios des membres sont privés par défaut. La publication publique exige une validation dans l'espace d'administration.
+- Les enregistrements de la bibliothèque musicale sont publics dès leur enregistrement par un utilisateur connecté. L'administrateur peut supprimer un fichier depuis Administration > Bibliothèque musicale ; la suppression se fait via l'API Storage et non par DELETE SQL sur storage.objects.
 - Les privilèges SQL et politiques RLS restent l'autorité finale : masquer un bouton dans l'interface ne suffit pas à protéger une action.
+
+## 7. Tableau de bord administrateur — fonctionnalités
+
+Depuis le menu principal, après connexion avec un compte administrateur, ouvrir « Espace administrateur » ou /gestion.
+
+- Gestion des comptes : consulter les comptes inscrits, leur e-mail, date de création, statut d'adhésion et rôle administrateur.
+- Adhésion : valider, refuser ou remettre en attente l'appartenance à la JEC.
+- Rôles : attribuer ou retirer le rôle administrateur. La base empêche de retirer le dernier administrateur.
+- Bibliothèque musicale : consulter les enregistrements publiés et supprimer un audio. La suppression utilise supabase.storage.from(bucket).remove([path]), puis supprime sa métadonnée.
+- Annuaire : créer des fiches institutionnelles en brouillon et publier les fiches après validation des informations officielles.
+
+La ligne incorrecte rally/fr qui correspondait à Hymne_de_la_JEC.mp3 peut être supprimée sans toucher à la ligne anthem/fr. Dans le tableau de bord, vérifier impérativement le chant et la langue avant de confirmer la suppression.
