@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { LanguageSwitcher, useLanguage } from "@/components/language-provider";
 import { PWAInstallButton } from "@/components/pwa-install-button";
+import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
 const news = [
   {
@@ -54,6 +55,7 @@ const nav = [
   ["Actualités JEC","JEC News","◉",""],
   ["Découvrir la JEC","Discover JEC","✳",""],
   ["Structures","Structures","◎",""],
+  ["Annuaire JEC","JEC directory","♙",""],
   ["Agenda public","Public calendar","▣",""],
   ["Workspace","Workspace","⌘","COLLABORATION"],
   ["Messagerie","Messages","▤",""],
@@ -76,6 +78,57 @@ export default function Home() {
   const [active,setActive]=useState("Vue d'ensemble");
   const [search,setSearch]=useState("");
   const [notificationsOpen,setNotificationsOpen]=useState(false);
+
+  const [identity,setIdentity]=useState<{
+    id:string; email:string; displayName:string; avatarUrl:string|null;
+    membershipStatus:"pending"|"verified"|"rejected"; isAdmin:boolean;
+  }|null>(null);
+
+  useEffect(()=>{
+    const supabase=getSupabaseBrowserClient();
+    if(!supabase) return;
+    let mounted=true;
+    const loadIdentity=async(user:{id:string;email?:string;user_metadata?:Record<string,unknown>})=>{
+      const [profileResult,membershipResult,adminResult]=await Promise.all([
+        supabase.from("jec_profiles").select("first_name,last_name,display_name,avatar_url").eq("user_id",user.id).maybeSingle(),
+        supabase.from("jec_memberships").select("membership_status").eq("user_id",user.id).maybeSingle(),
+        supabase.rpc("is_jec_admin")
+      ]);
+      if(!mounted) return;
+      const p=profileResult.data;
+      const meta=user.user_metadata??{};
+      const fallback=typeof meta.full_name==="string"?meta.full_name:typeof meta.name==="string"?meta.name:"";
+      const display=typeof p?.display_name==="string"&&p.display_name.trim()?p.display_name:(fallback||user.email||"Compte JEC");
+      setIdentity({
+        id:user.id,
+        email:user.email??"",
+        displayName:display,
+        avatarUrl:typeof p?.avatar_url==="string"?p.avatar_url:(typeof meta.avatar_url==="string"?meta.avatar_url:null),
+        membershipStatus:membershipResult.data?.membership_status==="verified"?"verified":membershipResult.data?.membership_status==="rejected"?"rejected":"pending",
+        isAdmin:adminResult.data===true
+      });
+    };
+    void supabase.auth.getUser().then(({data})=>{
+      if(data.user) void loadIdentity(data.user);
+      else if(mounted) setIdentity(null);
+    });
+    const {data:{subscription}}=supabase.auth.onAuthStateChange((_event,session)=>{
+      if(!session?.user){setIdentity(null);return;}
+      const user=session.user;
+      Promise.resolve().then(()=>loadIdentity(user));
+    });
+    return ()=>{mounted=false;subscription.unsubscribe();};
+  },[]);
+
+  async function signOut(){
+    const supabase=getSupabaseBrowserClient();
+    if(!supabase) return;
+    const {error}=await supabase.auth.signOut({scope:"local"});
+    if(error){window.alert(en?"Unable to sign out: "+error.message:"Impossible de se déconnecter : "+error.message);return;}
+    setIdentity(null);
+    window.location.href="/";
+  }
+
 
   const filteredNews=useMemo(()=>news.filter(item=>
     (item.title+" "+item.titleEn+" "+item.summary+" "+item.summaryEn+" "+item.category).toLowerCase().includes(search.toLowerCase())
@@ -113,6 +166,22 @@ export default function Home() {
       <div className="discover-preview-copy"><p className="eyebrow">{t("HISTOIRE · MISSION · DÉMARCHE","HISTORY · MISSION · APPROACH")}</p><h2>{t("Découvrir la Jeunesse Étudiante Chrétienne","Discover the Young Christian Students")}</h2><p>{t("Des premiers groupes en France en 1929 à la coordination internationale, explore les repères historiques, la pédagogie Voir-Juger-Agir et les piliers du mouvement.","From the first groups in France in 1929 to the international coordination, explore the timeline, the See-Judge-Act approach and the movement’s pillars.")}</p><Link href="/decouvrir#frise-chronologique" className="primary-button">{t("Explorer la frise chronologique →","Explore the interactive timeline →")}</Link></div>
     </section>;
 
+
+    if(active==="Annuaire JEC") return <section>
+      <div className="section-heading"><div><p className="eyebrow">{t("ORGANISATION ET CONTACTS","ORGANIZATION & CONTACTS")}</p><h2>{t("Annuaire et organigramme de la JEC","JEC directory and organization chart")}</h2></div></div>
+      <p className="section-intro">{t("Retrouve les fonctions institutionnelles, les structures et les membres qui ont choisi d'apparaître dans l'annuaire. Les noms et responsabilités officiels seront publiés après validation par la JEC.","Find institutional roles, structures and members who have chosen to appear in the directory. Official names and responsibilities will be published after JEC validation.")}</p>
+      <div className="directory-callout"><strong>{t("Tu cherches le bon interlocuteur ?","Looking for the right contact?")}</strong><p>{t("L'annuaire indiquera les responsables et leurs domaines de compétence, avec les coordonnées fonctionnelles validées.","The directory will list leaders and areas of responsibility, with validated functional contact details.")}</p><Link href="/annuaire" className="primary-button">{t("Ouvrir l'annuaire complet →","Open the full directory →")}</Link></div>
+      <div className="directory-empty-grid">
+        {[
+          [t("Bureau national","National board"),t("Présidence, secrétariat, trésorerie et autres responsabilités nationales.","Presidency, secretariat, treasury and other national responsibilities.")],
+          [t("Équipe nationale","National team"),t("Coordination et animation du mouvement au niveau national.","National coordination and movement leadership.")],
+          [t("Fédérations et équipes locales","Federations and local teams"),t("Repérer les structures territoriales et leurs contacts validés.","Find local structures and their validated contacts.")],
+          [t("Commissions et services","Commissions and services"),t("Identifier le service compétent selon ta demande.","Find the right service for your request.")]
+        ].map(([name,description])=><article className="widget-card directory-placeholder" key={name}><span>✧</span><h3>{name}</h3><p>{description}</p><small>{t("Informations officielles à compléter","Official information to be completed")}</small></article>)}
+      </div>
+      <p className="source-note">{t("Aucun nom ni mandat n'est inventé. Les fonctions et personnes seront ajoutées après validation par les responsables nationaux.","No names or mandates are invented. Roles and people will be added after validation by national leaders.")}</p>
+    </section>;
+
     if(active==="Structures") return <section>
       <div className="section-heading"><div><p className="eyebrow">{t("REPÈRES PUBLICS","PUBLIC INFORMATION")}</p><h2>{t("Structures référencées par JEC France","Structures listed by JEC France")}</h2></div></div>
       <p className="section-intro">{t("Cette sélection reprend les structures citées sur la page publique « Nos équipes ». Elle ne constitue pas un annuaire actualisé des membres.","This selection reflects structures listed on the public “Our teams” page. It is not an up-to-date member directory.")}</p>
@@ -133,10 +202,10 @@ export default function Home() {
       <Link href="/" className="brand-lockup side-brand"><div className="brand-mark"><span>JEC</span><i>✳</i></div><span>conNEcT</span></Link>
       <div className="workspace-switch"><div className="workspace-avatar">J</div><div><strong>JEC France</strong><small>{t("Portail public","Public portal")}</small></div><span className="chevron">⌄</span></div>
       <nav className="main-nav">{nav.map(([fr,english,icon,group])=><div key={fr}>{group&&<p className="nav-group">{t(group==="ESPACE PUBLIC"?"ESPACE PUBLIC":group==="COLLABORATION"?"COLLABORATION":"PATRIMOINE",group==="ESPACE PUBLIC"?"PUBLIC SPACE":group==="COLLABORATION"?"COLLABORATION":"HERITAGE")}</p>}<button onClick={()=>setActive(fr)} className={active===fr?"nav-item active":"nav-item"}><span className={fr==="JEC AI"?"nav-icon sparkle":"nav-icon"}>{icon}</span><span>{en?english:fr}</span></button></div>)}</nav>
-      <div className="sidebar-bottom"><div className="help-card"><div className="help-icon">✧</div><strong>{t("Sources vérifiables","Verifiable sources")}</strong><p>{t("Les faits publics renvoient à leurs publications d'origine.","Public facts link to their original publications.")}</p><button onClick={()=>setActive("Actualités JEC")}>{t("Voir les sources →","Browse sources →")}</button></div><div className="profile-mini"><div className="avatar user">VP</div><div><strong>{t("Visiteur","Visitor")}</strong><small>{t("Aperçu public · non connecté","Public preview · signed out")}</small></div><span>•••</span></div></div>
+      <div className="sidebar-bottom"><div className="help-card"><div className="help-icon">✧</div><strong>{t("Sources vérifiables","Verifiable sources")}</strong><p>{t("Les faits publics renvoient à leurs publications d'origine.","Public facts link to their original publications.")}</p><button onClick={()=>setActive("Actualités JEC")}>{t("Voir les sources →","Browse sources →")}</button></div>{identity?<div className="profile-mini profile-mini-auth"><Link href="/compte" className="profile-avatar-link"><div className="avatar user">{identity.avatarUrl?<img src={identity.avatarUrl} alt=""/>:identity.displayName.trim().split(/\s+/).slice(0,2).map(x=>x[0]).join("").toUpperCase()}</div></Link><Link href="/compte" className="profile-identity"><strong>{identity.displayName}</strong><small>{identity.isAdmin?t("Administrateur JEC-conNEcT","JEC-conNEcT administrator"):identity.membershipStatus==="verified"?t("Membre JEC vérifié","Verified JEC member"):identity.membershipStatus==="rejected"?t("Adhésion non validée","Membership not approved"):t("Compte connecté · adhésion à confirmer","Signed in · membership pending")}</small></Link><button className="profile-signout" onClick={signOut} title={t("Se déconnecter","Sign out")} aria-label={t("Se déconnecter","Sign out")}>↪</button></div>:<div className="profile-mini"><div className="avatar user">VP</div><div><strong>{t("Visiteur","Visitor")}</strong><small>{t("Aperçu public · non connecté","Public preview · signed out")}</small></div><Link className="profile-signin" href="/login">{t("Connexion","Sign in")}</Link></div>}</div>
     </aside>
     <main className="main-area">
-      <header className="topbar"><div className="breadcrumb">JEC France <span>/</span> <strong>{en?(nav.find(item=>item[0]===active)?.[1]??active):active}</strong></div><div className="top-actions"><label className="search-box"><span>⌕</span><input value={search} onChange={e=>setSearch(e.target.value)} placeholder={t("Rechercher dans les sources publiques","Search public sources")}/><kbd>⌘ K</kbd></label><button className="icon-button notification-button" aria-label={t("Notifications","Notifications")} onClick={()=>setNotificationsOpen(!notificationsOpen)}>♧</button><PWAInstallButton/><LanguageSwitcher/><Link className="top-login" href="/login">{t("Connexion","Sign in")}</Link></div></header>
+      <header className="topbar"><div className="breadcrumb">JEC France <span>/</span> <strong>{en?(nav.find(item=>item[0]===active)?.[1]??active):active}</strong></div><div className="top-actions"><label className="search-box"><span>⌕</span><input value={search} onChange={e=>setSearch(e.target.value)} placeholder={t("Rechercher dans les sources publiques","Search public sources")}/><kbd>⌘ K</kbd></label><button className="icon-button notification-button" aria-label={t("Notifications","Notifications")} onClick={()=>setNotificationsOpen(!notificationsOpen)}>♧</button><PWAInstallButton/><LanguageSwitcher/><Link className="top-login" href={identity?"/compte":"/login"}>{identity?t("Mon compte","My account"):t("Connexion","Sign in")}</Link></div></header>
       {notificationsOpen&&<div className="notification-popover"><strong>{t("Notifications","Notifications")}</strong><p>{t("Les notifications personnelles seront disponibles après activation de l'espace membre.","Personal notifications will be available when the member area is enabled.")}</p><p className="muted">{t("Aucune notification individuelle n'est simulée sur cette page publique.","No personal notifications are simulated on this public page.")}</p></div>}
       <div className="page-content">
         {active==="Vue d'ensemble"?<>
