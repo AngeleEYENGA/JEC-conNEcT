@@ -179,7 +179,7 @@ export default function ChantsPage() {
   },[audioStorageKey]);
 
   useEffect(()=>{
-    return ()=>{ if(audioUrl) URL.revokeObjectURL(audioUrl); };
+    return ()=>{ if(audioUrl.startsWith("blob:")) URL.revokeObjectURL(audioUrl); };
   },[audioUrl]);
 
   const verses=useMemo(()=>lyrics.split(/\n\s*\n/).map(x=>x.trim()).filter(Boolean),[lyrics]);
@@ -359,10 +359,10 @@ export default function ChantsPage() {
         <div className="songs-intro-row"><div><p className="eyebrow">{lang==="fr"?"LES VOIX DU MOUVEMENT":"THE VOICES OF THE MOVEMENT"}</p><h2>{lang==="fr"?"Le répertoire JEC":"The JEC repertoire"}</h2></div><p>{lang==="fr"?"Choisis un chant, consulte ses paroles et écoute un enregistrement lorsqu'il est disponible.":"Choose a song, read its lyrics and listen to a recording when available."}</p></div>
 
         <div className="song-selector">
-          <button className={selected==="rally"?"song-select-card active":"song-select-card"} onClick={()=>{setSelected("rally");setAudioUrl("");setAudioName("");setAudioFile(null);setAudioSaved(false);setAudioStatus("");}}>
+          <button className={selected==="rally"?"song-select-card active":"song-select-card"} onClick={()=>{setSelected("rally");setAudioUrl("");setAudioName("");setAudioFile(null);setAudioSaved(false);setAudioCloudSaved(false);setAudioIsPublic(false);setAudioMetaId(null);setAudioStatus("");}}>
             <span className="song-select-icon rally-icon">✊</span><span className="song-select-meta">{lang==="fr"?"CHANT COLLECTIF":"COMMUNITY SONG"}</span><strong>{tr("rally",lang)}</strong><small>{tr("rallySub",lang)}</small><span className="select-arrow">↗</span>
           </button>
-          <button className={selected==="anthem"?"song-select-card active":"song-select-card"} onClick={()=>{setSelected("anthem");setAudioUrl("");setAudioName("");setAudioFile(null);setAudioSaved(false);setAudioStatus("");}}>
+          <button className={selected==="anthem"?"song-select-card active":"song-select-card"} onClick={()=>{setSelected("anthem");setAudioUrl("");setAudioName("");setAudioFile(null);setAudioSaved(false);setAudioCloudSaved(false);setAudioIsPublic(false);setAudioMetaId(null);setAudioStatus("");}}>
             <span className="song-select-icon anthem-icon">♫</span><span className="song-select-meta">{lang==="fr"?"HYMNE OFFICIEL":"OFFICIAL ANTHEM"}</span><strong>{tr("anthem",lang)}</strong><small>{tr("anthemSub",lang)}</small><span className="select-arrow">↗</span>
           </button>
         </div>
