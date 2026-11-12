@@ -101,3 +101,6 @@ Le code synchronise un audio vers le bucket privé Supabase `jec-audio` pour un 
 - Déploiement Vercel de production : état READY sur le commit de configuration.
 
 Restant avant validation complète de l'authentification : URL Site/Redirect dans Supabase, SMTP transactionnel pour les adresses hors équipe, identifiants Google OAuth, puis tests réels inscription/confirmation/connexion/récupération et upload audio avec deux comptes distincts.
+## Évolution future — Espace Partenaires
+
+Un volet Partenaires est ajouté à la feuille de route, hors MVP. Il pourra couvrir un annuaire institutionnel validé, les contacts des organisations, conventions, appels à projets, opportunités, projets communs et bilans. Les partenaires externes disposeront, le cas échéant, de comptes séparés à permissions minimales ; aucun accès automatique aux espaces membres ou aux documents internes. Le besoin, la gouvernance et la politique de partenariat devront être validés avant conception.
