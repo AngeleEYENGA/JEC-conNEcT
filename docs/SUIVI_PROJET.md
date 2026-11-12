@@ -6,7 +6,7 @@
 |---|---|---|
 | Cadrage produit | En cours | Vision et modules définis ; arbitrages du Bureau à obtenir. |
 | Dépôt GitHub / Vercel | Démarré | Dépôt connecté et prévisualisation déployée. |
-| Authentification | Parcours de base testés avec succès | Google OAuth, inscription e-mail, confirmation d'adresse et réinitialisation du mot de passe validés par test le 12 novembre 2026. SMTP institutionnel et tests de sécurité complémentaires à finaliser pour l'ouverture générale. |
+| Authentification et compte | Parcours de base testés ; profils raccordés | Google OAuth, inscription e-mail, confirmation et réinitialisation validés par test. Profils persistants, statut d'adhésion séparé, page Mon compte, déconnexion et affichage du compte connecté intégrés. Désignation du premier administrateur et tests multi-comptes à terminer. |
 | Identité visuelle | Première proposition | Palette et déclinaisons dérivées du logo fourni ; validation communication requise. |
 | Frise chronologique | Intégrée au prototype | Frise interactive France / international avec six repères datés, détails et liens vers les sources institutionnelles. À enrichir après vérification d'archives complémentaires. |
 | Registre des sources | Créé | Sources historiques, niveau de précision et précautions éditoriales documentés dans `REGISTRE_SOURCES_PUBLIQUES.md`. |
@@ -74,7 +74,7 @@ Les textes restent modifiables par l'utilisateur en brouillon local. Le fichier 
 | Chantier | État | Commentaire |
 |---|---|---|
 | Sauvegarde des audios | Première version intégrée | Bouton « Enregistrer l'audio » ; fichiers stockés dans IndexedDB et restaurés lors du retour sur la page. Sauvegarde limitée au navigateur et à l'appareil. |
-| Stockage cloud des audios | Infrastructure créée | Bucket privé jec-audio, table jec_song_audio et politiques RLS appliqués sur le projet dédié. Test upload/téléchargement entre comptes à effectuer après activation des comptes. |
+| Bibliothèque audio cloud | Infrastructure privée/publique configurée | Brouillons conservés dans le bucket privé jec-audio ; bucket distinct jec-audio-public pour les versions approuvées. Restauration cloud prioritaire dans le lecteur et file de publication administrateur intégrées. Tests réels multi-comptes et diffusion publique à effectuer après désignation de l'administrateur. |
 | Téléchargement / installation | PWA en place | Manifeste, service worker, cache initial et bouton « Installer l'application » ajoutés. Instructions spécifiques iOS et navigateurs sans prompt disponibles. |
 | Responsive mobile/tablette | Refonte engagée | Navigation inférieure défilante sur téléphone, grilles empilées, contrôles audio et pages historiques adaptés aux écrans étroits. Tests réels à compléter sur iOS, Android, tablette et desktop. |
 
@@ -114,3 +114,23 @@ Le 12 novembre 2026, la connexion Google a été testée avec succès sur le dé
 ### Validation — parcours d'authentification
 
 Le 12 novembre 2026, la porteuse du projet a confirmé les tests réussis suivants sur JEC-conNEcT : connexion Google, inscription par e-mail, confirmation des adresses e-mail et réinitialisation du mot de passe. Ces résultats valident les parcours fonctionnels de base dans l'environnement de test actuel. La configuration d'un SMTP transactionnel institutionnel reste prévue après validation de l'architecture et des outils définitifs de la JEC. Les tests multi-comptes des espaces audio, la déconnexion, le renouvellement des sessions et la revue des permissions restent à effectuer.
+
+## Mise à jour — compte, annuaire et diffusion musicale
+
+- Création des tables `jec_profiles`, `jec_memberships`, `jec_directory_entries` et de la liste privée d'administrateurs `private.jec_admins`, avec RLS et permissions séparées.
+- Les nouveaux comptes commencent avec le statut `pending` : être connecté ne signifie pas être membre JEC vérifié et ne donne aucun droit administratif.
+- Ajout de la page `Mon compte` : prénom, nom, nom affiché, avatar, choix d'apparaître dans l'annuaire des membres et déconnexion.
+- Ajout d'un annuaire institutionnel (Bureau national, équipe nationale, fédérations, équipes locales, commissions, services) et d'un annuaire de membres sur opt-in, réservé aux membres vérifiés. Aucun nom ou mandat réel n'a été inventé ; la base officielle est vide en attente des informations validées.
+- Ajout de `/gestion` pour les administrateurs : validation des adhésions, création/publication de fiches institutionnelles et revue des audios déposés par les membres.
+- Procédure d'attribution explicite du premier rôle administrateur documentée dans `docs/BOOTSTRAP_ADMIN.md`. Aucun compte administrateur n'a été attribué automatiquement.
+- Le chant de ralliement complet fourni par la porteuse du projet a remplacé le texte abrégé, en français et avec une traduction anglaise clairement identifiée.
+- Le lecteur restaure d'abord la version publique officielle, puis le brouillon cloud privé de l'utilisateur, puis la copie locale. Les audios privés restent privés jusqu'à leur publication explicite par un administrateur dans le bucket public distinct.
+
+### Reste à faire avant validation fonctionnelle complète
+
+1. Désigner et initialiser explicitement le premier administrateur via `docs/BOOTSTRAP_ADMIN.md`.
+2. Tester le profil et la déconnexion avec un compte Google et un compte e-mail.
+3. Tester la validation d'adhésion avec un compte administrateur et un compte membre en attente.
+4. Tester le dépôt audio, sa restauration après reconnexion et sa publication par l'administrateur ; vérifier la lecture anonyme du fichier publié et l'inaccessibilité du brouillon privé.
+5. Collecter auprès de la JEC la liste officielle du Bureau national, des équipes, des fédérations, commissions/services, fonctions, contacts et autorisations d'affichage.
+6. Configurer ultérieurement SMTP institutionnel et expéditeur officiel après validation des fournisseurs définitifs.
