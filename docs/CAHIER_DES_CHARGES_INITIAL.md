@@ -245,3 +245,40 @@ Ce module n'appartient pas au premier périmètre du prototype. Il sera spécifi
 - La page affiche les versions publiques françaises et anglaises correspondant au chant sélectionné.
 - Toute personne qui dépose un fichier doit disposer des droits nécessaires pour le partager publiquement ; l'interface doit rendre cette conséquence explicite avant l'enregistrement.
 - Les archives institutionnelles, comptes rendus et documents internes ne doivent pas être placés dans ce bucket public. Ils relèveront d'un stockage distinct, privé, avec des permissions par structure et service.
+
+## 26. Collaboration — espaces de travail et coordination
+
+### Espaces de travail
+- Créer des espaces privés par équipe nationale, fédération, équipe locale, commission, service ou groupe temporaire.
+- Chaque espace possède un nom, une description, une liste de membres, un fil d'échanges, des projets, des tâches, des réunions et des documents.
+- Les invitations sont envoyées à des comptes JEC-conNEcT existants et vérifiés ; le membre doit accepter avant d'accéder au contenu.
+- Les rôles `owner`, `manager` et `member` sont limités à l'espace concerné et distincts du rôle administrateur global.
+- Les responsables d'espace peuvent inviter des membres vérifiés, planifier des réunions et piloter les projets selon leurs droits.
+
+### Projets et tâches
+- Créer des projets dans un espace avec objectif, statut, priorité, responsable et échéance.
+- Décomposer le travail en tâches, préciser l'échéance, l'assignation et le statut (à faire, en cours, bloqué, terminé, annulé).
+- Permettre au créateur, au destinataire de la tâche et aux responsables de l'espace de mettre à jour les tâches selon les permissions.
+
+### Réunions
+- Programmer des réunions rattachées à un espace ou à un projet, avec date, heure, ordre du jour, statut et lien de visioconférence.
+- Prévoir les invitations, réponses de présence, comptes rendus, pièces jointes et historique des réunions.
+- La visioconférence, la transcription et la génération automatique de comptes rendus nécessitent une intégration ultérieure à des outils choisis par la JEC.
+
+### Documents collaboratifs
+- Déposer des fichiers dans un espace privé (limite prototype : 50 Mo par fichier), les classer par catégorie et les rattacher éventuellement à un projet ou une réunion.
+- Les fichiers sont stockés dans le bucket privé `jec-workspace-documents`, distinct du bucket public des chants.
+- L'accès se fait via des liens de téléchargement temporaires et des règles d'accès par appartenance à l'espace.
+- Prévoir ultérieurement versions, approbation, verrouillage, recherche plein texte, prévisualisation et journal d'audit.
+
+### Messagerie
+- Prévoir des conversations directes entre membres, des groupes et des discussions rattachées à un espace.
+- Chaque conversation possède ses participants et ses permissions ; un non-participant ne peut ni lire les messages, ni récupérer les pièces jointes.
+- Prévoir accusés de lecture, notifications, recherche, pièces jointes, modération et archivage.
+- La messagerie directe et de groupe fera l'objet d'une phase dédiée ; elle ne doit pas être confondue avec le fil d'échanges d'un espace.
+
+### Sécurité et gouvernance
+- Toutes les tables de collaboration sont protégées par RLS ; chaque ligne est rattachée à un espace.
+- Les documents internes ne sont jamais publics et ne sont jamais stockés dans le bucket des chants.
+- L'accès aux espaces est révoqué à la désactivation ou au retrait d'un membre.
+- Les données et fichiers doivent rester exportables et sauvegardables.
