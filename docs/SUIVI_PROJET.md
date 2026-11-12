@@ -67,3 +67,22 @@ Les quatre textes transmis dans la bibliothèque documentaire ont été intégr�
 - Hymne principal EN : YCS_Main_Hymn_EN.docx.
 
 Les textes restent modifiables par l'utilisateur en brouillon local. Le fichier source peut être restauré. Aucun fichier audio officiel n'a été identifié dans la bibliothèque consultée ; le lecteur accepte une préécoute locale de fichier, mais aucun audio n'est publié ou synchronisé à ce stade.
+
+
+## Mise à jour — sauvegarde audio, installation et responsive
+
+| Chantier | État | Commentaire |
+|---|---|---|
+| Sauvegarde des audios | Première version intégrée | Bouton « Enregistrer l'audio » ; fichiers stockés dans IndexedDB et restaurés lors du retour sur la page. Sauvegarde limitée au navigateur et à l'appareil. |
+| Stockage cloud partagé | À faire | Nécessite authentification opérationnelle, bucket privé Supabase Storage, règles RLS et gestion des droits de publication des fichiers musicaux. |
+| Téléchargement / installation | PWA en place | Manifeste, service worker, cache initial et bouton « Installer l'application » ajoutés. Instructions spécifiques iOS et navigateurs sans prompt disponibles. |
+| Responsive mobile/tablette | Refonte engagée | Navigation inférieure défilante sur téléphone, grilles empilées, contrôles audio et pages historiques adaptés aux écrans étroits. Tests réels à compléter sur iOS, Android, tablette et desktop. |
+
+### Vérifications à effectuer
+- Ajouter un audio, cliquer sur Enregistrer, quitter la page, revenir et recharger le site.
+- Vérifier que chaque chant conserve son propre fichier audio.
+- Tester le bouton Télécharger sur l'audio enregistré.
+- Tester l'installation depuis Chrome/Edge et l'ajout à l'écran d'accueil sur iOS Safari.
+- Vérifier le comportement hors ligne des pages mises en cache.
+- Mesurer les limites de quota IndexedDB pour les fichiers audio volumineux.
+- Ne pas considérer la persistance locale comme une sauvegarde cloud : les fichiers ne sont pas partagés entre appareils et peuvent être effacés lors du nettoyage des données du navigateur.
