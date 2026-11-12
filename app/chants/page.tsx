@@ -61,20 +61,20 @@ const labels: Record<string,Copy> = {
   intro:{fr:"Retrouve les chants qui accompagnent la vie du mouvement : rassemblements, rencontres, célébrations et moments de fraternité.",en:"Discover the songs that accompany the movement: gatherings, meetings, celebrations and moments of fellowship."},
   needLyrics:{fr:"Colle ici la version complète et validée, en séparant chaque couplet par une ligne vide. Le brouillon est enregistré uniquement sur cet appareil.",en:"Paste the complete approved version here, separating each verse with a blank line. The draft is stored only on this device."},
   localOnly:{fr:"Brouillon local — non publié",en:"Local draft — not published"},
-  addAudioHint:{fr:"Enregistre le fichier pour le conserver sur cet appareil, même après avoir quitté la page ou rechargé le site.",en:"Save the file to keep it on this device, even after leaving the page or reloading the site."},
-  saveAudio:{fr:"Enregistrer l’audio",en:"Save audio"},
+  addAudioHint:{fr:"Connecte-toi pour publier cet enregistrement dans la bibliothèque commune.",en:"Sign in to publish this recording to the shared music library."},
+  saveAudio:{fr:"Enregistrer et publier pour tous",en:"Save and publish for everyone"},
   audioSaved:{fr:"Audio enregistré sur cet appareil",en:"Audio saved on this device"},
   audioCloudSaved:{fr:"Audio enregistré dans la bibliothèque commune.",en:"Audio saved to the shared music library."},
   audioPublished:{fr:"Version officielle publiée : elle est désormais accessible à tout le monde.",en:"Official version published: it is now available to everyone."},
   publishAudio:{fr:"Publier la version officielle",en:"Publish official version"},
   publishPending:{fr:"La publication rendra ce fichier accessible à toutes les personnes qui consultent la bibliothèque musicale.",en:"Publishing this file will make it accessible to everyone viewing the music library."},
   publicBadge:{fr:"VERSION PUBLIQUE OFFICIELLE",en:"OFFICIAL PUBLIC VERSION"},
-  cloudPending:{fr:"Connecte-toi pour synchroniser cet audio dans ton espace cloud privé. La copie locale est conservée sur cet appareil.",en:"Sign in to sync this audio to your private cloud space. The local copy is kept on this device."},
+  cloudPending:{fr:"Connecte-toi pour enregistrer cet audio dans la bibliothèque commune.",en:"Sign in to save this audio to the shared music library."},
   retryCloud:{fr:"Réessayer la synchronisation",en:"Retry cloud sync"},
   audioCloudPrivate:{fr:"Audio enregistré dans la bibliothèque commune.",en:"Audio saved to the shared music library."},
   removeAudio:{fr:"Supprimer l’audio enregistré",en:"Remove saved audio"},
   downloadAudio:{fr:"Télécharger",en:"Download"},
-  localStorageLimit:{fr:"La copie locale reste liée à ce navigateur et à cet appareil. Après connexion, l’audio est également synchronisé dans ton espace cloud privé.",en:"The local copy stays in this browser and on this device. After signing in, the audio is also synced to your private cloud space."},
+  localStorageLimit:{fr:"Tout enregistrement envoyé dans la bibliothèque sera public : vérifie que tu disposes des droits de diffusion.",en:"Every recording uploaded to the library will be public: make sure you have permission to share it."},
   heritage:{fr:"Patrimoine musical",en:"Musical heritage"},
   home:{fr:"Retour à l'accueil",en:"Back to home"}
 };
@@ -205,20 +205,20 @@ export default function ChantsPage() {
     setAudioStatus("");
     let localSaveComplete=false;
     try {
+      const supabase=getSupabaseBrowserClient();
+      if(!supabase){
+        setAudioStatus(tr("cloudPending",lang));
+        return;
+      }
+      const {data:{user},error:authError}=await supabase.auth.getUser();
+      if(authError || !user){
+        setAudioStatus(tr("cloudPending",lang));
+        return;
+      }
       await saveAudioLocally(audioStorageKey,audioFile);
       localSaveComplete=true;
       setAudioSaved(true);
       setAudioStatus(tr("audioSaved",lang));
-      const supabase=getSupabaseBrowserClient();
-      if(!supabase){
-        setAudioStatus(tr("audioSaved",lang)+" · "+tr("cloudPending",lang));
-        return;
-      }
-      const {data:{user}}=await supabase.auth.getUser();
-      if(!user){
-        setAudioStatus(tr("audioSaved",lang)+" · "+tr("cloudPending",lang));
-        return;
-      }
       const safeName=audioFile.name.normalize("NFKD").replace(/[^a-zA-Z0-9._-]+/g,"_").slice(-100) || "audio";
       const storagePath=user.id+"/"+selected+"/"+lyricsLang+"/"+safeName;
       const {error:uploadError}=await supabase.storage.from("jec-audio").upload(storagePath,audioFile,{
@@ -243,7 +243,6 @@ export default function ChantsPage() {
         published_by:user.id
       },{onConflict:"storage_path"}).select("id").single();
       if(metadataError){
-        await supabase.storage.from("jec-audio").remove([storagePath]);
         setAudioStatus(tr("audioSaved",lang)+" · "+metadataError.message);
         return;
       }
