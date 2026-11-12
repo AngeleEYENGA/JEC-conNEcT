@@ -115,7 +115,7 @@ export default function MessagesPage(){
     void loadConversation();
 
     const channel=supabase.channel("jec-messages-"+selectedId)
-      .on("postgres_changes",{event:"INSERT",schema:"public",table:"jec_messages",filter:"conversation_id=eq."+selectedId},payload=>{
+      .on("postgres_changes",{event:"INSERT",schema:"public",table:"jec_messages",filter:"conversation_id=eq."+selectedId},(payload: {new: Message})=>{
         const incoming=payload.new as Message;
         setMessages(current=>current.some(message=>message.id===incoming.id)?current:[...current,incoming]);
       }).subscribe();
