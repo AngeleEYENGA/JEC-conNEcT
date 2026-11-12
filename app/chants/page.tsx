@@ -66,6 +66,7 @@ const labels: Record<string,Copy> = {
   audioSaved:{fr:"Audio enregistré sur cet appareil",en:"Audio saved on this device"},
   audioCloudSaved:{fr:"Audio synchronisé dans le stockage privé JEC-conNEcT.",en:"Audio synced to JEC-conNEcT private storage."},
   cloudPending:{fr:"La synchronisation cloud sera disponible après activation de Supabase Auth et du stockage audio.",en:"Cloud sync will be available after Supabase Auth and audio storage are enabled."},
+  retryCloud:{fr:"Réessayer la synchronisation",en:"Retry cloud sync"},
   audioCloudPrivate:{fr:"Brouillon privé envoyé dans ton espace.",en:"Private draft uploaded to your space."},
   removeAudio:{fr:"Supprimer l’audio enregistré",en:"Remove saved audio"},
   downloadAudio:{fr:"Télécharger",en:"Download"},
@@ -88,6 +89,7 @@ export default function ChantsPage() {
   const [audioName,setAudioName]=useState("");
   const [audioFile,setAudioFile]=useState<File|null>(null);
   const [audioSaved,setAudioSaved]=useState(false);
+  const [audioCloudSaved,setAudioCloudSaved]=useState(false);
   const [audioStatus,setAudioStatus]=useState("");
   const [savingAudio,setSavingAudio]=useState(false);
   const [saved,setSaved]=useState(false);
@@ -114,12 +116,14 @@ export default function ChantsPage() {
           setAudioName(file.name);
           setAudioUrl(URL.createObjectURL(file));
           setAudioSaved(true);
+          setAudioCloudSaved(false);
           setAudioStatus(tr("audioSaved",lang));
         } else {
           setAudioFile(null);
           setAudioName("");
           setAudioUrl("");
           setAudioSaved(false);
+          setAudioCloudSaved(false);
           setAudioStatus("");
           const supabase=getSupabaseBrowserClient();
           if(supabase){
@@ -144,6 +148,7 @@ export default function ChantsPage() {
                     setAudioName(file.name);
                     setAudioUrl(URL.createObjectURL(file));
                     setAudioSaved(true);
+                    setAudioCloudSaved(true);
                     setAudioStatus(tr("audioCloudSaved",lang));
                     return;
                   }
@@ -175,6 +180,7 @@ export default function ChantsPage() {
     setAudioUrl(URL.createObjectURL(file));
     setAudioName(file.name);
     setAudioSaved(false);
+    setAudioCloudSaved(false);
     setAudioStatus(lang==="fr"?"Nouvel audio sélectionné — pense à l’enregistrer.":"New audio selected — remember to save it.");
   }
 
@@ -199,16 +205,16 @@ export default function ChantsPage() {
         return;
       }
       const safeName=audioFile.name.normalize("NFKD").replace(/[^a-zA-Z0-9._-]+/g,"_").slice(-100) || "audio";
-      const storagePath=user.id+"/"+selected+"/"+lyricsLang+"/"+Date.now()+"-"+safeName;
+      const storagePath=user.id+"/"+selected+"/"+lyricsLang+"/"+safeName;
       const {error:uploadError}=await supabase.storage.from("jec-audio").upload(storagePath,audioFile,{
         contentType:audioFile.type||"application/octet-stream",
-        upsert:false
+        upsert:true
       });
       if(uploadError){
         setAudioStatus(tr("audioSaved",lang)+" · "+uploadError.message);
         return;
       }
-      const {error:metadataError}=await supabase.from("jec_song_audio").insert({
+      const {error:metadataError}=await supabase.from("jec_song_audio").upsert({
         song_id:selected,
         language:lyricsLang,
         storage_path:storagePath,
@@ -217,12 +223,13 @@ export default function ChantsPage() {
         file_size:audioFile.size,
         uploaded_by:user.id,
         is_published:false
-      });
+      },{onConflict:"storage_path"});
       if(metadataError){
         await supabase.storage.from("jec-audio").remove([storagePath]);
         setAudioStatus(tr("audioSaved",lang)+" · "+metadataError.message);
         return;
       }
+      setAudioCloudSaved(true);
       setAudioStatus(tr("audioCloudPrivate",lang));
     } catch(error) {
       setAudioSaved(localSaveComplete);
@@ -238,6 +245,7 @@ export default function ChantsPage() {
     try {
       await removeAudioLocally(audioStorageKey);
       setAudioSaved(false);
+      setAudioCloudSaved(false);
       setAudioFile(null);
       setAudioName("");
       if(audioUrl) URL.revokeObjectURL(audioUrl);
@@ -326,7 +334,7 @@ export default function ChantsPage() {
               <input ref={audioInput} type="file" accept="audio/*" hidden onChange={e=>onAudioChange(e.target.files?.[0])}/>
               <div className="audio-controls">
                 <button className="audio-upload-button" onClick={()=>audioInput.current?.click()}>＋ {tr("uploadAudio",lang)}</button>
-                {audioFile && <button className="primary-button audio-save-button" onClick={saveAudio} disabled={savingAudio || audioSaved}>{savingAudio?(lang==="fr"?"Enregistrement…":"Saving…"):audioSaved?tr("audioSaved",lang):tr("saveAudio",lang)}</button>}
+                {audioFile && <button className="primary-button audio-save-button" onClick={saveAudio} disabled={savingAudio || audioCloudSaved}>{savingAudio?(lang==="fr"?"Enregistrement…":"Saving…"):audioCloudSaved?tr("audioCloudSaved",lang):audioSaved?tr("retryCloud",lang):tr("saveAudio",lang)}</button>}
                 {audioUrl && <a className="audio-download-button" href={audioUrl} download={audioName || "jec-audio"}>↓ {tr("downloadAudio",lang)}</a>}
                 {audioSaved && <button className="audio-remove-button" onClick={deleteSavedAudio}>{tr("removeAudio",lang)}</button>}
               </div>
