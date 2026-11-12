@@ -6,7 +6,7 @@
 |---|---|---|
 | Cadrage produit | En cours | Vision et modules définis ; arbitrages du Bureau à obtenir. |
 | Dépôt GitHub / Vercel | Démarré | Dépôt connecté et prévisualisation déployée. |
-| Authentification | Configuration technique raccordée, validation utilisateur à faire | Projet Supabase dédié créé ; URL et clé publique configurées dans Vercel ; parcours e-mail/mot de passe et Google OAuth préparés. URL Auth, fournisseur Google et SMTP transactionnel à finaliser. |
+| Authentification | Google OAuth opérationnel ; parcours e-mail à valider | Projet Supabase dédié créé ; URL et clé publique configurées dans Vercel ; connexion Google testée avec succès le 12 novembre 2026. Inscription/confirmation e-mail, réinitialisation et SMTP transactionnel restent à tester/configurer. |
 | Identité visuelle | Première proposition | Palette et déclinaisons dérivées du logo fourni ; validation communication requise. |
 | Frise chronologique | Intégrée au prototype | Frise interactive France / international avec six repères datés, détails et liens vers les sources institutionnelles. À enrichir après vérification d'archives complémentaires. |
 | Registre des sources | Créé | Sources historiques, niveau de précision et précautions éditoriales documentés dans `REGISTRE_SOURCES_PUBLIQUES.md`. |
@@ -104,3 +104,8 @@ Restant avant validation complète de l'authentification : URL Site/Redirect dan
 ## Évolution future — Espace Partenaires
 
 Un volet Partenaires est ajouté à la feuille de route, hors MVP. Il pourra couvrir un annuaire institutionnel validé, les contacts des organisations, conventions, appels à projets, opportunités, projets communs et bilans. Les partenaires externes disposeront, le cas échéant, de comptes séparés à permissions minimales ; aucun accès automatique aux espaces membres ou aux documents internes. Le besoin, la gouvernance et la politique de partenariat devront être validés avant conception.
+
+
+### Validation — connexion Google OAuth
+
+Le 12 novembre 2026, la connexion Google a été testée avec succès sur le déploiement JEC-conNEcT. Le fournisseur Google est activé dans Supabase et la redirection vers l'application fonctionne. Restent à valider : inscription e-mail, confirmation d'adresse, réinitialisation de mot de passe, configuration SMTP de production et scénarios de sécurité multi-comptes.
