@@ -231,8 +231,11 @@ export default function ChantsPage() {
       setAudioStatus(tr("audioSaved",lang));
       const safeName=audioFile.name.normalize("NFKD").replace(/[^a-zA-Z0-9._-]+/g,"_").slice(-100) || "audio";
       const uploadMimeType=getUploadAudioMimeType(audioFile);
+      // Clone the bytes into a Blob whose own MIME type is normalized too.
+      // Some browser/SDK combinations prefer File.type over FileOptions.contentType.
+      const normalizedAudio=audioFile.slice(0,audioFile.size,uploadMimeType);
       const storagePath=user.id+"/"+selected+"/"+lyricsLang+"/"+safeName;
-      const {error:uploadError}=await supabase.storage.from("jec-audio").upload(storagePath,audioFile,{
+      const {error:uploadError}=await supabase.storage.from("jec-audio").upload(storagePath,normalizedAudio,{
         contentType:uploadMimeType,
         upsert:true
       });
