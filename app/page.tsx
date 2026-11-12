@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { LanguageSwitcher, useLanguage } from "@/components/language-provider";
+import { PWAInstallButton } from "@/components/pwa-install-button";
 
 const news = [
   {
@@ -135,7 +136,7 @@ export default function Home() {
       <div className="sidebar-bottom"><div className="help-card"><div className="help-icon">✧</div><strong>{t("Sources vérifiables","Verifiable sources")}</strong><p>{t("Les faits publics renvoient à leurs publications d'origine.","Public facts link to their original publications.")}</p><button onClick={()=>setActive("Actualités JEC")}>{t("Voir les sources →","Browse sources →")}</button></div><div className="profile-mini"><div className="avatar user">VP</div><div><strong>{t("Visiteur","Visitor")}</strong><small>{t("Aperçu public · non connecté","Public preview · signed out")}</small></div><span>•••</span></div></div>
     </aside>
     <main className="main-area">
-      <header className="topbar"><div className="breadcrumb">JEC France <span>/</span> <strong>{en?(nav.find(item=>item[0]===active)?.[1]??active):active}</strong></div><div className="top-actions"><label className="search-box"><span>⌕</span><input value={search} onChange={e=>setSearch(e.target.value)} placeholder={t("Rechercher dans les sources publiques","Search public sources")}/><kbd>⌘ K</kbd></label><button className="icon-button notification-button" aria-label={t("Notifications","Notifications")} onClick={()=>setNotificationsOpen(!notificationsOpen)}>♧</button><LanguageSwitcher/><Link className="top-login" href="/login">{t("Connexion","Sign in")}</Link></div></header>
+      <header className="topbar"><div className="breadcrumb">JEC France <span>/</span> <strong>{en?(nav.find(item=>item[0]===active)?.[1]??active):active}</strong></div><div className="top-actions"><label className="search-box"><span>⌕</span><input value={search} onChange={e=>setSearch(e.target.value)} placeholder={t("Rechercher dans les sources publiques","Search public sources")}/><kbd>⌘ K</kbd></label><button className="icon-button notification-button" aria-label={t("Notifications","Notifications")} onClick={()=>setNotificationsOpen(!notificationsOpen)}>♧</button><PWAInstallButton/><LanguageSwitcher/><Link className="top-login" href="/login">{t("Connexion","Sign in")}</Link></div></header>
       {notificationsOpen&&<div className="notification-popover"><strong>{t("Notifications","Notifications")}</strong><p>{t("Les notifications personnelles seront disponibles après activation de l'espace membre.","Personal notifications will be available when the member area is enabled.")}</p><p className="muted">{t("Aucune notification individuelle n'est simulée sur cette page publique.","No personal notifications are simulated on this public page.")}</p></div>}
       <div className="page-content">
         {active==="Vue d'ensemble"?<>
