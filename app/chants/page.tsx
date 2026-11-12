@@ -83,6 +83,14 @@ function tr(key:string, lang:"fr"|"en") {
   return labels[key]?.[lang] ?? key;
 }
 
+function getUploadAudioMimeType(file:File):string {
+  const detected=(file.type||"").toLowerCase().trim();
+  // Some browsers report AAC/ADTS recordings with this vendor MIME type.
+  // Store them as standard AAC while keeping the original extension and bytes.
+  if(detected==="audio/vnd.dna.adts") return "audio/aac";
+  return detected||"application/octet-stream";
+}
+
 export default function ChantsPage() {
   const {lang}=useLanguage();
   const [selected,setSelected]=useState<SongId>("rally");
@@ -222,9 +230,10 @@ export default function ChantsPage() {
       setAudioSaved(true);
       setAudioStatus(tr("audioSaved",lang));
       const safeName=audioFile.name.normalize("NFKD").replace(/[^a-zA-Z0-9._-]+/g,"_").slice(-100) || "audio";
+      const uploadMimeType=getUploadAudioMimeType(audioFile);
       const storagePath=user.id+"/"+selected+"/"+lyricsLang+"/"+safeName;
       const {error:uploadError}=await supabase.storage.from("jec-audio").upload(storagePath,audioFile,{
-        contentType:audioFile.type||"application/octet-stream",
+        contentType:uploadMimeType,
         upsert:true
       });
       if(uploadError){
@@ -236,7 +245,7 @@ export default function ChantsPage() {
         language:lyricsLang,
         storage_path:storagePath,
         file_name:audioFile.name,
-        mime_type:audioFile.type,
+        mime_type:uploadMimeType,
         file_size:audioFile.size,
         uploaded_by:user.id,
         bucket_id:"jec-audio",
