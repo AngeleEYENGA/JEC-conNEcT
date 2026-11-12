@@ -542,3 +542,22 @@
 .admin-drafts{margin-top:22px;padding-top:17px;border-top:1px solid #eeeaf3}
 .admin-drafts h3{font:800 12px Manrope;margin:0 0 9px}
 .admin-drafts .admin-member-row{border-top:1px solid #f0edf4}
+
+
+/* Administrator navigation and management console */
+.admin-nav-group{padding:10px 0 2px;margin-top:4px;border-top:1px solid #eeebf2}
+.admin-nav-link{color:#6841a8!important;background:#f8f4fd}
+.admin-account-row{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;padding:15px 0;border-top:1px solid #f0edf4}
+.admin-account-main{display:flex;flex-direction:column;gap:6px;min-width:0;flex:1}
+.admin-account-main>strong{font:800 11px Manrope;color:#39334d;overflow-wrap:anywhere}
+.admin-account-main>small{font-size:8px;color:#898395;overflow-wrap:anywhere}
+.admin-account-badges{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.admin-account-actions{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:6px;max-width:390px}
+.admin-account-actions button{font-size:8px;padding:8px 10px;white-space:nowrap}
+.secondary-outline-button,.danger-outline-button{border:1px solid #ddd3ec;background:#fff;color:#6841a8;border-radius:8px;font-weight:800}
+.danger-outline-button{border-color:#f0d5d9;color:#ae4050;background:#fffafa}
+.danger-outline-button:hover{background:#fff0f2}
+@media(max-width:760px){
+ .admin-account-row{flex-direction:column}
+ .admin-account-actions{justify-content:flex-start;max-width:none}
+}
