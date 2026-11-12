@@ -173,3 +173,7 @@ Exigences :
 - textes et images qui se redimensionnent sans débordement ;
 - respect des zones de sécurité iOS (safe areas) ;
 - tests clavier, contraste et lecteur d'écran.
+
+
+### Implémentation de référence pour le prototype
+Le dépôt contient une migration préparatoire `supabase/migrations/202611120001_create_jec_audio_library.sql` qui crée le bucket privé `jec-audio`, la table de métadonnées `jec_song_audio` et des politiques RLS pour les brouillons privés. Avant mise en service, la migration doit être revue et exécutée par un administrateur Supabase, puis les rôles et la publication des audios officiels doivent être validés. Le stockage IndexedDB demeure un cache local et ne remplace pas le stockage centralisé.
