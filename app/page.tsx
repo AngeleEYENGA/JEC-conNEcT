@@ -108,11 +108,11 @@ export default function Home() {
         isAdmin:adminResult.data===true
       });
     };
-    void supabase.auth.getUser().then(({data})=>{
+    void supabase.auth.getUser().then(({data}:{data:{user:{id:string;email?:string;user_metadata?:Record<string,unknown>}|null}})=>{
       if(data.user) void loadIdentity(data.user);
       else if(mounted) setIdentity(null);
     });
-    const {data:{subscription}}=supabase.auth.onAuthStateChange((_event,session)=>{
+    const {data:{subscription}}=supabase.auth.onAuthStateChange((_event:string,session:{user:{id:string;email?:string;user_metadata?:Record<string,unknown>}}|null)=>{
       if(!session?.user){setIdentity(null);return;}
       const user=session.user;
       Promise.resolve().then(()=>loadIdentity(user));
