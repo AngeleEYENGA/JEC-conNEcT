@@ -536,3 +536,9 @@
   .admin-member-row button{flex:1}
   .directory-callout{padding:15px}
 }
+
+
+.directory-category-empty{margin:0;padding:12px;border:1px dashed #e5deed;border-radius:8px;background:#fbf9fd;color:#8b8497;font-size:9px;line-height:1.6}
+.admin-drafts{margin-top:22px;padding-top:17px;border-top:1px solid #eeeaf3}
+.admin-drafts h3{font:800 12px Manrope;margin:0 0 9px}
+.admin-drafts .admin-member-row{border-top:1px solid #f0edf4}
