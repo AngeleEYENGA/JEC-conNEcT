@@ -1,11 +1,13 @@
--- Allow AAC/ADTS files reported by browsers as audio/vnd.dna.adts.
--- Preserve every MIME type already allowed on the shared JEC music bucket.
+-- Add browser-reported AAC/ADTS and standard AAC MIME types to the public JEC music library.
 update storage.buckets
-set allowed_mime_types = (
-  select array_agg(distinct mime_type order by mime_type)
-  from unnest(
-    coalesce(allowed_mime_types, array[]::text[])
-    || array['audio/vnd.dna.adts']::text[]
-  ) as allowed(mime_type)
-)
+set allowed_mime_types = array[
+  'audio/mpeg',
+  'audio/mp4',
+  'audio/aac',
+  'audio/vnd.dna.adts',
+  'audio/wav',
+  'audio/ogg',
+  'audio/webm',
+  'audio/x-m4a'
+]::text[]
 where id = 'jec-audio';
