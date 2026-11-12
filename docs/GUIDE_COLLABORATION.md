@@ -61,3 +61,20 @@ Le rôle Administrateur JEC-conNEcT est global et distinct des rôles de chaque 
 - Vérifier qu'un membre d'un espace ne peut pas télécharger les documents d'un autre espace.
 - Confirmer les règles de conservation, de sauvegarde et de suppression des documents.
 - Traiter l'alerte RLS de `private.jec_admins` avant la mise en production institutionnelle complète.
+
+## 8. Utiliser la messagerie
+
+1. Ouvre **Messagerie** dans le menu Collaboration.
+2. Clique sur « Nouvelle conversation ».
+3. Choisis : conversation directe (un seul autre membre), groupe (plusieurs membres) ou conversation d'espace (membres actifs de l'espace).
+4. Pour une conversation directe ou un groupe, saisis les adresses e-mail des comptes JEC-conNEcT vérifiés. Sépare les adresses par des virgules ou des points-virgules.
+5. Les personnes invitées acceptent depuis la rubrique Invitations avant de lire et d'envoyer des messages.
+6. Les nouveaux messages apparaissent en temps réel dans le fil de discussion.
+
+Les administrateurs de la plateforme ne peuvent pas lire automatiquement une conversation privée s'ils n'en sont pas participants. Seuls les participants actifs ont accès aux messages.
+
+## 9. Limites actuelles de la messagerie
+
+- Pas encore de notifications push/e-mail, indicateurs non lus ou accusés de lecture.
+- Pas encore de pièces jointes, recherche dans l'historique, présence ou modification/suppression des messages depuis l'interface.
+- La diffusion temps réel concerne les nouveaux messages ; le chargement de l'historique s'effectue à l'ouverture de la conversation.
