@@ -158,3 +158,29 @@ Le 12 novembre 2026, la porteuse du projet a confirmé les tests réussis suivan
 - La copie locale obsolète du fichier audio de ralliement n'est plus restaurée automatiquement ; un nouvel enregistrement doit être déposé pour ce chant.
 
 **Action manuelle restante pour la suppression du mauvais audio :** dans Administration > Bibliothèque musicale, repérer la ligne « Chant de ralliement · FR » (Hymne de la JEC.mp3) et utiliser « Supprimer l'audio ». Cette action utilise l'API Storage, supprime le fichier correspondant et sa métadonnée. La ligne « Hymne de la JEC · FR » n'est pas concernée. Un DELETE SQL direct sur storage.objects n'est pas utilisé, car il laisserait le fichier physique orphelin dans Storage.
+## Mise à jour — Volet Collaboration, première tranche
+
+- Migration Supabase `202611120011_collaboration_workspace_foundation.sql` appliquée : espaces, membres et rôles locaux, fil d'échanges, projets, tâches, réunions, participants et documents.
+- Migration `202611120012_collaboration_policy_refinements.sql` appliquée : accès aux profils des coéquipiers dans un même espace, restrictions de gestion des rôles et renforcement des droits de suppression.
+- Bucket `jec-workspace-documents` créé en mode privé, avec limite de 50 Mo et politiques Storage par appartenance à l'espace. Il est distinct du stockage public des chants.
+- Fonctions d'invitation par e-mail et d'acceptation d'invitation créées ; seuls les comptes JEC vérifiés ou administrateurs peuvent rejoindre un espace.
+- Création de `/workspace` pour lister les espaces, accepter les invitations et créer un espace (administrateur global).
+- Création de `/workspace/[slug]` pour le fil d'échanges, les tâches, les projets, les réunions, les documents et les membres, avec des actions limitées aux rôles appropriés.
+- Vues transversales `/projets`, `/reunions` et `/documents` ajoutées ; le téléchargement de documents s'effectue via des liens temporaires privés.
+- Rubriques de navigation Collaboration reliées aux écrans correspondants.
+- `/messagerie` est un point d'entrée explicite pour la prochaine tranche. Les conversations directes et de groupe ne sont pas encore implémentées ; elles nécessitent un schéma séparé de participants, messages et permissions.
+
+### Démarrage opérationnel
+
+1. Se connecter avec le compte administrateur JEC-conNEcT.
+2. Ouvrir « Workspace » puis créer le premier espace (par exemple une équipe, un service ou une commission dont le nom est validé par la JEC).
+3. Valider le statut JEC des comptes destinés à rejoindre l'espace dans Administration > Gestion des comptes.
+4. Ouvrir l'espace > Membres et inviter les adresses e-mail des comptes vérifiés.
+5. Chaque invité accepte depuis « Mes espaces » avant de voir les contenus.
+
+### Contrôles et limites
+
+- Le schéma crée les tables et politiques, mais aucun espace réel ni membre d'espace n'a été prérempli : les structures doivent être définies par les responsables de la JEC.
+- La messagerie temps réel, visioconférence, transcription, notifications, versionnage documentaire et recherche documentaire avancée restent à développer/intégrer.
+- Le contrôle Supabase continue de signaler `private.jec_admins` avec RLS désactivée. Ne pas ouvrir cette table au client ; cette alerte doit être traitée avec une politique RLS adaptée avant mise en production institutionnelle.
+- La protection Supabase contre les mots de passe compromis reste désactivée ; sa disponibilité dépend de l'offre Supabase.
