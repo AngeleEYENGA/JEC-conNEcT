@@ -137,3 +137,39 @@ Pour activer réellement les connexions, les prérequis sont :
 - URL de callback de l'application ajoutée dans la liste des redirections autorisées Supabase, pour localhost, Preview et production.
 
 L'authentification ne doit être déclarée opérationnelle qu'après tests de création de compte, confirmation e-mail, connexion par mot de passe, Google OAuth, réinitialisation, déconnexion et renouvellement de session. La présence d'un bouton Google ne prouve pas que le fournisseur est activé.
+
+
+## 17. Bibliothèque audio — conservation et téléchargement
+Le lecteur audio doit permettre de sélectionner, préécouter, enregistrer, télécharger et supprimer un fichier associé à un chant.
+- Une action explicite « Enregistrer l'audio » doit confirmer la conservation du fichier.
+- Le stockage doit survivre à la navigation, au rechargement et au redémarrage du navigateur.
+- Chaque chant possède sa propre version audio et ses métadonnées : titre, nom de fichier, format, durée, taille, langue, auteur/provenance, droits et statut de validation.
+- L'utilisateur peut télécharger le fichier ou remplacer/supprimer une version selon ses permissions.
+- La version de démonstration peut utiliser IndexedDB sur l'appareil, mais doit clairement signaler que ce stockage est local.
+- Le produit final doit utiliser un stockage objet privé (ex. Supabase Storage ou solution équivalente) avec authentification, politiques d'accès, limites de taille, sauvegardes et synchronisation entre appareils.
+- Les audios officiels publiés dans la bibliothèque doivent être gérés par des responsables habilités et leurs droits de reproduction et de diffusion validés.
+
+## 18. Application installable (PWA)
+- Manifeste web avec nom, description, couleurs, icône, start URL et affichage standalone.
+- Service worker pour le cache contrôlé des ressources publiques et des pages de base.
+- Bouton d'installation explicite dans l'interface.
+- Instructions alternatives pour iOS Safari et les navigateurs ne déclenchant pas le prompt d'installation.
+- Indication des fonctionnalités disponibles hors ligne.
+- Mises à jour du service worker gérées proprement et sans conserver indéfiniment de vieux contenus.
+- L'installation PWA ne remplace pas une application native publiée dans les stores.
+
+## 19. Exigences responsive
+L'interface doit être testée sur :
+- petits téléphones (320–375 px) ;
+- téléphones standards et grands formats ;
+- tablettes portrait et paysage ;
+- ordinateurs portables et écrans larges.
+
+Exigences :
+- aucune barre de défilement horizontale involontaire ;
+- navigation mobile dédiée (barre inférieure ou menu adapté) ;
+- contenus en une colonne lorsque nécessaire ;
+- lecteurs audio, boutons et champs accessibles au tactile ;
+- textes et images qui se redimensionnent sans débordement ;
+- respect des zones de sécurité iOS (safe areas) ;
+- tests clavier, contraste et lecteur d'écran.
