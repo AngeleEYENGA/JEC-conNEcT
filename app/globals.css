@@ -561,3 +561,7 @@
  .admin-account-row{flex-direction:column}
  .admin-account-actions{justify-content:flex-start;max-width:none}
 }
+
+
+.admin-top-link{display:inline-flex;align-items:center;justify-content:center;padding:8px 11px;border:1px solid #ded2f0;border-radius:9px;background:#f8f4fd;color:#6741a7;text-decoration:none;font-size:10px;font-weight:800;white-space:nowrap}
+.admin-top-link:hover{background:#f0e8fa}
