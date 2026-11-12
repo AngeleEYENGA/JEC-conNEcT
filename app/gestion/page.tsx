@@ -5,7 +5,7 @@ import { FormEvent, useEffect, useState } from "react";
 import { LanguageSwitcher, useLanguage } from "@/components/language-provider";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
-type PendingMember={user_id:string;membership_status:string;structure_name:string|null;jec_profiles:{first_name:string|null;last_name:string|null;display_name:string|null}|null};
+type PendingMember={user_id:string;email:string|null;created_at:string;structure_name:string|null;display_name:string|null;first_name:string|null;last_name:string|null};
 type DirectoryDraft={id:string;full_name:string;role_title:string;category:string;structure_name:string|null;visibility:string};
 type AudioDraft={id:string;song_id:string;language:string;file_name:string;uploaded_by:string;created_at:string};
 
@@ -36,21 +36,9 @@ export default function AdminPage(){
     const {data:admin}=await supabase.rpc("is_jec_admin");
     if(admin!==true){setIsAdmin(false);setLoading(false);return;}
     setIsAdmin(true);
-    const {data:membershipRows,error:membersError}=await supabase.from("jec_memberships")
-      .select("user_id,membership_status,structure_name")
-      .eq("membership_status","pending")
-      .order("created_at");
+    const {data:pendingRows,error:membersError}=await supabase.rpc("jec_admin_pending_memberships");
     if(membersError)setError(membersError.message);
-    const pendingIds=(membershipRows??[]).map((row:{user_id:string})=>row.user_id);
-    const {data:profileRows,error:profilesError}=pendingIds.length
-      ? await supabase.from("jec_profiles").select("user_id,first_name,last_name,display_name").in("user_id",pendingIds)
-      : {data:[],error:null};
-    if(profilesError)setError(profilesError.message);
-    const profileById=new Map((profileRows??[]).map((profile:{user_id:string;first_name:string|null;last_name:string|null;display_name:string|null})=>[profile.user_id,profile]));
-    setMembers((membershipRows??[]).map((row:{user_id:string;membership_status:string;structure_name:string|null})=>({
-      ...row,
-      jec_profiles:profileById.get(row.user_id)??null
-    })) as PendingMember[]);
+    setMembers((pendingRows??[]) as PendingMember[]);
     const {data:drafts,error:draftsError}=await supabase.from("jec_directory_entries").select("id,full_name,role_title,category,structure_name,visibility").eq("is_published",false).order("created_at",{ascending:false});
     if(draftsError)setError(draftsError.message);
     setDirectoryDrafts((drafts??[]) as DirectoryDraft[]);
@@ -134,7 +122,7 @@ export default function AdminPage(){
       <p className="eyebrow">{en?"GOVERNANCE":"GOUVERNANCE"}</p><h1>{en?"JEC-conNEcT administration":"Administration JEC-conNEcT"}</h1>
       {loading?<p className="muted">{en?"Checking permissions…":"Vérification des permissions…"}</p>:!isAdmin?<section className="admin-locked"><h2>{en?"Administrator access required":"Accès administrateur requis"}</h2><p>{en?"Your account is connected, but it has not been granted JEC-conNEcT administrator privileges. Membership verification and administrator authorization are separate decisions.":"Ton compte est connecté, mais il ne dispose pas des droits d'administration de JEC-conNEcT. La validation de l'adhésion et l'autorisation d'administration sont deux décisions distinctes."}</p><p>{en?"The first administrator must be explicitly added by a project owner in the Supabase SQL Editor after checking the person's account email.":"Le premier administrateur doit être ajouté explicitement par le propriétaire du projet dans l'éditeur SQL Supabase, après vérification de l'adresse e-mail du compte."}</p></section>:<>
         <section className="admin-section"><div className="directory-section-heading"><div><p className="eyebrow">{en?"MEMBERSHIP":"ADHÉSIONS"}</p><h2>{en?"Membership requests":"Demandes d'adhésion"}</h2></div><span>{members.length} {en?"pending":"en attente"}</span></div>
-          {members.length?members.map(m=><article className="admin-member-row" key={m.user_id}><div><strong>{m.jec_profiles?.display_name||[m.jec_profiles?.first_name,m.jec_profiles?.last_name].filter(Boolean).join(" ")||(en?"New account":"Nouveau compte")}</strong><small>{m.user_id}</small>{m.structure_name&&<small>{m.structure_name}</small>}</div><div><button className="primary-button" onClick={()=>validateMember(m.user_id,"verified")}>{en?"Verify member":"Valider le membre"}</button><button className="quiet-button" onClick={()=>validateMember(m.user_id,"rejected")}>{en?"Decline":"Refuser"}</button></div></article>):<div className="directory-empty compact"><p>{en?"No pending membership request.":"Aucune demande d'adhésion en attente."}</p></div>}
+          {members.length?members.map(m=><article className="admin-member-row" key={m.user_id}><div><strong>{m.display_name||[m.first_name,m.last_name].filter(Boolean).join(" ")||m.email||(en?"New account":"Nouveau compte")}</strong><small>{m.email??m.user_id}</small>{m.structure_name&&<small>{m.structure_name}</small>}</div><div><button className="primary-button" onClick={()=>validateMember(m.user_id,"verified")}>{en?"Verify member":"Valider le membre"}</button><button className="quiet-button" onClick={()=>validateMember(m.user_id,"rejected")}>{en?"Decline":"Refuser"}</button></div></article>):<div className="directory-empty compact"><p>{en?"No pending membership request.":"Aucune demande d'adhésion en attente."}</p></div>}
         </section>
         <section className="admin-section">
           <div className="directory-section-heading"><div><p className="eyebrow">{en?"MUSIC LIBRARY":"BIBLIOTHÈQUE MUSICALE"}</p><h2>{en?"Audio awaiting publication":"Audios en attente de publication"}</h2></div><span>{audioDrafts.length} {en?"drafts":"brouillons"}</span></div>
