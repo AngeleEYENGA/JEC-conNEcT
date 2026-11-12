@@ -2,71 +2,7 @@
 -- Private workspaces, projects, tasks, meetings and documents.
 -- All private content is scoped to active workspace memberships; no public collaboration data.
 
-create or replace function private.is_jec_workspace_member(
-  target_workspace_id uuid,
-  target_user_id uuid default null
-)
-returns boolean
-language sql
-stable
-security definer
-set search_path = ''
-as $$
-  select exists (
-    select 1
-    from public.jec_workspace_members m
-    where m.workspace_id = target_workspace_id
-      and m.user_id = coalesce(target_user_id, (select auth.uid()))
-      and m.membership_status = 'active'
-  );
-$$;
-revoke all on function private.is_jec_workspace_member(uuid,uuid) from public, anon;
-grant execute on function private.is_jec_workspace_member(uuid,uuid) to authenticated;
 
-create or replace function private.can_manage_jec_workspace(
-  target_workspace_id uuid,
-  target_user_id uuid default null
-)
-returns boolean
-language sql
-stable
-security definer
-set search_path = ''
-as $$
-  select
-    (target_user_id is null and private.is_jec_admin())
-    or (
-      target_user_id is not null
-      and exists (select 1 from private.jec_admins a where a.user_id=target_user_id)
-    )
-    or exists (
-      select 1
-      from public.jec_workspace_members m
-      where m.workspace_id=target_workspace_id
-        and m.user_id=coalesce(target_user_id,(select auth.uid()))
-        and m.membership_status='active'
-        and m.workspace_role in ('owner','manager')
-    );
-$$;
-revoke all on function private.can_manage_jec_workspace(uuid,uuid) from public, anon;
-grant execute on function private.can_manage_jec_workspace(uuid,uuid) to authenticated;
-
-create or replace function private.is_jec_verified_or_admin(target_user_id uuid)
-returns boolean
-language sql
-stable
-security definer
-set search_path = ''
-as $$
-  select
-    exists (
-      select 1 from public.jec_memberships m
-      where m.user_id=target_user_id and m.membership_status='verified'
-    )
-    or exists (select 1 from private.jec_admins a where a.user_id=target_user_id);
-$$;
-revoke all on function private.is_jec_verified_or_admin(uuid) from public, anon;
-grant execute on function private.is_jec_verified_or_admin(uuid) to authenticated;
 
 create table if not exists public.jec_workspaces (
   id uuid primary key default gen_random_uuid(),
@@ -213,6 +149,144 @@ create index if not exists idx_jec_meeting_participants_user
 create index if not exists idx_jec_documents_workspace_category
   on public.jec_documents(workspace_id,document_category,created_at desc);
 
+
+
+create or replace function private.is_jec_workspace_member(
+  target_workspace_id uuid,
+  target_user_id uuid default null
+)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select exists (
+    select 1
+    from public.jec_workspace_members m
+    where m.workspace_id = target_workspace_id
+      and m.user_id = coalesce(target_user_id, (select auth.uid()))
+      and m.membership_status = 'active'
+  );
+$$;
+revoke all on function private.is_jec_workspace_member(uuid,uuid) from public, anon;
+grant execute on function private.is_jec_workspace_member(uuid,uuid) to authenticated;
+
+create or replace function private.can_manage_jec_workspace(
+  target_workspace_id uuid,
+  target_user_id uuid default null
+)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select
+    (target_user_id is null and private.is_jec_admin())
+    or (
+      target_user_id is not null
+      and exists (select 1 from private.jec_admins a where a.user_id=target_user_id)
+    )
+    or exists (
+      select 1
+      from public.jec_workspace_members m
+      where m.workspace_id=target_workspace_id
+        and m.user_id=coalesce(target_user_id,(select auth.uid()))
+        and m.membership_status='active'
+        and m.workspace_role in ('owner','manager')
+    );
+$$;
+revoke all on function private.can_manage_jec_workspace(uuid,uuid) from public, anon;
+grant execute on function private.can_manage_jec_workspace(uuid,uuid) to authenticated;
+
+create or replace function private.is_jec_verified_or_admin(target_user_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select
+    exists (
+      select 1 from public.jec_memberships m
+      where m.user_id=target_user_id and m.membership_status='verified'
+    )
+    or exists (select 1 from private.jec_admins a where a.user_id=target_user_id);
+$$;
+revoke all on function private.is_jec_verified_or_admin(uuid) from public, anon;
+grant execute on function private.is_jec_verified_or_admin(uuid) to authenticated;
+
+
+
+
+
+create or replace function private.jec_workspace_invite_by_email(
+  target_workspace_id uuid,
+  target_email text,
+  target_role text default 'member'
+)
+returns uuid language plpgsql security definer set search_path = ''
+as $$
+declare invited_user_id uuid;
+begin
+  if not (private.is_jec_admin() or private.can_manage_jec_workspace(target_workspace_id)) then
+    raise exception 'Workspace manager access required' using errcode = '42501';
+  end if;
+  if target_role not in ('manager','member') then
+    raise exception 'Only member or manager invitations are permitted' using errcode = '22023';
+  end if;
+  select u.id into invited_user_id from auth.users u
+  where lower(u.email)=lower(trim(target_email)) limit 1;
+  if invited_user_id is null then
+    raise exception 'No JEC-conNEcT account was found for this email' using errcode = 'P0002';
+  end if;
+  if not private.is_jec_verified_or_admin(invited_user_id) then
+    raise exception 'Only verified JEC members can be invited to a workspace' using errcode = '42501';
+  end if;
+  insert into public.jec_workspace_members(workspace_id,user_id,workspace_role,membership_status,invited_by)
+  values(target_workspace_id,invited_user_id,target_role,'invited',(select auth.uid()))
+  on conflict(workspace_id,user_id) do update set
+    workspace_role=excluded.workspace_role,membership_status='invited',
+    invited_by=(select auth.uid()),joined_at=null,updated_at=now();
+  return invited_user_id;
+end;
+$$;
+revoke all on function private.jec_workspace_invite_by_email(uuid,text,text) from public, anon;
+grant execute on function private.jec_workspace_invite_by_email(uuid,text,text) to authenticated;
+
+create or replace function public.jec_workspace_invite_by_email(
+  target_workspace_id uuid,target_email text,target_role text default 'member'
+)
+returns uuid language sql security invoker set search_path = ''
+as $$ select private.jec_workspace_invite_by_email(target_workspace_id,target_email,target_role); $$;
+revoke all on function public.jec_workspace_invite_by_email(uuid,text,text) from public, anon;
+grant execute on function public.jec_workspace_invite_by_email(uuid,text,text) to authenticated;
+
+create or replace function private.jec_workspace_accept_invitation(target_workspace_id uuid)
+returns void language plpgsql security definer set search_path = ''
+as $$
+begin
+  if (select auth.uid()) is null then
+    raise exception 'Authentication required' using errcode='42501';
+  end if;
+  update public.jec_workspace_members set membership_status='active',joined_at=now(),updated_at=now()
+  where workspace_id=target_workspace_id and user_id=(select auth.uid()) and membership_status='invited';
+  if not found then
+    raise exception 'No pending invitation was found for this workspace' using errcode='P0002';
+  end if;
+end;
+$$;
+revoke all on function private.jec_workspace_accept_invitation(uuid) from public, anon;
+grant execute on function private.jec_workspace_accept_invitation(uuid) to authenticated;
+
+create or replace function public.jec_workspace_accept_invitation(target_workspace_id uuid)
+returns void language sql security invoker set search_path = ''
+as $$ select private.jec_workspace_accept_invitation(target_workspace_id); $$;
+revoke all on function public.jec_workspace_accept_invitation(uuid) from public, anon;
+grant execute on function public.jec_workspace_accept_invitation(uuid) to authenticated;
+
+
 alter table public.jec_workspaces enable row level security;
 alter table public.jec_workspace_members enable row level security;
 alter table public.jec_workspace_posts enable row level security;
@@ -226,7 +300,16 @@ alter table public.jec_documents enable row level security;
 drop policy if exists "Workspace members read their spaces" on public.jec_workspaces;
 create policy "Workspace members read their spaces"
 on public.jec_workspaces for select to authenticated
-using (private.is_jec_admin() or private.is_jec_workspace_member(id));
+using (
+  private.is_jec_admin()
+  or private.is_jec_workspace_member(id)
+  or exists (
+    select 1 from public.jec_workspace_members pending
+    where pending.workspace_id=id
+      and pending.user_id=(select auth.uid())
+      and pending.membership_status='invited'
+  )
+);
 
 drop policy if exists "JEC admins create workspaces" on public.jec_workspaces;
 create policy "JEC admins create workspaces"
@@ -294,8 +377,14 @@ with check (author_id=(select auth.uid()) and private.is_jec_workspace_member(wo
 drop policy if exists "Authors and managers update posts" on public.jec_workspace_posts;
 create policy "Authors and managers update posts"
 on public.jec_workspace_posts for update to authenticated
-using (author_id=(select auth.uid()) or private.can_manage_jec_workspace(workspace_id))
-with check (author_id=(select auth.uid()) or private.can_manage_jec_workspace(workspace_id));
+using (
+  (author_id=(select auth.uid()) and private.is_jec_workspace_member(workspace_id))
+  or private.can_manage_jec_workspace(workspace_id)
+)
+with check (
+  (author_id=(select auth.uid()) and private.is_jec_workspace_member(workspace_id))
+  or private.can_manage_jec_workspace(workspace_id)
+);
 
 drop policy if exists "Authors and managers delete posts" on public.jec_workspace_posts;
 create policy "Authors and managers delete posts"
@@ -320,8 +409,14 @@ with check (
 drop policy if exists "Project owners and workspace managers update projects" on public.jec_projects;
 create policy "Project owners and workspace managers update projects"
 on public.jec_projects for update to authenticated
-using (owner_id=(select auth.uid()) or private.can_manage_jec_workspace(workspace_id))
-with check (owner_id=(select auth.uid()) or private.can_manage_jec_workspace(workspace_id));
+using (
+  (owner_id=(select auth.uid()) and private.is_jec_workspace_member(workspace_id))
+  or private.can_manage_jec_workspace(workspace_id)
+)
+with check (
+  (owner_id=(select auth.uid()) and private.is_jec_workspace_member(workspace_id))
+  or private.can_manage_jec_workspace(workspace_id)
+);
 
 drop policy if exists "Workspace managers delete projects" on public.jec_projects;
 create policy "Workspace managers delete projects"
@@ -440,8 +535,14 @@ with check (
 drop policy if exists "Document owners and managers update metadata" on public.jec_documents;
 create policy "Document owners and managers update metadata"
 on public.jec_documents for update to authenticated
-using (uploaded_by=(select auth.uid()) or private.can_manage_jec_workspace(workspace_id))
-with check (uploaded_by=(select auth.uid()) or private.can_manage_jec_workspace(workspace_id));
+using (
+  (uploaded_by=(select auth.uid()) and private.is_jec_workspace_member(workspace_id))
+  or private.can_manage_jec_workspace(workspace_id)
+)
+with check (
+  (uploaded_by=(select auth.uid()) and private.is_jec_workspace_member(workspace_id))
+  or private.can_manage_jec_workspace(workspace_id)
+);
 
 drop policy if exists "Document owners and managers delete documents" on public.jec_documents;
 create policy "Document owners and managers delete documents"
