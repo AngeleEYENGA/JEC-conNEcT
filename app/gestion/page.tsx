@@ -7,7 +7,8 @@ import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
 type PendingMember={user_id:string;email:string|null;created_at:string;structure_name:string|null;display_name:string|null;first_name:string|null;last_name:string|null};
 type DirectoryDraft={id:string;full_name:string;role_title:string;category:string;structure_name:string|null;visibility:string};
-type AudioDraft={id:string;song_id:string;language:string;file_name:string;uploaded_by:string;created_at:string};
+type AudioDraft={id:string;song_id:string;language:string;file_name:string;uploaded_by:string;created_at:string;bucket_id:string;storage_path:string;is_published:boolean};
+type AccountRow={user_id:string;email:string|null;created_at:string;display_name:string|null;first_name:string|null;last_name:string|null;membership_status:"pending"|"verified"|"rejected";structure_name:string|null;is_admin:boolean};
 
 export default function AdminPage(){
   const {lang}=useLanguage();
@@ -15,6 +16,7 @@ export default function AdminPage(){
   const [loading,setLoading]=useState(true);
   const [isAdmin,setIsAdmin]=useState(false);
   const [members,setMembers]=useState<PendingMember[]>([]);
+  const [accounts,setAccounts]=useState<AccountRow[]>([]);
   const [directoryDrafts,setDirectoryDrafts]=useState<DirectoryDraft[]>([]);
   const [audioDrafts,setAudioDrafts]=useState<AudioDraft[]>([]);
   const [publishingAudioId,setPublishingAudioId]=useState<string|null>(null);
@@ -39,10 +41,13 @@ export default function AdminPage(){
     const {data:pendingRows,error:membersError}=await supabase.rpc("jec_admin_pending_memberships");
     if(membersError)setError(membersError.message);
     setMembers((pendingRows??[]) as PendingMember[]);
+    const {data:accountRows,error:accountsError}=await supabase.rpc("jec_admin_list_accounts");
+    if(accountsError)setError(accountsError.message);
+    setAccounts((accountRows??[]) as AccountRow[]);
     const {data:drafts,error:draftsError}=await supabase.from("jec_directory_entries").select("id,full_name,role_title,category,structure_name,visibility").eq("is_published",false).order("created_at",{ascending:false});
     if(draftsError)setError(draftsError.message);
     setDirectoryDrafts((drafts??[]) as DirectoryDraft[]);
-    const {data:audioRows,error:audioError}=await supabase.from("jec_song_audio").select("id,song_id,language,file_name,uploaded_by,created_at").eq("bucket_id","jec-audio").eq("is_published",false).order("created_at",{ascending:false});
+    const {data:audioRows,error:audioError}=await supabase.from("jec_song_audio").select("id,song_id,language,file_name,uploaded_by,created_at,bucket_id,storage_path,is_published").order("created_at",{ascending:false});
     if(audioError)setError(audioError.message);
     setAudioDrafts((audioRows??[]) as AudioDraft[]);
     setLoading(false);
@@ -63,6 +68,48 @@ export default function AdminPage(){
     }).eq("user_id",userId);
     if(updateError)setError(updateError.message);
     else {setMessage(en?"Membership status updated.":"Statut d'adhésion mis à jour.");await load();}
+  }
+
+
+  async function setMembership(userId:string,status:"pending"|"verified"|"rejected"){
+    const supabase=getSupabaseBrowserClient();
+    if(!supabase)return;
+    setError("");setMessage("");
+    const {error:updateError}=await supabase.rpc("jec_admin_set_membership",{target_user_id:userId,new_status:status,new_structure_name:null});
+    if(updateError)setError(updateError.message);
+    else {setMessage(en?"Membership status updated.":"Statut d'adhésion mis à jour.");await load();}
+  }
+
+  async function setAdministrator(userId:string,makeAdmin:boolean){
+    const supabase=getSupabaseBrowserClient();
+    if(!supabase)return;
+    const account=accounts.find(item=>item.user_id===userId);
+    const label=account?.email??userId;
+    const promptText=makeAdmin
+      ? (en?"Grant JEC-conNEcT administrator access to "+label+"?":"Accorder les droits administrateur JEC-conNEcT à "+label+" ?")
+      : (en?"Remove administrator access from "+label+"?":"Retirer les droits administrateur de "+label+" ?");
+    if(!window.confirm(promptText))return;
+    setError("");setMessage("");
+    const {error:roleError}=await supabase.rpc("jec_admin_set_role",{target_user_id:userId,make_admin:makeAdmin});
+    if(roleError)setError(roleError.message);
+    else {setMessage(en?"Administrator role updated.":"Rôle administrateur mis à jour.");await load();}
+  }
+
+  async function deleteAudio(audio:AudioDraft){
+    const supabase=getSupabaseBrowserClient();
+    if(!supabase)return;
+    const title=audio.song_id==="rally"?(en?"rallying song":"chant de ralliement"):(en?"JEC anthem":"hymne de la JEC");
+    const promptText=en
+      ?"Permanently delete the audio file for "+title+" ("+audio.file_name+")?"
+      :"Supprimer définitivement le fichier audio du "+title+" ("+audio.file_name+") ?";
+    if(!window.confirm(promptText))return;
+    setError("");setMessage("");
+    const {error:storageError}=await supabase.storage.from(audio.bucket_id).remove([audio.storage_path]);
+    if(storageError){setError(storageError.message);return;}
+    const {error:rowError}=await supabase.from("jec_song_audio").delete().eq("id",audio.id);
+    if(rowError){setError(rowError.message);return;}
+    setMessage(en?"Audio deleted from the library.":"Audio supprimé de la bibliothèque.");
+    await load();
   }
 
   async function createDirectoryEntry(event:FormEvent<HTMLFormElement>){
@@ -121,13 +168,27 @@ export default function AdminPage(){
     <div className="admin-content">
       <p className="eyebrow">{en?"GOVERNANCE":"GOUVERNANCE"}</p><h1>{en?"JEC-conNEcT administration":"Administration JEC-conNEcT"}</h1>
       {loading?<p className="muted">{en?"Checking permissions…":"Vérification des permissions…"}</p>:!isAdmin?<section className="admin-locked"><h2>{en?"Administrator access required":"Accès administrateur requis"}</h2><p>{en?"Your account is connected, but it has not been granted JEC-conNEcT administrator privileges. Membership verification and administrator authorization are separate decisions.":"Ton compte est connecté, mais il ne dispose pas des droits d'administration de JEC-conNEcT. La validation de l'adhésion et l'autorisation d'administration sont deux décisions distinctes."}</p><p>{en?"The first administrator must be explicitly added by a project owner in the Supabase SQL Editor after checking the person's account email.":"Le premier administrateur doit être ajouté explicitement par le propriétaire du projet dans l'éditeur SQL Supabase, après vérification de l'adresse e-mail du compte."}</p></section>:<>
+        <section className="admin-section">
+          <div className="directory-section-heading"><div><p className="eyebrow">{en?"ACCOUNT MANAGEMENT":"GESTION DES COMPTES"}</p><h2>{en?"All registered accounts":"Tous les comptes enregistrés"}</h2></div><span>{accounts.length} {en?"accounts":"comptes"}</span></div>
+          <p className="admin-help">{en?"Approve JEC membership separately from platform administrator access. New accounts remain pending until reviewed.":"La validation de l'appartenance à la JEC est distincte du rôle administrateur de la plateforme. Les nouveaux comptes restent en attente jusqu'à leur examen."}</p>
+          {accounts.length?accounts.map(account=><article className="admin-account-row" key={account.user_id}>
+            <div className="admin-account-main"><strong>{account.display_name||[account.first_name,account.last_name].filter(Boolean).join(" ")||account.email||account.user_id}</strong><small>{account.email??account.user_id}</small><div className="admin-account-badges"><span className={"membership-pill "+account.membership_status}>{account.membership_status==="verified"?(en?"JEC member":"Membre JEC"):account.membership_status==="rejected"?(en?"Rejected":"Refusé"):(en?"Pending":"En attente")}</span>{account.is_admin&&<span className="admin-pill">{en?"Administrator":"Administrateur"}</span>}</div><small>{en?"Registered":"Inscrit"} · {new Date(account.created_at).toLocaleDateString(en?"en-GB":"fr-FR")}</small></div>
+            <div className="admin-account-actions">
+              {account.membership_status!=="verified"&&<button className="primary-button" onClick={()=>setMembership(account.user_id,"verified")}>{en?"Approve membership":"Valider membre"}</button>}
+              {account.membership_status!=="rejected"&&<button className="quiet-button" onClick={()=>setMembership(account.user_id,"rejected")}>{en?"Reject":"Refuser"}</button>}
+              {account.membership_status!=="pending"&&<button className="quiet-button" onClick={()=>setMembership(account.user_id,"pending")}>{en?"Set pending":"Remettre en attente"}</button>}
+              <button className={account.is_admin?"danger-outline-button":"secondary-outline-button"} onClick={()=>setAdministrator(account.user_id,!account.is_admin)}>{account.is_admin?(en?"Revoke admin":"Retirer admin"):(en?"Make administrator":"Nommer administrateur")}</button>
+            </div>
+          </article>):<div className="directory-empty compact"><p>{en?"No registered accounts yet.":"Aucun compte enregistré."}</p></div>}
+        </section>
+
         <section className="admin-section"><div className="directory-section-heading"><div><p className="eyebrow">{en?"MEMBERSHIP":"ADHÉSIONS"}</p><h2>{en?"Membership requests":"Demandes d'adhésion"}</h2></div><span>{members.length} {en?"pending":"en attente"}</span></div>
           {members.length?members.map(m=><article className="admin-member-row" key={m.user_id}><div><strong>{m.display_name||[m.first_name,m.last_name].filter(Boolean).join(" ")||m.email||(en?"New account":"Nouveau compte")}</strong><small>{m.email??m.user_id}</small>{m.structure_name&&<small>{m.structure_name}</small>}</div><div><button className="primary-button" onClick={()=>validateMember(m.user_id,"verified")}>{en?"Verify member":"Valider le membre"}</button><button className="quiet-button" onClick={()=>validateMember(m.user_id,"rejected")}>{en?"Decline":"Refuser"}</button></div></article>):<div className="directory-empty compact"><p>{en?"No pending membership request.":"Aucune demande d'adhésion en attente."}</p></div>}
         </section>
         <section className="admin-section">
           <div className="directory-section-heading"><div><p className="eyebrow">{en?"MUSIC LIBRARY":"BIBLIOTHÈQUE MUSICALE"}</p><h2>{en?"Audio awaiting publication":"Audios en attente de publication"}</h2></div><span>{audioDrafts.length} {en?"drafts":"brouillons"}</span></div>
-          <p className="admin-help">{en?"Members' uploads remain private until an administrator checks the recording and has confirmed the rights to publish it.":"Les audios déposés par les membres restent privés jusqu'à ce qu'un administrateur vérifie l'enregistrement et confirme les droits de diffusion."}</p>
-          {audioDrafts.length?audioDrafts.map(audio=><article className="admin-member-row" key={audio.id}><div><strong>{audio.song_id==="rally"?(en?"Rallying song":"Chant de ralliement"):(en?"JEC anthem":"Hymne de la JEC")} · {audio.language.toUpperCase()}</strong><small>{audio.file_name} · {new Date(audio.created_at).toLocaleDateString(en?"en-GB":"fr-FR")}</small><small>{en?"Uploader":"Déposé par"} : {audio.uploaded_by}</small></div><button className="primary-button" disabled={publishingAudioId===audio.id} onClick={()=>publishAudioDraft(audio.id)}>{publishingAudioId===audio.id?(en?"Publishing…":"Publication…"):(en?"Publish publicly":"Publier publiquement")}</button></article>):<div className="directory-empty compact"><p>{en?"No audio draft awaits publication.":"Aucun audio n'attend actuellement de publication."}</p></div>}
+          <p className="admin-help">{en?"Review published and uploaded recordings. Deleting a row also removes its Storage object.":"Consulte les enregistrements publiés et déposés. La suppression retire aussi le fichier du stockage."}</p>
+          {audioDrafts.length?audioDrafts.map(audio=><article className="admin-member-row" key={audio.id}><div><strong>{audio.song_id==="rally"?(en?"Rallying song":"Chant de ralliement"):(en?"JEC anthem":"Hymne de la JEC")} · {audio.language.toUpperCase()}</strong><small>{audio.file_name} · {new Date(audio.created_at).toLocaleDateString(en?"en-GB":"fr-FR")}</small><small>{audio.is_published?(en?"Public library":"Bibliothèque publique"):(en?"Unpublished":"Non publié")} · {audio.uploaded_by}</small></div><div className="admin-account-actions">{!audio.is_published&&<button className="primary-button" disabled={publishingAudioId===audio.id} onClick={()=>publishAudioDraft(audio.id)}>{publishingAudioId===audio.id?(en?"Publishing…":"Publication…"):(en?"Publish publicly":"Publier publiquement")}</button>}<button className="danger-outline-button" onClick={()=>deleteAudio(audio)}>{en?"Delete audio":"Supprimer l'audio"}</button></div></article>):<div className="directory-empty compact"><p>{en?"No audio files in the library.":"Aucun fichier audio dans la bibliothèque."}</p></div>}
         </section>
         <section className="admin-section"><p className="eyebrow">{en?"INSTITUTIONAL DIRECTORY":"ANNUAIRE INSTITUTIONNEL"}</p><h2>{en?"Create an official role":"Créer une fonction officielle"}</h2><p className="admin-help">{en?"Enter only names and responsibilities confirmed by JEC France. New entries are drafts and are not visible until published.":"Saisis uniquement des noms et responsabilités confirmés par la JEC France. Les nouvelles fiches sont des brouillons invisibles avant publication."}</p>
           <form className="account-form" onSubmit={createDirectoryEntry}>
