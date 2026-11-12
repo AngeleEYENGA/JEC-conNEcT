@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { LanguageSwitcher, useLanguage } from "@/components/language-provider";
+import { PWAInstallButton } from "@/components/pwa-install-button";
 
 type Milestone = {
   id: string;
@@ -134,7 +135,7 @@ export default function DecouvrirPage() {
     <main className="discover-public">
       <header className="discover-public-header">
         <Link href="/" className="brand-lockup"><span className="brand-mark"><span>JEC</span><i>✳</i></span><span>conNEcT</span></Link>
-        <div className="discover-header-actions"><LanguageSwitcher/><Link href="/" className="back-link-inline">{t("← Retour à l’espace public","← Back to public home")}</Link></div>
+        <div className="discover-header-actions"><PWAInstallButton/><LanguageSwitcher/><Link href="/" className="back-link-inline">{t("← Retour à l’espace public","← Back to public home")}</Link></div>
       </header>
 
       <section className="discover-hero">
