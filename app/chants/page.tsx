@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { LanguageSwitcher, useLanguage } from "@/components/language-provider";
+import { getAudioLocally, removeAudioLocally, saveAudioLocally } from "@/lib/audio-db";
 
 type SongId = "rally" | "anthem";
 type Copy = { en: string; fr: string };
@@ -58,7 +59,12 @@ const labels: Record<string,Copy> = {
   intro:{fr:"Retrouve les chants qui accompagnent la vie du mouvement : rassemblements, rencontres, célébrations et moments de fraternité.",en:"Discover the songs that accompany the movement: gatherings, meetings, celebrations and moments of fellowship."},
   needLyrics:{fr:"Colle ici la version complète et validée, en séparant chaque couplet par une ligne vide. Le brouillon est enregistré uniquement sur cet appareil.",en:"Paste the complete approved version here, separating each verse with a blank line. The draft is stored only on this device."},
   localOnly:{fr:"Brouillon local — non publié",en:"Local draft — not published"},
-  addAudioHint:{fr:"Le fichier reste dans ton navigateur et n'est pas téléversé sur le serveur.",en:"The file stays in your browser and is not uploaded to the server."},
+  addAudioHint:{fr:"Enregistre le fichier pour le conserver sur cet appareil, même après avoir quitté la page ou rechargé le site.",en:"Save the file to keep it on this device, even after leaving the page or reloading the site."},
+  saveAudio:{fr:"Enregistrer l’audio",en:"Save audio"},
+  audioSaved:{fr:"Audio enregistré sur cet appareil",en:"Audio saved on this device"},
+  removeAudio:{fr:"Supprimer l’audio enregistré",en:"Remove saved audio"},
+  downloadAudio:{fr:"Télécharger",en:"Download"},
+  localStorageLimit:{fr:"Cette sauvegarde reste liée à ce navigateur et à cet appareil. La synchronisation entre plusieurs membres sera activée avec le stockage cloud sécurisé de la plateforme.",en:"This save stays in this browser and on this device. Cross-device member sync will be enabled with the platform’s secure cloud storage."},
   heritage:{fr:"Patrimoine musical",en:"Musical heritage"},
   home:{fr:"Retour à l'accueil",en:"Back to home"}
 };
@@ -75,10 +81,15 @@ export default function ChantsPage() {
   const [editing,setEditing]=useState(false);
   const [audioUrl,setAudioUrl]=useState("");
   const [audioName,setAudioName]=useState("");
+  const [audioFile,setAudioFile]=useState<File|null>(null);
+  const [audioSaved,setAudioSaved]=useState(false);
+  const [audioStatus,setAudioStatus]=useState("");
+  const [savingAudio,setSavingAudio]=useState(false);
   const [saved,setSaved]=useState(false);
   const audioInput=useRef<HTMLInputElement>(null);
 
   const storageKey = `jec-connect-song-${selected}-${lyricsLang}`;
+  const audioStorageKey = `jec-connect-audio-${selected}`;
 
   useEffect(()=>{
     const stored=window.localStorage.getItem(storageKey);
@@ -86,6 +97,33 @@ export default function ChantsPage() {
     setEditing(false);
     setSaved(Boolean(stored));
   },[storageKey]);
+
+  useEffect(()=>{
+    let cancelled=false;
+    async function restoreAudio(){
+      try {
+        const file=await getAudioLocally(audioStorageKey);
+        if(cancelled) return;
+        if(file){
+          setAudioFile(file);
+          setAudioName(file.name);
+          setAudioUrl(URL.createObjectURL(file));
+          setAudioSaved(true);
+          setAudioStatus(tr("audioSaved",lang));
+        } else {
+          setAudioFile(null);
+          setAudioName("");
+          setAudioUrl("");
+          setAudioSaved(false);
+          setAudioStatus("");
+        }
+      } catch {
+        if(!cancelled) setAudioStatus(lang==="fr"?"Le stockage local n'est pas disponible dans ce navigateur.":"Local storage is not available in this browser.");
+      }
+    }
+    restoreAudio();
+    return ()=>{cancelled=true;};
+  },[audioStorageKey,lang]);
 
   useEffect(()=>{
     return ()=>{ if(audioUrl) URL.revokeObjectURL(audioUrl); };
@@ -98,8 +136,41 @@ export default function ChantsPage() {
   function onAudioChange(file?:File) {
     if(!file) return;
     if(audioUrl) URL.revokeObjectURL(audioUrl);
+    setAudioFile(file);
     setAudioUrl(URL.createObjectURL(file));
     setAudioName(file.name);
+    setAudioSaved(false);
+    setAudioStatus(lang==="fr"?"Nouvel audio sélectionné — pense à l’enregistrer.":"New audio selected — remember to save it.");
+  }
+
+  async function saveAudio() {
+    if(!audioFile) return;
+    setSavingAudio(true);
+    setAudioStatus("");
+    try {
+      await saveAudioLocally(audioStorageKey,audioFile);
+      setAudioSaved(true);
+      setAudioStatus(tr("audioSaved",lang));
+    } catch(error) {
+      setAudioSaved(false);
+      setAudioStatus(error instanceof Error ? error.message : (lang==="fr"?"Impossible d'enregistrer cet audio.":"Unable to save this audio."));
+    } finally {
+      setSavingAudio(false);
+    }
+  }
+
+  async function deleteSavedAudio() {
+    try {
+      await removeAudioLocally(audioStorageKey);
+      setAudioSaved(false);
+      setAudioFile(null);
+      setAudioName("");
+      if(audioUrl) URL.revokeObjectURL(audioUrl);
+      setAudioUrl("");
+      setAudioStatus(lang==="fr"?"Audio supprimé de cet appareil.":"Audio removed from this device.");
+    } catch(error) {
+      setAudioStatus(error instanceof Error ? error.message : (lang==="fr"?"Impossible de supprimer cet audio.":"Unable to delete this audio."));
+    }
   }
 
   function saveLyrics() {
@@ -178,8 +249,14 @@ export default function ChantsPage() {
               <p className="eyebrow">{tr("audio",lang).toUpperCase()}</p><h3>{title}</h3>
               {audioUrl ? <><p className="audio-filename">{audioName}</p><audio controls src={audioUrl} className="audio-player"/></> : <div className="audio-empty"><span>♫</span><p>{tr("missingAudio",lang)}</p></div>}
               <input ref={audioInput} type="file" accept="audio/*" hidden onChange={e=>onAudioChange(e.target.files?.[0])}/>
-              <button className="audio-upload-button" onClick={()=>audioInput.current?.click()}>＋ {tr("uploadAudio",lang)}</button>
-              <small className="audio-privacy">{tr("addAudioHint",lang)}</small>
+              <div className="audio-controls">
+                <button className="audio-upload-button" onClick={()=>audioInput.current?.click()}>＋ {tr("uploadAudio",lang)}</button>
+                {audioFile && <button className="primary-button audio-save-button" onClick={saveAudio} disabled={savingAudio || audioSaved}>{savingAudio?(lang==="fr"?"Enregistrement…":"Saving…"):audioSaved?tr("audioSaved",lang):tr("saveAudio",lang)}</button>}
+                {audioUrl && <a className="audio-download-button" href={audioUrl} download={audioName || "jec-audio"}>↓ {tr("downloadAudio",lang)}</a>}
+                {audioSaved && <button className="audio-remove-button" onClick={deleteSavedAudio}>{tr("removeAudio",lang)}</button>}
+              </div>
+              {audioStatus && <p className={audioSaved?"audio-status saved":"audio-status"} role="status">{audioStatus}</p>}
+              <small className="audio-privacy">{tr("addAudioHint",lang)} {tr("localStorageLimit",lang)}</small>
             </aside>
           </div>
         </section>
