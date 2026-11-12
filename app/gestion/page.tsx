@@ -41,13 +41,13 @@ export default function AdminPage(){
       .eq("membership_status","pending")
       .order("created_at");
     if(membersError)setError(membersError.message);
-    const pendingIds=(membershipRows??[]).map(row=>row.user_id);
+    const pendingIds=(membershipRows??[]).map((row:{user_id:string})=>row.user_id);
     const {data:profileRows,error:profilesError}=pendingIds.length
       ? await supabase.from("jec_profiles").select("user_id,first_name,last_name,display_name").in("user_id",pendingIds)
       : {data:[],error:null};
     if(profilesError)setError(profilesError.message);
-    const profileById=new Map((profileRows??[]).map(profile=>[profile.user_id,profile]));
-    setMembers((membershipRows??[]).map(row=>({
+    const profileById=new Map((profileRows??[]).map((profile:{user_id:string;first_name:string|null;last_name:string|null;display_name:string|null})=>[profile.user_id,profile]));
+    setMembers((membershipRows??[]).map((row:{user_id:string;membership_status:string;structure_name:string|null})=>({
       ...row,
       jec_profiles:profileById.get(row.user_id)??null
     })) as PendingMember[]);
