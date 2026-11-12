@@ -54,7 +54,7 @@ export default function DirectoryPage(){
     return ()=>{active=false;};
   },[]);
 
-  const grouped=Object.keys(categories).map(key=>({key,label:categories[key][en?"en":"fr"],items:entries.filter(e=>e.category===key)})).filter(group=>group.items.length>0);
+  const grouped=Object.keys(categories).map(key=>({key,label:categories[key][en?"en":"fr"],items:entries.filter(e=>e.category===key)}));
 
   return <main className="directory-page">
     <header className="account-header"><Link href="/" className="brand-lockup"><span className="brand-mark"><span>JEC</span><i>✳</i></span><span>conNEcT</span></Link><div><LanguageSwitcher/><Link href="/" className="back-link-inline">{en?"Back to portal":"Retour au portail"}</Link></div></header>
@@ -65,7 +65,7 @@ export default function DirectoryPage(){
       {loading?<p className="muted">{en?"Loading directory…":"Chargement de l'annuaire…"}</p>:<>
         <section className="directory-section">
           <div className="directory-section-heading"><div><p className="eyebrow">{en?"OFFICIAL ROLES":"FONCTIONS OFFICIELLES"}</p><h2>{en?"Institutional organization chart":"Organigramme institutionnel"}</h2></div><span>{entries.length} {en?"published roles":"fonctions publiées"}</span></div>
-          {grouped.length?grouped.map(group=><div className="directory-group" key={group.key}><h3>{group.label}</h3><div className="directory-entry-grid">{group.items.map(entry=><article className="directory-entry-card" key={entry.id}><span className="directory-entry-icon">✧</span><h4>{entry.role_title}</h4><strong>{entry.full_name}</strong>{entry.structure_name&&<small>{entry.structure_name}</small>}{entry.description&&<p>{entry.description}</p>}{entry.functional_email&&<a href={"mailto:"+entry.functional_email}>{entry.functional_email}</a>}</article>)}</div></div>):<div className="directory-empty"><span>♙</span><h3>{en?"The official directory is being prepared":"L'annuaire officiel est en préparation"}</h3><p>{en?"The Bureau, national team, federations and services will appear here after their roles and contact details have been validated by JEC France.":"Le Bureau national, l'équipe nationale, les fédérations et les services apparaîtront ici après validation des fonctions et des coordonnées par la JEC France."}</p></div>}
+          {grouped.map(group=><div className="directory-group" key={group.key}><h3>{group.label}</h3>{group.items.length?<div className="directory-entry-grid">{group.items.map(entry=><article className="directory-entry-card" key={entry.id}><span className="directory-entry-icon">✧</span><h4>{entry.role_title}</h4><strong>{entry.full_name}</strong>{entry.structure_name&&<small>{entry.structure_name}</small>}{entry.description&&<p>{entry.description}</p>}{entry.functional_email&&<a href={"mailto:"+entry.functional_email}>{entry.functional_email}</a>}</article>)}</div>:<p className="directory-category-empty">{en?"Validated names and role holders will be added here.":"Les noms et titulaires des fonctions seront ajoutés ici après validation."}</p>}</div>)}
         </section>
         <section className="directory-section">
           <div className="directory-section-heading"><div><p className="eyebrow">{en?"COMMUNITY":"COMMUNAUTÉ"}</p><h2>{en?"Members who opted in":"Membres ayant choisi d'apparaître"}</h2></div></div>
