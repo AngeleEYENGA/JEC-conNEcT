@@ -177,3 +177,24 @@ Exigences :
 
 ### Implémentation de référence pour le prototype
 Le dépôt contient une migration préparatoire `supabase/migrations/202611120001_create_jec_audio_library.sql` qui crée le bucket privé `jec-audio`, la table de métadonnées `jec_song_audio` et des politiques RLS pour les brouillons privés. Avant mise en service, la migration doit être revue et exécutée par un administrateur Supabase, puis les rôles et la publication des audios officiels doivent être validés. Le stockage IndexedDB demeure un cache local et ne remplace pas le stockage centralisé.
+## 20. Espace Partenaires — évolution ultérieure
+
+Prévoir, dans une phase ultérieure et après validation par les responsables nationaux, un volet dédié aux partenaires institutionnels, associatifs, éducatifs, financiers et techniques de la JEC.
+
+Objectifs possibles :
+- Présenter les partenaires autorisés et leurs domaines d'intervention, avec une fiche institutionnelle validée par la JEC.
+- Gérer les organisations partenaires, leurs contacts institutionnels et l'historique des collaborations.
+- Centraliser les conventions, lettres d'engagement, dossiers de partenariat et documents associés dans un espace à accès restreint.
+- Publier, selon validation, des appels à projets, opportunités de financement, événements, offres de formation et actions communes.
+- Suivre les projets co-portés, les contributions, les échéances, les livrables et les bilans.
+- Permettre à certains partenaires invités d'accéder à un espace externe limité, sans leur donner accès à la communauté interne, aux documents des services, aux données des membres ni aux instances de gouvernance.
+
+Principes de conception :
+- Distinguer clairement les comptes membres JEC des comptes partenaires externes.
+- Accorder des permissions minimales, limitées à une organisation, un projet et une durée définis.
+- Prévoir un responsable JEC référent pour chaque relation partenaire.
+- Soumettre les fiches publiques, logos, communications et conventions à validation avant publication.
+- Encadrer les données des contacts professionnels (information, finalité, accès, durée de conservation et droits RGPD).
+- Prévoir la révocation immédiate d'un accès externe à la fin d'un partenariat.
+
+Ce module n'appartient pas au premier périmètre du prototype. Il sera spécifié séparément après recueil des besoins de la JEC, cartographie des partenaires existants et définition d'une politique de partenariat. Aucun partenaire, accord ou financement ne doit être inventé ou affiché sans validation.
