@@ -36,12 +36,21 @@ export default function AdminPage(){
     const {data:admin}=await supabase.rpc("is_jec_admin");
     if(admin!==true){setIsAdmin(false);setLoading(false);return;}
     setIsAdmin(true);
-    const {data,error:membersError}=await supabase.from("jec_memberships")
-      .select("user_id,membership_status,structure_name,jec_profiles(first_name,last_name,display_name)")
+    const {data:membershipRows,error:membersError}=await supabase.from("jec_memberships")
+      .select("user_id,membership_status,structure_name")
       .eq("membership_status","pending")
       .order("created_at");
     if(membersError)setError(membersError.message);
-    setMembers((data??[]) as unknown as PendingMember[]);
+    const pendingIds=(membershipRows??[]).map(row=>row.user_id);
+    const {data:profileRows,error:profilesError}=pendingIds.length
+      ? await supabase.from("jec_profiles").select("user_id,first_name,last_name,display_name").in("user_id",pendingIds)
+      : {data:[],error:null};
+    if(profilesError)setError(profilesError.message);
+    const profileById=new Map((profileRows??[]).map(profile=>[profile.user_id,profile]));
+    setMembers((membershipRows??[]).map(row=>({
+      ...row,
+      jec_profiles:profileById.get(row.user_id)??null
+    })) as PendingMember[]);
     const {data:drafts,error:draftsError}=await supabase.from("jec_directory_entries").select("id,full_name,role_title,category,structure_name,visibility").eq("is_published",false).order("created_at",{ascending:false});
     if(draftsError)setError(draftsError.message);
     setDirectoryDrafts((drafts??[]) as DirectoryDraft[]);
