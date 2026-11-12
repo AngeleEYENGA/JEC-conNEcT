@@ -565,3 +565,97 @@
 
 .admin-top-link{display:inline-flex;align-items:center;justify-content:center;padding:8px 11px;border:1px solid #ded2f0;border-radius:9px;background:#f8f4fd;color:#6741a7;text-decoration:none;font-size:10px;font-weight:800;white-space:nowrap}
 .admin-top-link:hover{background:#f0e8fa}
+
+
+/* JEC-conNEcT collaboration workspace */
+.collab-page{min-height:100vh;background:#f8f7fb;color:#302d43}
+.collab-content,.workspace-detail-content{width:min(100% - 34px,1040px);margin:0 auto;padding:42px 0 75px}
+.collab-content h1,.workspace-title-row h1{font:800 clamp(28px,4vw,40px)/1.15 Manrope;letter-spacing:-1px;color:#302b47;margin:7px 0 13px}
+.collab-lead{max-width:780px;color:#7e788b;font-size:12px;line-height:1.8;margin:0 0 25px}
+.collab-section,.workspace-panel{background:#fff;border:1px solid #ece8f1;border-radius:15px;padding:22px;margin:18px 0}
+.collab-section-heading{display:flex;align-items:flex-end;justify-content:space-between;gap:15px;margin-bottom:16px}
+.collab-section-heading .eyebrow{margin:0 0 4px}
+.collab-section-heading h2,.workspace-panel h2{font:800 18px Manrope;margin:0;color:#39334f}
+.collab-section-heading>span{font-size:9px;color:#8e8799}
+.collab-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.collab-card{display:flex;flex-direction:column;align-items:flex-start;min-width:0;border:1px solid #eee9f4;border-radius:12px;padding:17px;background:#fff;text-decoration:none;color:inherit;transition:border-color .15s,transform .15s}
+.collab-card:hover{border-color:#cbb9e3;transform:translateY(-1px)}
+.collab-card-icon{display:grid;place-items:center;width:36px;height:36px;border-radius:11px;background:#f1eafa;color:#6942a4;font-size:18px;margin-bottom:11px}
+.collab-type{font-size:8px;text-transform:uppercase;letter-spacing:.9px;color:#8d79aa;font-weight:800}
+.collab-card h3{font:800 13px Manrope;margin:8px 0;color:#353047;overflow-wrap:anywhere}
+.collab-card p{font-size:9px;line-height:1.7;color:#817b8e;margin:0 0 13px}
+.collab-card-footer{display:flex;align-items:center;justify-content:space-between;gap:9px;width:100%;margin-top:auto;border-top:1px solid #f0edf4;padding-top:11px;font-size:8px;color:#898395}
+.collab-card-footer strong{color:#6942a4}
+.invitation-card{border-color:#e2d7f0;background:#fcfaff}
+.collab-empty{border:1px dashed #ded6e8;border-radius:12px;padding:34px 22px;text-align:center;background:#fbf9fd}
+.collab-empty>span{font-size:28px;color:#8f71bc}
+.collab-empty h2,.collab-empty h3{font:800 15px Manrope;color:#39334f;margin:9px 0}
+.collab-empty p{font-size:10px;line-height:1.7;color:#858093;max-width:560px;margin:8px auto 14px}
+.collab-empty .primary-button{display:inline-flex;text-decoration:none}
+.collab-empty.compact{padding:19px}
+.collab-empty.compact p{margin:0 auto}
+.collab-form{display:grid;gap:12px;border:1px solid #eeeaf3;border-radius:12px;background:#fcfbfd;padding:17px;margin:14px 0 18px}
+.collab-form.compact{margin-top:0}
+.collab-form label{display:grid;gap:6px;font-size:9px;font-weight:800;color:#4a455d}
+.collab-form input,.collab-form select,.collab-form textarea{width:100%;border:1px solid #e5e0eb;border-radius:8px;padding:10px 11px;background:#fff;color:#363148;font:400 11px inherit;outline-color:#9675c1}
+.collab-form textarea{resize:vertical}
+.collab-form .primary-button{justify-self:start}
+.collab-private-note{font-size:8px;line-height:1.6;color:#827b8d;margin:0}
+.task-create-form{display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:10px;align-items:end}
+.invite-form{grid-template-columns:2fr 1fr auto;align-items:end}
+.workspace-title-row{display:flex;justify-content:space-between;align-items:flex-start;gap:20px}
+.workspace-title-row .collab-lead{margin-bottom:12px}
+.workspace-role-pill{display:inline-flex;align-items:center;border-radius:18px;background:#f1eafa;color:#6942a4;padding:6px 10px;font-size:8px;font-weight:800;white-space:nowrap}
+.workspace-role-pill.manager{background:#edf6ff;color:#35618d}
+.workspace-tabs{display:flex;gap:6px;overflow-x:auto;padding:4px 0 12px;margin:10px 0 2px;border-bottom:1px solid #e9e5ee}
+.workspace-tabs button{display:flex;align-items:center;gap:7px;white-space:nowrap;border:1px solid transparent;border-radius:9px;padding:9px 12px;background:transparent;color:#817b8e;font-size:9px;font-weight:700}
+.workspace-tabs button.active{background:#f2ecfa;color:#65409e;border-color:#e6daf3}
+.workspace-tabs button span{font-size:13px}
+.workspace-post{display:flex;gap:11px;border-top:1px solid #f0edf4;padding:16px 0}
+.workspace-post-avatar,.roster-avatar{display:grid;place-items:center;flex:none;width:35px;height:35px;border-radius:12px;background:#eee8f7;color:#6841a3;font:800 10px Manrope}
+.workspace-post-content{min-width:0;flex:1}
+.workspace-post-meta{display:flex;justify-content:space-between;gap:10px;align-items:center}
+.workspace-post-meta strong{font-size:10px;color:#403a54}
+.workspace-post-meta time{font-size:8px;color:#928b9c}
+.workspace-post-content>p{white-space:pre-wrap;font-size:10px;line-height:1.8;color:#625d70;margin:8px 0 0;overflow-wrap:anywhere}
+.workspace-task-row,.workspace-meeting-row,.workspace-document-row,.admin-account-row{display:flex;align-items:center;gap:12px;padding:13px 0;border-top:1px solid #f0edf4}
+.task-status-dot{width:9px;height:9px;border-radius:50%;background:#c8c3cf;flex:none}
+.task-status-dot[data-status="in_progress"]{background:#5c8bc0}
+.task-status-dot[data-status="blocked"]{background:#d28a4c}
+.task-status-dot[data-status="done"]{background:#54a477}
+.workspace-task-main,.workspace-meeting-main,.workspace-document-main{min-width:0;flex:1;display:flex;flex-direction:column;gap:4px}
+.workspace-task-main strong,.workspace-meeting-main strong,.workspace-document-main strong{font-size:10px;color:#3e394f;overflow-wrap:anywhere}
+.workspace-task-main small,.workspace-meeting-main small,.workspace-document-main small{font-size:8px;color:#938c9d}
+.workspace-task-main p,.workspace-meeting-main p,.workspace-document-main p{font-size:9px;line-height:1.6;color:#827b8e;margin:2px 0}
+.workspace-task-row select{border:1px solid #e7e2ec;border-radius:7px;padding:7px;font-size:8px;background:#fff;color:#534b64}
+.workspace-meeting-row{align-items:flex-start}
+.meeting-date-block{width:46px;flex:none;border-radius:9px;padding:7px 3px;background:#f3eff9;text-align:center;color:#6742a0}
+.meeting-date-block strong{display:block;font:800 17px Manrope}
+.meeting-date-block span{display:block;font-size:8px;text-transform:uppercase}
+.workspace-meeting-main a{font-size:9px;font-weight:800;color:#6941a8;text-decoration:none}
+.project-status{display:inline-flex;align-items:center;border-radius:14px;background:#f0eef4;color:#777184;padding:5px 8px;font-size:7px;font-weight:800;text-transform:uppercase}
+.project-status.active,.project-status.scheduled{background:#edf7f0;color:#378052}
+.project-status.completed,.project-status.done{background:#eaf6ef;color:#31774c}
+.project-status.on_hold,.project-status.blocked{background:#fff4e8;color:#9a6c34}
+.project-status.archived,.project-status.cancelled{background:#f2eff4;color:#817b8a}
+.project-card .project-status{margin-bottom:10px}
+.workspace-document-row{align-items:center;flex-wrap:wrap}
+.document-file-icon{display:grid;place-items:center;width:35px;height:35px;border-radius:9px;background:#f1eafa;color:#6b46a5;font-size:17px;flex:none}
+.workspace-document-row button{font-size:8px;padding:8px 10px}
+.workspace-roster-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid #f0edf4}
+.workspace-roster-name{display:flex;flex:1;flex-direction:column;gap:4px;min-width:0}
+.workspace-roster-name strong{font-size:10px;color:#403a54}
+.workspace-roster-name small{font-size:8px;color:#928b9b}
+.collab-footnote{font-size:8px;color:#938c9d;line-height:1.7;margin-top:18px}
+@media(max-width:700px){
+ .collab-content,.workspace-detail-content{width:calc(100% - 24px);padding:25px 0 48px}
+ .collab-section,.workspace-panel{padding:14px}
+ .collab-grid{grid-template-columns:1fr}
+ .workspace-title-row{flex-direction:column;gap:7px}
+ .workspace-tabs button{padding:8px 10px}
+ .task-create-form,.invite-form{grid-template-columns:1fr}
+ .workspace-task-row{align-items:flex-start;flex-wrap:wrap}
+ .workspace-task-row select{margin-left:20px}
+ .workspace-document-row{align-items:flex-start}
+ .workspace-document-row .workspace-document-main{flex-basis:calc(100% - 50px)}
+}
