@@ -86,3 +86,7 @@ Les textes restent modifiables par l'utilisateur en brouillon local. Le fichier 
 - Vérifier le comportement hors ligne des pages mises en cache.
 - Mesurer les limites de quota IndexedDB pour les fichiers audio volumineux.
 - Ne pas considérer la persistance locale comme une sauvegarde cloud : les fichiers ne sont pas partagés entre appareils et peuvent être effacés lors du nettoyage des données du navigateur.
+
+
+### Stockage cloud des audios — préparation
+Le code sait désormais synchroniser un audio vers le bucket privé Supabase `jec-audio` pour un utilisateur authentifié, avec une métadonnée `jec_song_audio`. La migration SQL est disponible dans `supabase/migrations/202611120001_create_jec_audio_library.sql`. **Elle n'a pas encore été exécutée dans le projet Supabase** et les variables d'authentification Vercel sont encore incomplètes ; l'envoi cloud n'est donc pas encore opérationnel. En attendant, IndexedDB conserve l'audio sur l'appareil.
