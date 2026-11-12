@@ -65,12 +65,12 @@ const labels: Record<string,Copy> = {
   saveAudio:{fr:"Enregistrer l’audio",en:"Save audio"},
   audioSaved:{fr:"Audio enregistré sur cet appareil",en:"Audio saved on this device"},
   audioCloudSaved:{fr:"Audio synchronisé dans le stockage privé JEC-conNEcT.",en:"Audio synced to JEC-conNEcT private storage."},
-  cloudPending:{fr:"La synchronisation cloud sera disponible après activation de Supabase Auth et du stockage audio.",en:"Cloud sync will be available after Supabase Auth and audio storage are enabled."},
+  cloudPending:{fr:"Connecte-toi pour synchroniser cet audio dans ton espace cloud privé. La copie locale est conservée sur cet appareil.",en:"Sign in to sync this audio to your private cloud space. The local copy is kept on this device."},
   retryCloud:{fr:"Réessayer la synchronisation",en:"Retry cloud sync"},
   audioCloudPrivate:{fr:"Brouillon privé envoyé dans ton espace.",en:"Private draft uploaded to your space."},
   removeAudio:{fr:"Supprimer l’audio enregistré",en:"Remove saved audio"},
   downloadAudio:{fr:"Télécharger",en:"Download"},
-  localStorageLimit:{fr:"Cette sauvegarde reste liée à ce navigateur et à cet appareil. La synchronisation entre plusieurs membres sera activée avec le stockage cloud sécurisé de la plateforme.",en:"This save stays in this browser and on this device. Cross-device member sync will be enabled with the platform’s secure cloud storage."},
+  localStorageLimit:{fr:"La copie locale reste liée à ce navigateur et à cet appareil. Après connexion, l’audio est également synchronisé dans ton espace cloud privé.",en:"The local copy stays in this browser and on this device. After signing in, the audio is also synced to your private cloud space."},
   heritage:{fr:"Patrimoine musical",en:"Musical heritage"},
   home:{fr:"Retour à l'accueil",en:"Back to home"}
 };
