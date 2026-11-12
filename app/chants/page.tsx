@@ -12,8 +12,8 @@ type Copy = { en: string; fr: string };
 
 const officialLyrics: Record<SongId, Record<"fr"|"en", string>> = {
   "rally": {
-    "fr": "UN MÊME ÉLAN • UNE MÊME FOI • UN MÊME ENGAGEMENT\\n\\nNous irons jusqu'au bout du monde.\\nLa JEC ne périra pas ! (bis)\\n\\nLa JEC : oui, oui, oui.\\nLa JEC : oui, c'est vrai.\\nLa JEC : ne périra pas ! (bis)\\n\\nLA JEC NE PÉRIRA PAS !\\n\\nSur ma tombe il faut qu'on inscrive les initiales de la JEC. (bis)\\n\\nLes initiales : oui, oui, oui !\\nLes initiales : oui, c'est vrai !\\nLes initiales : de la JEC ! (bis)\\n\\nPar la foi et par la prière, nous serons forts pour changer les cœurs ; (bis)\\n\\nPar la foi : oui, oui, oui !\\nPar la prière : oui, c'est vrai !\\nNous serons forts pour changer les cœurs ! (bis)\\n\\nVoir • Juger • Agir",
-    "en": "ONE MOVEMENT • ONE FAITH • ONE COMMITMENT\\n\\nWe will go to the ends of the earth.\\nThe YCS shall not perish! (twice)\\n\\nYCS: yes, yes, yes!\\nYCS: yes, that's true!\\nYCS shall not perish! (twice)\\n\\nTHE YCS SHALL NOT PERISH!\\n\\nOn my tombstone, let the initials of the YCS be inscribed. (twice)\\n\\nThe initials: yes, yes, yes!\\nThe initials: yes, that's true!\\nThe initials of the YCS! (twice)\\n\\nThrough faith and prayer, we will be strong enough to change hearts! (twice)\\n\\nThrough faith: yes, yes, yes!\\nThrough prayer: yes, that's true!\\nWe will be strong enough to change hearts! (twice)\\n\\nSEE • JUDGE • ACT"
+    "fr": "UN MÊME ÉLAN • UNE MÊME FOI • UN MÊME ENGAGEMENT\n\nNous irons jusqu'au bout du monde.\nLa JEC ne périra pas ! (bis)\n\nLa JEC : oui, oui, oui.\nLa JEC : oui, c'est vrai.\nLa JEC : ne périra pas ! (bis)\n\nSur ma tombe il faut qu'on inscrive les initiales de la JEC. (bis)\n\nLes initiales : oui, oui, oui !\nLes initiales : oui, c'est vrai !\nLes initiales : de la JEC ! (bis)\n\nPar la foi et par la prière, nous serons forts pour changer les cœurs ; (bis)\n\nPar la foi : oui, oui, oui !\nPar la prière : oui, c'est vrai !\nNous serons forts pour changer les cœurs ! (bis)\n\nVoir • Juger • Agir",
+    "en": "ONE SHARED SPIRIT • ONE SHARED FAITH • ONE SHARED COMMITMENT\n\nWe will go to the ends of the earth.\nThe YCS shall never perish! (twice)\n\nYCS: yes, yes, yes!\nYCS: yes, that's right!\nThe YCS shall never perish! (twice)\n\nOn my grave, the initials of the YCS must be inscribed. (twice)\n\nThe initials: yes, yes, yes!\nThe initials: yes, that's right!\nThe initials of the YCS! (twice)\n\nThrough faith and prayer, we will be strong enough to change hearts! (twice)\n\nThrough faith: yes, yes, yes!\nThrough prayer: yes, that's right!\nWe will be strong enough to change hearts! (twice)\n\nSEE • JUDGE • ACT"
   },
   "anthem": {
     "fr": "REFRAIN\n\nChantons amis la vie est belle\nPour nos cœurs joyeux et fervents\nJécistes le Christ nous appelle (bis)\nVers l'avenir, en avant (bis)\n\nCOUPLET 1\n\nNous sommes la jeunesse ardente\nPhalange sans regret ni peur\nEt dans nos poitrines vibrantes\nBat le cœur du Christ Rédempteur\n\nPortons à travers nos écoles\nSon nom, sa joie, sa charité\nQue tous entendent ses paroles\nQu'ils naissent à la vérité\n\nREFRAIN — À REPRENDRE\n\nChantons amis la vie est belle\nPour nos cœurs joyeux et fervents\nJécistes le Christ nous appelle (bis)\nVers l'avenir, en avant (bis)\n\nVERS L'AVENIR, EN AVANT",
@@ -102,7 +102,7 @@ export default function ChantsPage() {
   const [saved,setSaved]=useState(false);
   const audioInput=useRef<HTMLInputElement>(null);
 
-  const storageKey = `jec-connect-song-${selected}-${lyricsLang}-v3`;
+  const storageKey = `jec-connect-song-${selected}-${lyricsLang}-v4`;
   const audioStorageKey = `jec-connect-audio-${selected}-${lyricsLang}`;
 
   useEffect(()=>{
@@ -160,7 +160,9 @@ export default function ChantsPage() {
             }
           }
         }
-        const localFile=await getAudioLocally(audioStorageKey);
+        // Old local rally audio was once incorrectly associated with the anthem file.
+        // Never restore that stale local copy; the correct rally recording will be uploaded separately.
+        const localFile=selected==="rally" ? (await removeAudioLocally(audioStorageKey),null) : await getAudioLocally(audioStorageKey);
         if(cancelled)return;
         if(localFile){
           setAudioFile(localFile);setAudioName(localFile.name);setAudioUrl(URL.createObjectURL(localFile));
