@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { LanguageSwitcher, useLanguage } from "@/components/language-provider";
+import { PWAInstallButton } from "@/components/pwa-install-button";
 import { getAudioLocally, removeAudioLocally, saveAudioLocally } from "@/lib/audio-db";
 
 type SongId = "rally" | "anthem";
@@ -190,7 +191,7 @@ export default function ChantsPage() {
     <main className="songs-page">
       <header className="songs-header">
         <Link href="/" className="brand-lockup"><span className="brand-mark"><span>JEC</span><i>✳</i></span><span>conNEcT</span></Link>
-        <div className="songs-header-actions"><LanguageSwitcher/><Link href="/" className="back-link-inline">← {tr("home",lang)}</Link></div>
+        <div className="songs-header-actions"><PWAInstallButton/><LanguageSwitcher/><Link href="/" className="back-link-inline">← {tr("home",lang)}</Link></div>
       </header>
 
       <section className="songs-hero">
