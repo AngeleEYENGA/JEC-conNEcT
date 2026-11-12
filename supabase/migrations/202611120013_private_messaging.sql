@@ -174,7 +174,7 @@ returns uuid
 language plpgsql security definer set search_path=''
 as $$
 declare
-  conversation_id uuid;
+  new_conversation_id uuid;
   target_email text;
   target_user_id uuid;
   invited_count integer:=0;
@@ -194,17 +194,17 @@ begin
     end if;
     insert into public.jec_conversations(conversation_type,title,workspace_id,created_by)
     values('workspace',coalesce(nullif(trim(target_title),''),'Conversation de l’espace'),target_workspace_id,(select auth.uid()))
-    returning id into conversation_id;
+    returning id into new_conversation_id;
     insert into public.jec_conversation_members(conversation_id,user_id,conversation_role,membership_status,joined_at)
-    values(conversation_id,(select auth.uid()),'owner','active',now());
+    values(new_conversation_id,(select auth.uid()),'owner','active',now());
     insert into public.jec_conversation_members(conversation_id,user_id,conversation_role,membership_status,invited_by,joined_at)
-    select conversation_id,wm.user_id,'member','active',(select auth.uid()),now()
+    select new_conversation_id,wm.user_id,'member','active',(select auth.uid()),now()
     from public.jec_workspace_members wm
     where wm.workspace_id=target_workspace_id
       and wm.membership_status='active'
       and wm.user_id<>(select auth.uid())
     on conflict(conversation_id,user_id) do nothing;
-    return conversation_id;
+    return new_conversation_id;
   end if;
 
   if coalesce(array_length(target_member_emails,1),0)=0 then
@@ -219,10 +219,10 @@ begin
 
   insert into public.jec_conversations(conversation_type,title,workspace_id,created_by)
   values(target_type,nullif(trim(coalesce(target_title,'')),''),null,(select auth.uid()))
-  returning id into conversation_id;
+  returning id into new_conversation_id;
 
   insert into public.jec_conversation_members(conversation_id,user_id,conversation_role,membership_status,joined_at)
-  values(conversation_id,(select auth.uid()),'owner','active',now());
+  values(new_conversation_id,(select auth.uid()),'owner','active',now());
 
   foreach target_email in array target_member_emails loop
     select u.id into target_user_id
@@ -239,7 +239,7 @@ begin
       raise exception 'Only verified JEC members can be invited' using errcode='42501';
     end if;
     insert into public.jec_conversation_members(conversation_id,user_id,conversation_role,membership_status,invited_by)
-    values(conversation_id,target_user_id,'member','invited',(select auth.uid()))
+    values(new_conversation_id,target_user_id,'member','invited',(select auth.uid()))
     on conflict(conversation_id,user_id) do nothing;
     invited_count:=invited_count+1;
   end loop;
@@ -247,7 +247,7 @@ begin
   if invited_count=0 then
     raise exception 'No participants were added' using errcode='22023';
   end if;
-  return conversation_id;
+  return new_conversation_id;
 end;
 $$;
 revoke all on function private.jec_create_conversation(text,text,uuid,text[]) from public,anon;
