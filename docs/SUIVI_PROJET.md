@@ -6,7 +6,7 @@
 |---|---|---|
 | Cadrage produit | En cours | Vision et modules définis ; arbitrages du Bureau à obtenir. |
 | Dépôt GitHub / Vercel | Démarré | Dépôt connecté et prévisualisation déployée. |
-| Authentification | Google OAuth opérationnel ; parcours e-mail à valider | Projet Supabase dédié créé ; URL et clé publique configurées dans Vercel ; connexion Google testée avec succès le 12 novembre 2026. Inscription/confirmation e-mail, réinitialisation et SMTP transactionnel restent à tester/configurer. |
+| Authentification | Parcours de base testés avec succès | Google OAuth, inscription e-mail, confirmation d'adresse et réinitialisation du mot de passe validés par test le 12 novembre 2026. SMTP institutionnel et tests de sécurité complémentaires à finaliser pour l'ouverture générale. |
 | Identité visuelle | Première proposition | Palette et déclinaisons dérivées du logo fourni ; validation communication requise. |
 | Frise chronologique | Intégrée au prototype | Frise interactive France / international avec six repères datés, détails et liens vers les sources institutionnelles. À enrichir après vérification d'archives complémentaires. |
 | Registre des sources | Créé | Sources historiques, niveau de précision et précautions éditoriales documentés dans `REGISTRE_SOURCES_PUBLIQUES.md`. |
@@ -109,3 +109,8 @@ Un volet Partenaires est ajouté à la feuille de route, hors MVP. Il pourra cou
 ### Validation — connexion Google OAuth
 
 Le 12 novembre 2026, la connexion Google a été testée avec succès sur le déploiement JEC-conNEcT. Le fournisseur Google est activé dans Supabase et la redirection vers l'application fonctionne. Restent à valider : inscription e-mail, confirmation d'adresse, réinitialisation de mot de passe, configuration SMTP de production et scénarios de sécurité multi-comptes.
+
+
+### Validation — parcours d'authentification
+
+Le 12 novembre 2026, la porteuse du projet a confirmé les tests réussis suivants sur JEC-conNEcT : connexion Google, inscription par e-mail, confirmation des adresses e-mail et réinitialisation du mot de passe. Ces résultats valident les parcours fonctionnels de base dans l'environnement de test actuel. La configuration d'un SMTP transactionnel institutionnel reste prévue après validation de l'architecture et des outils définitifs de la JEC. Les tests multi-comptes des espaces audio, la déconnexion, le renouvellement des sessions et la revue des permissions restent à effectuer.
