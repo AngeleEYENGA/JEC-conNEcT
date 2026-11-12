@@ -182,8 +182,10 @@ export default function ChantsPage() {
     if(!audioFile) return;
     setSavingAudio(true);
     setAudioStatus("");
+    let localSaveComplete=false;
     try {
       await saveAudioLocally(audioStorageKey,audioFile);
+      localSaveComplete=true;
       setAudioSaved(true);
       setAudioStatus(tr("audioSaved",lang));
       const supabase=getSupabaseBrowserClient();
@@ -223,8 +225,10 @@ export default function ChantsPage() {
       }
       setAudioStatus(tr("audioCloudPrivate",lang));
     } catch(error) {
-      setAudioSaved(false);
-      setAudioStatus(error instanceof Error ? error.message : (lang==="fr"?"Impossible d'enregistrer cet audio.":"Unable to save this audio."));
+      setAudioSaved(localSaveComplete);
+      setAudioStatus(localSaveComplete
+        ? tr("audioSaved",lang)+" · "+(error instanceof Error?error.message:"Cloud sync failed.")
+        : (error instanceof Error ? error.message : (lang==="fr"?"Impossible d'enregistrer cet audio.":"Unable to save this audio.")));
     } finally {
       setSavingAudio(false);
     }
