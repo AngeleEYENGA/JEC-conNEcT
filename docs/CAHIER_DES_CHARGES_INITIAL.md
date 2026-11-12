@@ -198,3 +198,39 @@ Principes de conception :
 - Prévoir la révocation immédiate d'un accès externe à la fin d'un partenariat.
 
 Ce module n'appartient pas au premier périmètre du prototype. Il sera spécifié séparément après recueil des besoins de la JEC, cartographie des partenaires existants et définition d'une politique de partenariat. Aucun partenaire, accord ou financement ne doit être inventé ou affiché sans validation.
+
+## 21. Comptes, profils et statut d'appartenance
+
+- Tout compte Auth dispose d'un profil applicatif séparé (prénom, nom, nom affiché, avatar et préférences de visibilité).
+- La connexion ne vaut pas confirmation d'appartenance à la JEC.
+- Chaque compte commence avec un statut d'adhésion `pending`; un responsable habilité peut le passer à `verified` ou `rejected` après vérification.
+- Le compte présente clairement l'état de connexion, le statut d'adhésion et les actions disponibles.
+- L'utilisateur peut consulter/modifier les champs personnels autorisés et se déconnecter depuis l'interface.
+- Les rôles administratifs sont attribués dans une liste protégée, jamais via les métadonnées modifiables du profil ou un auto-déclaratif.
+- Prévoir une gestion institutionnelle des rôles, une passation des administrateurs et des journaux d'audit.
+
+## 22. Annuaire et organigramme
+
+- Annuaire institutionnel classé par Bureau national, équipe nationale, fédérations, équipes locales, commissions et services.
+- Chaque fiche officielle comprend la fonction, le nom du titulaire, la structure, une description et, si validé, un contact fonctionnel.
+- L'annuaire aide à identifier l'interlocuteur compétent pour une demande, sans exposer par défaut les coordonnées personnelles.
+- Les membres disposent d'un annuaire séparé et choisissent explicitement d'y figurer (`opt-in`); seuls les membres vérifiés peuvent consulter ces profils.
+- Les responsables et mandats sont saisis, validés et publiés par des administrateurs désignés. Aucun nom, mandat ou contact ne doit être inventé.
+- Les fiches peuvent être publiques ou réservées aux membres vérifiés, selon la politique de communication de la JEC.
+
+## 23. Publication et conservation des audios
+
+- Les membres authentifiés peuvent déposer des brouillons audio dans leur espace privé. Le fichier cloud et ses métadonnées persistent après fermeture de page, déconnexion et reconnexion.
+- Le lecteur restaure dans cet ordre : version officielle publique, brouillon privé du propriétaire, copie locale de secours.
+- Les brouillons ne sont jamais publics par défaut et ne sont pas accessibles aux autres membres.
+- Un administrateur examine l'enregistrement et vérifie les droits avant publication.
+- Une publication crée une version dans un bucket public distinct ; seule la version marquée publiée est lisible anonymement.
+- L'interface doit identifier clairement « brouillon privé » et « version officielle publiée ».
+- La dépublication/revocation et l'historique des versions doivent être prévus pour la version de production.
+
+## 24. Gouvernance des rôles
+
+- Le rôle administrateur est stocké dans une liste dédiée, non modifiable par le membre lui-même.
+- La première personne administratrice est ajoutée par le propriétaire du projet après vérification de son adresse Auth et décision explicite de la JEC.
+- La validation d'adhésion et l'administration de la plateforme sont deux décisions distinctes.
+- Les actions sensibles (valider l'appartenance, publier une fiche officielle, rendre un audio public, attribuer un administrateur) doivent être réservées aux rôles expressément autorisés et journalisées.
