@@ -147,3 +147,14 @@ Le 12 novembre 2026, la porteuse du projet a confirmé les tests réussis suivan
 - Le texte complet du chant de ralliement transmis le 12 novembre a été vérifié dans les versions française et anglaise du code.
 
 **Rappel de publication :** tout enregistrement envoyé dans la bibliothèque commune est public. Les contributeurs doivent confirmer qu'ils disposent des droits de reproduction et de diffusion avant l'envoi.
+
+## Mise à jour — Administration complète et correction du chant de ralliement
+
+- Ajout des fonctions RPC sécurisées d'administration : liste des comptes, validation/refus/remise en attente de l'appartenance JEC, attribution/révocation du rôle administrateur, protection contre la révocation du dernier administrateur.
+- Ajout de la gestion des comptes dans l'espace /gestion, avec statut de membre et rôle administrateur visibles, et boutons d'action.
+- Ajout d'une entrée « Espace administrateur » dans le menu latéral, visible uniquement après authentification et confirmation du rôle administrateur.
+- Ajout d'une action administrateur de suppression d'un média : suppression via l'API Storage puis suppression de sa métadonnée.
+- Le dernier texte du chant de ralliement transmis le 12 novembre 2026 remplace la version précédente, sans le refrain en majuscules non présent dans la dernière copie. Traduction anglaise mise à jour.
+- La copie locale obsolète du fichier audio de ralliement n'est plus restaurée automatiquement ; un nouvel enregistrement doit être déposé pour ce chant.
+
+**Action manuelle restante pour la suppression du mauvais audio :** dans Administration > Bibliothèque musicale, repérer la ligne « Chant de ralliement · FR » (Hymne de la JEC.mp3) et utiliser « Supprimer l'audio ». Cette action utilise l'API Storage, supprime le fichier correspondant et sa métadonnée. La ligne « Hymne de la JEC · FR » n'est pas concernée. Un DELETE SQL direct sur storage.objects n'est pas utilisé, car il laisserait le fichier physique orphelin dans Storage.
