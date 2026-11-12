@@ -64,14 +64,14 @@ const labels: Record<string,Copy> = {
   addAudioHint:{fr:"Enregistre le fichier pour le conserver sur cet appareil, même après avoir quitté la page ou rechargé le site.",en:"Save the file to keep it on this device, even after leaving the page or reloading the site."},
   saveAudio:{fr:"Enregistrer l’audio",en:"Save audio"},
   audioSaved:{fr:"Audio enregistré sur cet appareil",en:"Audio saved on this device"},
-  audioCloudSaved:{fr:"Audio synchronisé dans ton espace privé JEC-conNEcT.",en:"Audio synced to your private JEC-conNEcT space."},
+  audioCloudSaved:{fr:"Audio enregistré dans la bibliothèque commune.",en:"Audio saved to the shared music library."},
   audioPublished:{fr:"Version officielle publiée : elle est désormais accessible à tout le monde.",en:"Official version published: it is now available to everyone."},
   publishAudio:{fr:"Publier la version officielle",en:"Publish official version"},
   publishPending:{fr:"La publication rendra ce fichier accessible à toutes les personnes qui consultent la bibliothèque musicale.",en:"Publishing this file will make it accessible to everyone viewing the music library."},
   publicBadge:{fr:"VERSION PUBLIQUE OFFICIELLE",en:"OFFICIAL PUBLIC VERSION"},
   cloudPending:{fr:"Connecte-toi pour synchroniser cet audio dans ton espace cloud privé. La copie locale est conservée sur cet appareil.",en:"Sign in to sync this audio to your private cloud space. The local copy is kept on this device."},
   retryCloud:{fr:"Réessayer la synchronisation",en:"Retry cloud sync"},
-  audioCloudPrivate:{fr:"Brouillon privé envoyé dans ton espace.",en:"Private draft uploaded to your space."},
+  audioCloudPrivate:{fr:"Audio enregistré dans la bibliothèque commune.",en:"Audio saved to the shared music library."},
   removeAudio:{fr:"Supprimer l’audio enregistré",en:"Remove saved audio"},
   downloadAudio:{fr:"Télécharger",en:"Download"},
   localStorageLimit:{fr:"La copie locale reste liée à ce navigateur et à cet appareil. Après connexion, l’audio est également synchronisé dans ton espace cloud privé.",en:"The local copy stays in this browser and on this device. After signing in, the audio is also synced to your private cloud space."},
@@ -102,7 +102,7 @@ export default function ChantsPage() {
   const [saved,setSaved]=useState(false);
   const audioInput=useRef<HTMLInputElement>(null);
 
-  const storageKey = `jec-connect-song-${selected}-${lyricsLang}-v2`;
+  const storageKey = `jec-connect-song-${selected}-${lyricsLang}-v3`;
   const audioStorageKey = `jec-connect-audio-${selected}-${lyricsLang}`;
 
   useEffect(()=>{
@@ -126,11 +126,11 @@ export default function ChantsPage() {
           const {data:publishedRows}=await supabase.from("jec_song_audio")
             .select("id,storage_path,file_name,mime_type,bucket_id")
             .eq("song_id",selected).eq("language",lyricsLang)
-            .eq("is_published",true).eq("bucket_id","jec-audio-public")
+            .eq("is_published",true).eq("bucket_id","jec-audio")
             .order("published_at",{ascending:false}).limit(1);
           const published=publishedRows?.[0];
           if(published){
-            const {data:publicFile}=supabase.storage.from("jec-audio-public").getPublicUrl(published.storage_path);
+            const {data:publicFile}=supabase.storage.from("jec-audio").getPublicUrl(published.storage_path);
             if(!cancelled){
               setAudioFile(null);setAudioName(published.file_name);setAudioUrl(publicFile.publicUrl);
               setAudioSaved(true);setAudioCloudSaved(true);setAudioIsPublic(true);setAudioMetaId(published.id);
@@ -238,7 +238,9 @@ export default function ChantsPage() {
         file_size:audioFile.size,
         uploaded_by:user.id,
         bucket_id:"jec-audio",
-        is_published:false
+        is_published:true,
+        published_at:new Date().toISOString(),
+        published_by:user.id
       },{onConflict:"storage_path"}).select("id").single();
       if(metadataError){
         await supabase.storage.from("jec-audio").remove([storagePath]);
@@ -246,9 +248,11 @@ export default function ChantsPage() {
         return;
       }
       setAudioCloudSaved(true);
-      setAudioIsPublic(false);
+      setAudioIsPublic(true);
       setAudioMetaId(metadataRow?.id??null);
-      setAudioStatus(tr("audioCloudPrivate",lang));
+      const {data:publicFile}=supabase.storage.from("jec-audio").getPublicUrl(storagePath);
+      setAudioUrl(publicFile.publicUrl);
+      setAudioStatus(tr("audioPublished",lang));
     } catch(error) {
       setAudioSaved(localSaveComplete);
       setAudioStatus(localSaveComplete
@@ -397,7 +401,7 @@ export default function ChantsPage() {
               <input ref={audioInput} type="file" accept="audio/*" hidden onChange={e=>onAudioChange(e.target.files?.[0])}/>
               <div className="audio-controls">
                 <button className="audio-upload-button" onClick={()=>audioInput.current?.click()}>＋ {tr("uploadAudio",lang)}</button>
-                {audioFile && <button className="primary-button audio-save-button" onClick={saveAudio} disabled={savingAudio || audioCloudSaved}>{savingAudio?(lang==="fr"?"Enregistrement…":"Saving…"):audioCloudSaved?tr("audioCloudSaved",lang):audioSaved?tr("retryCloud",lang):tr("saveAudio",lang)}</button>}{isAdmin&&audioCloudSaved&&!audioIsPublic&&audioMetaId&&<button className="audio-publish-button" onClick={publishAudio} disabled={savingAudio}>{savingAudio?(lang==="fr"?"Publication…":"Publishing…"):tr("publishAudio",lang)}</button>}{audioIsPublic&&<span className="audio-public-note">{tr("audioPublished",lang)}</span>}
+                {audioFile && <button className="primary-button audio-save-button" onClick={saveAudio} disabled={savingAudio || audioCloudSaved}>{savingAudio?(lang==="fr"?"Enregistrement…":"Saving…"):audioCloudSaved?tr("audioCloudSaved",lang):audioSaved?tr("retryCloud",lang):tr("saveAudio",lang)}</button>}{audioIsPublic&&<span className="audio-public-note">{tr("audioPublished",lang)}</span>}
                 {audioUrl && <a className="audio-download-button" href={audioUrl} download={audioName || "jec-audio"}>↓ {tr("downloadAudio",lang)}</a>}
                 {audioSaved && !audioIsPublic && <button className="audio-remove-button" onClick={deleteSavedAudio}>{tr("removeAudio",lang)}</button>}
               </div>
