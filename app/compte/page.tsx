@@ -65,8 +65,7 @@ export default function AccountPage() {
       last_name:lastName.trim()||null,
       display_name:displayName.trim()||null,
       avatar_url:avatarUrl.trim()||null,
-      show_in_directory:showInDirectory,
-      updated_at:new Date().toISOString()
+      show_in_directory:showInDirectory
     }).eq("user_id",userId);
     if(saveError)setError(saveError.message);
     else setMessage(en?"Your profile has been saved.":"Ton profil a été enregistré.");
