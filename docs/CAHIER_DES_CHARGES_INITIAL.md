@@ -282,3 +282,11 @@ Ce module n'appartient pas au premier périmètre du prototype. Il sera spécifi
 - Les documents internes ne sont jamais publics et ne sont jamais stockés dans le bucket des chants.
 - L'accès aux espaces est révoqué à la désactivation ou au retrait d'un membre.
 - Les données et fichiers doivent rester exportables et sauvegardables.
+
+## 27. Messagerie interne
+
+- Conversations directes, groupes et discussions associées à un espace.
+- Participants invités par adresse e-mail correspondant à un compte JEC-conNEcT vérifié ; acceptation explicite avant accès.
+- Les messages ne sont accessibles qu'aux participants actifs, sans accès automatique de l'administrateur global.
+- Réception des nouveaux messages en temps réel, avec chargement sécurisé de l'historique.
+- Prévoir ultérieurement notifications, accusés de lecture, présence, recherche, pièces jointes, modération et archivage.
