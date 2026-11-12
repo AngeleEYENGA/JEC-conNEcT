@@ -48,3 +48,7 @@ Le portail public privilégie les informations vérifiables issues de sources ex
 
 ## Icône et illustrations
 L'icône navigateur dédiée à JEC-conNEcT est définie par app/icon.svg. Les illustrations originales sont dans public/images/.
+
+
+## Audio : état de la persistance
+Le prototype enregistre déjà les fichiers audio dans IndexedDB sur l'appareil. Une intégration facultative au stockage privé Supabase est préparée dans le code et la migration `supabase/migrations/202611120001_create_jec_audio_library.sql`. La migration et la configuration Supabase ne sont pas encore activées ; la synchronisation entre appareils ne doit donc pas être considérée comme disponible.
