@@ -134,3 +134,16 @@ Le 12 novembre 2026, la porteuse du projet a confirmé les tests réussis suivan
 4. Tester le dépôt audio, sa restauration après reconnexion et sa publication par l'administrateur ; vérifier la lecture anonyme du fichier publié et l'inaccessibilité du brouillon privé.
 5. Collecter auprès de la JEC la liste officielle du Bureau national, des équipes, des fédérations, commissions/services, fonctions, contacts et autorisations d'affichage.
 6. Configurer ultérieurement SMTP institutionnel et expéditeur officiel après validation des fournisseurs définitifs.
+
+
+## Mise à jour — 12 novembre 2026 : bibliothèque musicale publique
+
+- Le compte `abessangel@gmail.com` a été inscrit dans la liste protégée des administrateurs JEC-conNEcT après désignation explicite de la porteuse du projet.
+- Le bucket `jec-audio` est désormais public en lecture : un visiteur sans compte peut écouter et télécharger les fichiers via la bibliothèque Chants & hymnes.
+- Les deux fichiers audio déjà présents ont été conservés et leurs métadonnées passées au statut publié ; aucun objet Storage n'a été supprimé.
+- Le bouton d'enregistrement de la page Chants & hymnes envoie désormais le fichier vers le bucket commun et publie ses métadonnées dès l'enregistrement. L'action nécessite une session connectée ; la lecture et le téléchargement restent accessibles sans connexion.
+- Les droits d'écriture et de remplacement restent limités au dossier Storage du compte ayant déposé le fichier. Le bucket public donne accès à la lecture, pas à l'écriture anonyme.
+- La clé de version des paroles est passée à `v3` et le cache PWA à `v2` afin d'empêcher un ancien brouillon local ou cache de réafficher la version courte du chant de ralliement.
+- Le texte complet du chant de ralliement transmis le 12 novembre a été vérifié dans les versions française et anglaise du code.
+
+**Rappel de publication :** tout enregistrement envoyé dans la bibliothèque commune est public. Les contributeurs doivent confirmer qu'ils disposent des droits de reproduction et de diffusion avant l'envoi.
