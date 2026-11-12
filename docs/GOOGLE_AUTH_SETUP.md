@@ -13,7 +13,7 @@ Le projet Supabase précédent NaVigue n'est pas utilisé par JEC-conNEcT et res
 - Variables Vercel NEXT_PUBLIC_SUPABASE_URL et NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY renseignées pour Development, Preview et Production.
 - Le dépôt .env.example pointe vers le nouveau projet.
 - Auth e-mail/mot de passe implémentée dans l'application : inscription, connexion, demande de réinitialisation et mise à jour du mot de passe.
-- OAuth Google préparé dans le code avec échange PKCE serveur via /auth/callback.
+- OAuth Google configuré dans Supabase et testé avec succès sur le déploiement JEC-conNEcT le 12 novembre 2026 ; le flux de connexion et le retour vers l'application fonctionnent. Le callback utilise l'échange PKCE côté serveur via /auth/callback.
 - Bucket privé jec-audio, table public.jec_song_audio et politiques RLS appliqués.
 - Les brouillons audio sont limités à leur propriétaire. La publication d'un audio officiel reste une opération administrative.
 - Les contrôles Supabase ne signalent aucune alerte de sécurité ou de santé sur le schéma actuel.
@@ -61,17 +61,17 @@ Prévoir un SMTP transactionnel géré par JEC France, avec domaine d'envoi vér
 
 ## 5. Tests de validation à effectuer
 
-Après ajout des URL autorisées et configuration de SMTP :
+Le test de connexion Google a réussi le 12 novembre 2026. Restent les tests et réglages du parcours e-mail et de la mise en service publique :
 1. Inscrire un compte de test autorisé.
 2. Vérifier la réception et le lien de confirmation.
 3. Se connecter par e-mail et mot de passe.
 4. Demander une réinitialisation et vérifier le parcours complet.
-5. Tester Google OAuth une fois le fournisseur activé.
+5. Google OAuth : test de connexion réussi sur le déploiement de production le 12 novembre 2026. Refaire un test après toute modification du domaine ou du fournisseur.
 6. Vérifier qu'un utilisateur authentifié peut déposer un brouillon audio dans son dossier privé.
 7. Vérifier qu'un autre utilisateur ne peut pas lire ce brouillon.
 8. Vérifier que les médias ne sont pas publiquement accessibles.
 
-L'authentification ne sera considérée comme validée de bout en bout qu'après ces tests réels. Les rôles JEC (administrateur, responsable, membre, etc.) et les profils institutionnels devront faire l'objet d'une conception et de règles RLS dédiées, sans se baser sur les métadonnées modifiables par l'utilisateur.
+La connexion Google est validée par un test réel. L'authentification globale (notamment inscription e-mail, confirmation, réinitialisation, SMTP, déconnexion et renouvellement de session) ne sera considérée comme validée de bout en bout qu'après ces autres tests réels. Les rôles JEC (administrateur, responsable, membre, etc.) et les profils institutionnels devront faire l'objet d'une conception et de règles RLS dédiées, sans se baser sur les métadonnées modifiables par l'utilisateur.
 
 ## 6. Références
 
