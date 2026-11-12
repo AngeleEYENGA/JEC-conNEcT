@@ -234,3 +234,14 @@ Ce module n'appartient pas au premier périmètre du prototype. Il sera spécifi
 - La première personne administratrice est ajoutée par le propriétaire du projet après vérification de son adresse Auth et décision explicite de la JEC.
 - La validation d'adhésion et l'administration de la plateforme sont deux décisions distinctes.
 - Les actions sensibles (valider l'appartenance, publier une fiche officielle, rendre un audio public, attribuer un administrateur) doivent être réservées aux rôles expressément autorisés et journalisées.
+
+
+## 25. Bibliothèque musicale publique
+
+- La rubrique Chants & hymnes est consultable sans connexion ; toute personne peut lire les paroles, écouter et télécharger un enregistrement publié.
+- Le dépôt et le remplacement d'un enregistrement nécessitent un compte connecté. Le bouton « Enregistrer et publier pour tous » dépose le fichier dans le bucket Storage public de la bibliothèque.
+- La lecture publique est distincte des permissions d'écriture : les utilisateurs non connectés ne peuvent ni déposer, ni remplacer, ni supprimer un fichier.
+- Chaque enregistrement possède des métadonnées de chant, langue, format, taille, chemin, contributeur et date de publication.
+- La page affiche les versions publiques françaises et anglaises correspondant au chant sélectionné.
+- Toute personne qui dépose un fichier doit disposer des droits nécessaires pour le partager publiquement ; l'interface doit rendre cette conséquence explicite avant l'enregistrement.
+- Les archives institutionnelles, comptes rendus et documents internes ne doivent pas être placés dans ce bucket public. Ils relèveront d'un stockage distinct, privé, avec des permissions par structure et service.
