@@ -184,3 +184,15 @@ Le 12 novembre 2026, la porteuse du projet a confirmé les tests réussis suivan
 - La messagerie temps réel, visioconférence, transcription, notifications, versionnage documentaire et recherche documentaire avancée restent à développer/intégrer.
 - Le contrôle Supabase continue de signaler `private.jec_admins` avec RLS désactivée. Ne pas ouvrir cette table au client ; cette alerte doit être traitée avec une politique RLS adaptée avant mise en production institutionnelle.
 - La protection Supabase contre les mots de passe compromis reste désactivée ; sa disponibilité dépend de l'offre Supabase.
+
+## Mise à jour — Messagerie privée et temps réel
+
+- Tables `jec_conversations`, `jec_conversation_members` et `jec_messages` créées avec RLS.
+- Conversations directes, groupes et conversations liées à un espace.
+- Invitations nominatives à des comptes JEC-conNEcT existants et vérifiés ; acceptation explicite avant lecture des messages.
+- L'administrateur global n'est pas automatiquement participant aux conversations privées ; les messages ne sont visibles que par les participants actifs.
+- Supabase Realtime activé sur `jec_messages` ; les événements sont toujours soumis aux politiques RLS.
+- Interface `/messagerie` reliée : liste des conversations, invitations, création, envoi et réception temps réel.
+- Cycle direct testé dans une transaction annulée : création, invitation, acceptation par le second compte, envoi de message, et vérification qu'un non-participant ne lit rien.
+
+**Restant pour la prochaine itération :** notifications et messages non lus, accusés de lecture, présence, pièces jointes privées, recherche, archivage, édition/suppression depuis l'interface et tests multi-appareils.
