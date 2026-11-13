@@ -160,7 +160,7 @@ export default function MeetingDetailPage(){
  function downloadTextFile(fileName:string,content:string,mimeType="text/markdown;charset=utf-8"){
   const blob=new Blob([content],{type:mimeType});const url=URL.createObjectURL(blob);
   const anchor=document.createElement("a");anchor.href=url;anchor.download=fileName;anchor.style.display="none";
-  document.body.appendChild(anchor);anchor.click();anchor.remove();URL.revokeObjectURL(url);
+  document.body.appendChild(anchor);anchor.click();anchor.remove();window.setTimeout(()=>URL.revokeObjectURL(url),1000);
  }
 
  function buildMinutesDraft(){
@@ -169,7 +169,7 @@ export default function MeetingDetailPage(){
    const status=p.attendance_status==="accepted"?(en?"confirmed":"présence confirmée"):p.attendance_status==="declined"?(en?"declined":"déclinée"):p.attendance_status==="attended"?(en?"attended":"présent(e)"):(en?"invited":"invité(e)");
    return "- "+(names[p.user_id]||(en?"JEC member":"Membre JEC"))+" — "+status;
   });
-  const agenda=agendaItems.map((item,index)=>`${index+1}. ${item.title} — ${item.item_status}${item.description?"\\n   "+item.description:""}`);
+  const agenda=agendaItems.map((item,index)=>`${index+1}. ${item.title} — ${item.item_status}${item.description?"\n   "+item.description:""}`);
   const decisionLines=decisions.map(item=>"- "+item.title+(item.detail?" — "+item.detail:""));
   const actionLines=tasks.map(item=>"- [ "+(item.task_status==="done"?"x":" ")+" ] "+item.title+" — "+(item.assigned_to?(names[item.assigned_to]||(en?"JEC member":"Membre JEC")):(en?"Unassigned":"Non attribuée"))+(item.due_at?" — "+date(item.due_at,en,false):""));
   const content=[
@@ -197,7 +197,7 @@ export default function MeetingDetailPage(){
    "",
    "## "+(en?"Next meeting":"Prochaine réunion"),
    en?"To be confirmed.":"À confirmer."
-  ].filter(Boolean).join("\\n");
+  ].filter(Boolean).join("\n");
   setMinutesText(content);
   setActiveTab("minutes");
   setNotice(en?"A structured draft has been prepared from the meeting data. Review it before sharing.":"Un brouillon structuré a été préparé à partir des données de la réunion. Relis-le avant partage.");
@@ -312,7 +312,7 @@ export default function MeetingDetailPage(){
     {minutes?.minutes_status==="approved"?<div className="minutes-approved"><p>{en?"Approved minutes — read only":"Compte rendu approuvé — lecture seule"}</p><div className="minutes-text-render">{minutes.content}</div><small>{en?"Approved by":"Approuvé par"} : {names[minutes.approved_by||""]||"Responsable JEC"} · {minutes.approved_at?date(minutes.approved_at,en):""}</small></div>:<>
       <p className="collab-muted">{en?"Use the meeting data to prepare a draft, then review and validate it before sharing.":"Prépare un brouillon à partir des éléments de la réunion, puis relis-le et valide-le avant partage."}</p>
       <div className="minutes-actions"><button className="secondary-outline-button" onClick={buildMinutesDraft}>{en?"Prepare structured draft":"Préremplir le compte rendu"}</button><button className="secondary-outline-button" onClick={()=>downloadTextFile("jec-meeting-minutes-"+meetingId+".md",minutes?.minutes_status==="approved"?minutes.content:minutesText)} disabled={!(minutes?.content||minutesText).trim()}>{en?"Download report (.md)":"Télécharger le compte rendu (.md)"}</button></div>
-      <textarea className="minutes-editor" rows={18} value={minutesText} onChange={e=>setMinutesText(e.target.value)} placeholder={en?"Meeting date and participants\\n1. Context\\n2. Discussion\\n3. Decisions\\n4. Action owners and deadlines":"Date et participants\\n1. Contexte\\n2. Échanges\\n3. Décisions\\n4. Responsables et échéances"}/>
+      <textarea className="minutes-editor" rows={18} value={minutesText} onChange={e=>setMinutesText(e.target.value)} placeholder={en?"Meeting date and participants\n1. Context\n2. Discussion\n3. Decisions\n4. Action owners and deadlines":"Date et participants\n1. Contexte\n2. Échanges\n3. Décisions\n4. Responsables et échéances"}/>
       <div className="minutes-actions"><button className="secondary-outline-button" onClick={()=>void saveMinutes("draft")} disabled={busy||!minutesText.trim()}>{en?"Save draft":"Enregistrer le brouillon"}</button><button className="primary-button" onClick={()=>void saveMinutes("shared")} disabled={busy||!minutesText.trim()}>{en?"Share with participants":"Partager aux participants"}</button>{manager&&minutes&&minutes.minutes_status==="shared"&&<button className="approve-minutes-button" onClick={()=>void approveMinutes()} disabled={busy}>{en?"Approve and lock":"Approuver et verrouiller"}</button>}</div>
     </>}
     {minutes?.minutes_status==="draft"&&manager&&<button className="approve-minutes-button" onClick={()=>void approveMinutes()} disabled={busy}>{en?"Approve and lock":"Approuver et verrouiller"}</button>}
