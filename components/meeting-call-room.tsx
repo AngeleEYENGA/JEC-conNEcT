@@ -135,7 +135,7 @@ export default function MeetingCallRoom({
             from: userIdRef.current,
             to: peerId,
             type: "description",
-            description: { type: pc.localDescription?.type ?? "offer", sdp: pc.localDescription?.sdp ?? "" }
+        description: offer
           });
         }
       } else if (signal.type === "candidate" && signal.candidate) {
