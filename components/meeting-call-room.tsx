@@ -163,7 +163,7 @@ export default function MeetingCallRoom({
         from: userIdRef.current,
         to: peerId,
         type: "description",
-        description: pc.localDescription?.toJSON()
+        description: { type: pc.localDescription?.type ?? "offer", sdp: pc.localDescription?.sdp ?? "" }
       });
     } catch (e) {
       setError(e instanceof Error ? e.message : "Impossible de démarrer la connexion.");
