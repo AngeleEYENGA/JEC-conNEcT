@@ -248,15 +248,7 @@ export default function MeetingDetailPage(){
     <div className="collab-card-heading"><div><p className="eyebrow">{en?"OFFICIAL MEETING RECORD":"DOCUMENT DE SUIVI"}</p><h2>{en?"Minutes / report":"Compte rendu"}</h2></div>{minutes&&<span className={"project-status "+minutes.minutes_status}>{minutes.minutes_status}</span>}</div>
     {minutes?.minutes_status==="approved"?<div className="minutes-approved"><p>{en?"Approved minutes — read only":"Compte rendu approuvé — lecture seule"}</p><div className="minutes-text-render">{minutes.content}</div><small>{en?"Approved by":"Approuvé par"} : {names[minutes.approved_by||""]||"Responsable JEC"} · {minutes.approved_at?date(minutes.approved_at,en):""}</small></div>:<>
       <p className="collab-muted">{en?"Structure the report with context, discussion, decisions and follow-up.":"Structure le compte rendu autour du contexte, des échanges, des décisions et du suivi."}</p>
-      <textarea className="minutes-editor" rows={18} value={minutesText} onChange={e=>setMinutesText(e.target.value)} placeholder={en?"Meeting date and participants
-1. Context
-2. Discussion
-3. Decisions
-4. Action owners and deadlines":"Date et participants
-1. Contexte
-2. Échanges
-3. Décisions
-4. Responsables et échéances"}/>
+      <textarea className="minutes-editor" rows={18} value={minutesText} onChange={e=>setMinutesText(e.target.value)} placeholder={en?"Meeting date and participants\\n1. Context\\n2. Discussion\\n3. Decisions\\n4. Action owners and deadlines":"Date et participants\\n1. Contexte\\n2. Échanges\\n3. Décisions\\n4. Responsables et échéances"}/>
       <div className="minutes-actions"><button className="secondary-outline-button" onClick={()=>void saveMinutes("draft")} disabled={busy||!minutesText.trim()}>{en?"Save draft":"Enregistrer le brouillon"}</button><button className="primary-button" onClick={()=>void saveMinutes("shared")} disabled={busy||!minutesText.trim()}>{en?"Share with participants":"Partager aux participants"}</button>{manager&&minutes&&minutes.minutes_status==="shared"&&<button className="approve-minutes-button" onClick={()=>void approveMinutes()} disabled={busy}>{en?"Approve and lock":"Approuver et verrouiller"}</button>}</div>
     </>}
     {minutes?.minutes_status==="draft"&&manager&&<button className="approve-minutes-button" onClick={()=>void approveMinutes()} disabled={busy}>{en?"Approve and lock":"Approuver et verrouiller"}</button>}
