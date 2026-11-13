@@ -134,7 +134,7 @@ export default function DecouvrirPage() {
   return (
     <main className="discover-public">
       <header className="discover-public-header">
-        <Link href="/" className="brand-lockup"><span className="brand-mark"><span>JEC</span><i>✳</i></span><span>conNEcT</span></Link>
+        <Link href="/" className="brand-lockup"><span className="brand-mark"><span>JEC</span><i aria-hidden="true">✝</i></span><span>conNEcT</span></Link>
         <div className="discover-header-actions"><PWAInstallButton/><LanguageSwitcher/><Link href="/" className="back-link-inline">{t("← Retour à l’espace public","← Back to public home")}</Link></div>
       </header>
 
