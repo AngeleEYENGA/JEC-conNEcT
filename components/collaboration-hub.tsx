@@ -33,7 +33,7 @@ export default function CollaborationHub({initialModule}:{initialModule:ModuleKe
   const {lang}=useLanguage();
   const en=lang==="en";
   const locale=en?"en-GB":"fr-FR";
-  const t=(fr:string,english:string)=>en?english:fr;
+  const t=useCallback((fr:string,english:string)=>en?english:fr,[en]);
   const [loading,setLoading]=useState(true);
   const [busy,setBusy]=useState(false);
   const [error,setError]=useState("");
@@ -131,7 +131,7 @@ export default function CollaborationHub({initialModule}:{initialModule:ModuleKe
   const loadConversations=useCallback(async(currentUserId:string)=>{
     if(!supabase)return;
     const {data:memberRows,error:memberError}=await supabase.from("jec_conversation_members")
-      .select("conversation_id,membership_status").eq("user_id",currentUserId).eq("membership_status","active");
+      .select("conversation_id,membership_status").eq("user_id",currentUserId).in("membership_status",["active","invited"]);
     if(memberError)throw memberError;
     const ids=(memberRows??[]).map(x=>x.conversation_id);
     if(!ids.length){setConversations([]);setMessages([]);setConversationId("");return;}
@@ -143,11 +143,15 @@ export default function CollaborationHub({initialModule}:{initialModule:ModuleKe
     const selected=rows.some(c=>c.id===conversationId)?conversationId:(rows[0]?.id??"");
     setConversationId(selected);
     if(selected){
-      const {data:messageRows,error:messageError}=await supabase.from("jec_messages")
-        .select("id,conversation_id,sender_id,body,created_at,edited_at")
-        .eq("conversation_id",selected).is("deleted_at",null).order("created_at",{ascending:true}).limit(200);
-      if(messageError)throw messageError;
-      setMessages((messageRows??[]) as Message[]);
+      const {data:ownMembership}=await supabase.from("jec_conversation_members").select("membership_status")
+        .eq("conversation_id",selected).eq("user_id",currentUserId).maybeSingle();
+      if(ownMembership?.membership_status==="active"){
+        const {data:messageRows,error:messageError}=await supabase.from("jec_messages")
+          .select("id,conversation_id,sender_id,body,created_at,edited_at")
+          .eq("conversation_id",selected).is("deleted_at",null).order("created_at",{ascending:true}).limit(200);
+        if(messageError)throw messageError;
+        setMessages((messageRows??[]) as Message[]);
+      }else setMessages([]);
     }else setMessages([]);
   },[supabase,conversationId]);
 
@@ -188,12 +192,25 @@ export default function CollaborationHub({initialModule}:{initialModule:ModuleKe
 
   useEffect(()=>{
     if(!supabase||!conversationId)return;
+    let active=true;
+    async function loadSelectedMessages(){
+      const {data:{user}}=await supabase.auth.getUser();
+      if(!user)return;
+      const {data:membership}=await supabase.from("jec_conversation_members").select("membership_status")
+        .eq("conversation_id",conversationId).eq("user_id",user.id).maybeSingle();
+      if(!active||membership?.membership_status!=="active"){setMessages([]);return;}
+      const {data,error:messagesError}=await supabase.from("jec_messages").select("id,conversation_id,sender_id,body,created_at,edited_at")
+        .eq("conversation_id",conversationId).is("deleted_at",null).order("created_at",{ascending:true}).limit(200);
+      if(!active)return;
+      if(messagesError)setError(messagesError.message);else setMessages((data??[]) as Message[]);
+    }
+    void loadSelectedMessages();
     const channel=supabase.channel("jec-messages-"+conversationId)
       .on("postgres_changes",{event:"INSERT",schema:"public",table:"jec_messages",filter:"conversation_id=eq."+conversationId},payload=>{
         const next=payload.new as Message;
         setMessages(current=>current.some(m=>m.id===next.id)?current:[...current,next]);
       }).subscribe();
-    return ()=>{void supabase.removeChannel(channel);};
+    return ()=>{active=false;void supabase.removeChannel(channel);};
   },[supabase,conversationId]);
 
   async function refreshWorkspace(){
@@ -335,9 +352,16 @@ export default function CollaborationHub({initialModule}:{initialModule:ModuleKe
   async function createConversation(e:FormEvent<HTMLFormElement>){
     e.preventDefault();if(!supabase||!workspaceId)return;
     setBusy(true);setError("");
+    const selectedMemberIds=conversationMembers;
+    const conversationType=selectedMemberIds.length===0?"workspace":selectedMemberIds.length===1?"direct":"group";
+    const memberIds=conversationType==="workspace"
+      ? roster.filter(m=>m.membership_status==="active"&&m.user_id!==userId).map(m=>m.user_id)
+      : selectedMemberIds;
     const {data:id,error:e2}=await supabase.rpc("jec_create_conversation",{
-      target_type:"workspace",target_title:conversationTitle.trim()||activeWorkspace?.name||t("Discussion d'équipe","Team discussion"),
-      target_workspace_id:workspaceId,target_member_ids:conversationMembers
+      target_type:conversationType,
+      target_title:conversationTitle.trim()||(conversationType==="workspace"?activeWorkspace?.name:t("Nouvelle conversation","New conversation")),
+      target_workspace_id:conversationType==="workspace"?workspaceId:null,
+      target_member_ids:memberIds
     });
     if(e2)setError(e2.message);else if(id){
       setConversationTitle("");setConversationMembers([]);
