@@ -207,7 +207,7 @@ export default function PartnersPage() {
   return (
     <main className="collab-page">
       <header className="account-header">
-        <Link href="/" className="brand-lockup"><span className="brand-mark"><span>JEC</span><i>✳</i></span><span>conNEcT</span></Link>
+        <Link href="/" className="brand-lockup"><span className="brand-mark"><span>JEC</span><i aria-hidden="true">✝</i></span><span>conNEcT</span></Link>
         <div><LanguageSwitcher /><Link href="/workspace" className="back-link-inline">{en ? "Workspaces" : "Espaces de travail"}</Link></div>
       </header>
       <div className="collab-content partner-page-content">
