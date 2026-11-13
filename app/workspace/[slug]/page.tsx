@@ -294,7 +294,7 @@ export default function WorkspaceDetailPage(){
 
   return <main className="collab-page">
     <header className="account-header">
-      <Link href="/" className="brand-lockup"><span className="brand-mark"><span>JEC</span><i>✳</i></span><span>conNEcT</span></Link>
+      <Link href="/" className="brand-lockup"><span className="brand-mark"><span>JEC</span><i aria-hidden="true">✝</i></span><span>conNEcT</span></Link>
       <div><LanguageSwitcher/><Link href="/workspace" className="back-link-inline">{en?"All workspaces":"Tous les espaces"}</Link></div>
     </header>
     <div className="workspace-detail-content">
