@@ -16,7 +16,7 @@ type AgendaItem = {id:string;title:string;description:string|null;presenter_id:s
 type Decision = {id:string;title:string;detail:string|null;decision_status:string;created_at:string};
 type Minutes = {id:string;content:string;minutes_status:string;prepared_by:string;approved_by:string|null;approved_at:string|null};
 type Transcript = {id:string;transcript_text:string;language:string;source_type:string;transcript_status:string;created_at:string};
-type Task = {id:string;title:string;task_status:string;priority:string;assigned_to:string|null;due_at:string|null};
+type Task = {id:string;title:string;task_status:string;priority:string;assigned_to:string|null;due_at:string|null;created_by:string};
 type Roster = {user_id:string;workspace_role:string;membership_status:string};
 
 type SpeechResultEvent = Event & { resultIndex:number; results: ArrayLike<{isFinal:boolean;[index:number]:{transcript:string}}> };
@@ -79,7 +79,7 @@ export default function MeetingDetailPage(){
    supabase.from("jec_meeting_decisions").select("id,title,detail,decision_status,created_at").eq("meeting_id",meetingId).order("created_at",{ascending:false}),
    supabase.from("jec_meeting_minutes").select("id,content,minutes_status,prepared_by,approved_by,approved_at").eq("meeting_id",meetingId).maybeSingle(),
    supabase.from("jec_meeting_transcripts").select("id,transcript_text,language,source_type,transcript_status,created_at").eq("meeting_id",meetingId).order("created_at",{ascending:false}),
-   supabase.from("jec_workspace_tasks").select("id,title,task_status,priority,assigned_to,due_at").eq("meeting_id",meetingId).order("created_at",{ascending:false})
+   supabase.from("jec_workspace_tasks").select("id,title,task_status,priority,assigned_to,due_at,created_by").eq("meeting_id",meetingId).order("created_at",{ascending:false})
   ]);
   const failures=[memberResult.error,rosterResult.error,participantResult.error,agendaResult.error,decisionResult.error,minutesResult.error,transcriptResult.error,taskResult.error].filter(Boolean);
   if(failures.length)setError(failures[0]!.message);
