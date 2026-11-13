@@ -158,86 +158,42 @@ Le 12 novembre 2026, la porteuse du projet a confirmé les tests réussis suivan
 - La copie locale obsolète du fichier audio de ralliement n'est plus restaurée automatiquement ; un nouvel enregistrement doit être déposé pour ce chant.
 
 **Action manuelle restante pour la suppression du mauvais audio :** dans Administration > Bibliothèque musicale, repérer la ligne « Chant de ralliement · FR » (Hymne de la JEC.mp3) et utiliser « Supprimer l'audio ». Cette action utilise l'API Storage, supprime le fichier correspondant et sa métadonnée. La ligne « Hymne de la JEC · FR » n'est pas concernée. Un DELETE SQL direct sur storage.objects n'est pas utilisé, car il laisserait le fichier physique orphelin dans Storage.
-## Mise à jour — Volet Collaboration, première tranche
-
-- Migration Supabase `202611120011_collaboration_workspace_foundation.sql` appliquée : espaces, membres et rôles locaux, fil d'échanges, projets, tâches, réunions, participants et documents.
-- Migration `202611120012_collaboration_policy_refinements.sql` appliquée : accès aux profils des coéquipiers dans un même espace, restrictions de gestion des rôles et renforcement des droits de suppression.
-- Bucket `jec-workspace-documents` créé en mode privé, avec limite de 50 Mo et politiques Storage par appartenance à l'espace. Il est distinct du stockage public des chants.
-- Fonctions d'invitation par e-mail et d'acceptation d'invitation créées ; seuls les comptes JEC vérifiés ou administrateurs peuvent rejoindre un espace.
-- Création de `/workspace` pour lister les espaces, accepter les invitations et créer un espace (administrateur global).
-- Création de `/workspace/[slug]` pour le fil d'échanges, les tâches, les projets, les réunions, les documents et les membres, avec des actions limitées aux rôles appropriés.
-- Vues transversales `/projets`, `/reunions` et `/documents` ajoutées ; le téléchargement de documents s'effectue via des liens temporaires privés.
-- Rubriques de navigation Collaboration reliées aux écrans correspondants.
-- `/messagerie` est un point d'entrée explicite pour la prochaine tranche. Les conversations directes et de groupe ne sont pas encore implémentées ; elles nécessitent un schéma séparé de participants, messages et permissions.
-
-### Démarrage opérationnel
-
-1. Se connecter avec le compte administrateur JEC-conNEcT.
-2. Ouvrir « Workspace » puis créer le premier espace (par exemple une équipe, un service ou une commission dont le nom est validé par la JEC).
-3. Valider le statut JEC des comptes destinés à rejoindre l'espace dans Administration > Gestion des comptes.
-4. Ouvrir l'espace > Membres et inviter les adresses e-mail des comptes vérifiés.
-5. Chaque invité accepte depuis « Mes espaces » avant de voir les contenus.
-
-### Contrôles et limites
-
-- Le schéma crée les tables et politiques, mais aucun espace réel ni membre d'espace n'a été prérempli : les structures doivent être définies par les responsables de la JEC.
-- La messagerie temps réel, visioconférence, transcription, notifications, versionnage documentaire et recherche documentaire avancée restent à développer/intégrer.
-- Le contrôle Supabase continue de signaler `private.jec_admins` avec RLS désactivée. Ne pas ouvrir cette table au client ; cette alerte doit être traitée avec une politique RLS adaptée avant mise en production institutionnelle.
-- La protection Supabase contre les mots de passe compromis reste désactivée ; sa disponibilité dépend de l'offre Supabase.
-
-## Mise à jour — Messagerie privée et temps réel
-
-- Tables `jec_conversations`, `jec_conversation_members` et `jec_messages` créées avec RLS.
-- Conversations directes, groupes et conversations liées à un espace.
-- Invitations nominatives à des comptes JEC-conNEcT existants et vérifiés ; acceptation explicite avant lecture des messages.
-- L'administrateur global n'est pas automatiquement participant aux conversations privées ; les messages ne sont visibles que par les participants actifs.
-- Supabase Realtime activé sur `jec_messages` ; les événements sont toujours soumis aux politiques RLS.
-- Interface `/messagerie` reliée : liste des conversations, invitations, création, envoi et réception temps réel.
-- Cycle direct testé dans une transaction annulée : création, invitation, acceptation par le second compte, envoi de message, et vérification qu'un non-participant ne lit rien.
-
-**Restant pour la prochaine itération :** notifications et messages non lus, accusés de lecture, présence, pièces jointes privées, recherche, archivage, édition/suppression depuis l'interface et tests multi-appareils.
-
 ## Mise à jour — 13 novembre 2026 : volet Collaboration opérationnel (première tranche)
 
-Le schéma de collaboration était déjà présent dans Supabase ; les corrections ci-dessous l'ont relié aux écrans et renforcé les accès.
+Le schéma de collaboration existait déjà dans Supabase ; cette itération a relié et corrigé les écrans, les RPC et les règles d'accès.
 
-- Tables privées : espaces, membres d'espace, publications, projets, tâches, réunions, participants, documents, conversations, participants aux conversations et messages.
-- Le rôle anonyme n'a plus de privilèges SQL directs sur les tables de collaboration. Les comptes authentifiés sont soumis aux politiques RLS et à leur appartenance effective à un espace ou une conversation.
-- Création d'un espace via une fonction atomique qui crée aussi le propriétaire. Seuls les administrateurs globaux peuvent créer les espaces à ce stade.
-- Un espace pilote privé « Espace pilote JEC-conNEcT » (pilote-jec-connect) a été créé. Le compte administrateur abessangel@gmail.com en est propriétaire et membre actif. Aucun bureau, service ou groupe réel n'a été inventé.
-- Invitations d'espace par e-mail via une fonction privée : le compte doit exister et être membre JEC vérifié (ou administrateur). L'invité accepte explicitement avant de consulter le contenu.
-- La page /workspace/[slug] couvre le fil d'équipe, les projets, les tâches, les réunions, les documents privés et les membres. Les responsables peuvent inviter des membres et gérer les éléments autorisés par leur rôle.
-- Les réunions créées dans un espace ajoutent désormais les membres actifs à la liste des participants : le créateur est marqué présent et les autres membres reçoivent une invitation à accepter ou décliner.
-- Les documents sont stockés dans le bucket privé jec-workspace-documents (50 Mo maximum). Les téléchargements utilisent des liens temporaires. La suppression Storage est autorisée uniquement au déposant encore membre ou aux responsables/administrateurs habilités.
-- La messagerie /messagerie est reliée à jec_conversations, jec_conversation_members et jec_messages. Elle prend en charge les conversations directes, groupes et discussions d'espace, les invitations, leur acceptation et la réception temps réel des nouveaux messages.
-- La création d'une conversation directe/groupe à partir d'adresses e-mail résout les comptes dans le schéma privé et vérifie leur appartenance JEC avant de créer les invitations.
-- Les modules transversaux /projets, /reunions et /documents sont reliés aux données RLS des espaces auxquels l'utilisateur a accès.
-- La table jec_messages est inscrite dans la publication Supabase Realtime.
-- Les migrations appliquées sont 202611130001_collaboration_permissions_and_conversations, 202611130002_collaboration_workspace_workflows, 202611130003_messaging_email_conversations et 202611130004_workspace_document_delete_policy.
+- Espaces privés par équipe, service, fédération, commission, projet ou groupe temporaire ; rôles locaux owner, manager et member distincts du statut JEC et du rôle administrateur global.
+- Création d'espace atomique via RPC : l'espace et son propriétaire sont créés dans la même transaction.
+- Espace pilote privé « Espace pilote JEC-conNEcT » (slug : pilote-jec-connect) créé. Le compte abessangel@gmail.com est propriétaire et membre actif. Aucun responsable ni structure institutionnelle n'a été inventé.
+- Invitation des membres par e-mail ; les comptes doivent être JEC vérifiés ou administrateurs et doivent accepter l'invitation avant d'accéder aux contenus.
+- Fil d'échanges d'équipe, projets, tâches et affectation des actions disponibles dans chaque espace.
+- Réunions liées à un espace : programmation, ordre du jour, lieu, lien de visioconférence externe, invitations automatiques de tous les membres actifs, confirmation ou refus de présence.
+- Documents privés : bucket jec-workspace-documents, limite de 50 Mo, liens de téléchargement signés temporaires et suppression autorisée selon le rôle et l'appartenance à l'espace.
+- Messagerie directe, de groupe ou liée à un espace ; invitations de comptes JEC vérifiés, acceptation explicite, historique privé et événements de nouveaux messages via Supabase Realtime.
+- Création de conversations directes/groupes à partir d'e-mails résolue côté serveur dans le schéma privé ; aucune consultation directe de auth.users par le navigateur.
+- Pages transversales /workspace, /workspace/[slug], /messagerie, /reunions, /projets et /documents reliées à Supabase.
+- Les tables de collaboration n'ont pas de privilèges SQL directs pour le rôle anon. Le bucket des documents reste privé et distinct du bucket public des chants.
+- Migrations appliquées : 202611130001_collaboration_permissions_and_conversations, 202611130002_collaboration_workspace_workflows, 202611130003_messaging_email_conversations, 202611130004_workspace_document_delete_policy.
 
-### Vérifications effectuées
+### Vérifications techniques
 
-- Vérification SQL : les tables de collaboration ne sont pas accessibles au rôle anon ; l'exécution des fonctions RPC publiques est réservée au rôle authenticated.
-- Test transactionnel de la création atomique d'un espace avec propriétaire : réussi, puis annulé (aucune donnée de test conservée).
-- Test transactionnel de création d'une conversation directe avec un second compte JEC vérifié : réussi, puis annulé (aucune conversation de test conservée).
-- L'espace pilote contient uniquement son propriétaire. Aucun autre membre n'a été invité automatiquement.
-- Les parcours multi-comptes dans le navigateur (acceptation d'invitation, envoi et réception réelle de messages, réponse à une réunion et téléchargement depuis un second compte) restent à effectuer avec les deux comptes de test.
+- Vérification des privilèges : anon ne peut ni lire les workspaces/messages ni écrire dans les tables collaboratives ; l'accès passe par authenticated et RLS.
+- Vérification du stockage : jec-workspace-documents est un bucket privé.
+- Test transactionnel réussi de la création d'un espace avec propriétaire et de la création d'une conversation directe avec un second compte JEC vérifié ; les transactions ont été annulées après validation, sans conserver de données de test.
+- Les tests multi-comptes dans l'interface restent à réaliser : invitation réelle, acceptation, publication dans le fil, échange de messages temps réel, réponse à une réunion et téléchargement documentaire avec le second compte.
 
-### Accès pour commencer
+### Démarrage du pilote
 
-1. Se connecter avec le compte administrateur JEC-conNEcT.
-2. Ouvrir Workspace puis Espace pilote JEC-conNEcT.
-3. Publier une première information ou créer un projet/tâche.
-4. Depuis l'onglet Membres, inviter l'adresse du second compte JEC vérifié.
-5. Se connecter avec ce second compte, ouvrir Mes espaces et accepter l'invitation.
-6. Tester le fil, les tâches, les documents et les réunions depuis les deux comptes.
-7. Ouvrir Messagerie pour créer une conversation directe ou une discussion de groupe.
+1. Connecte-toi avec le compte administrateur JEC-conNEcT.
+2. Ouvre Workspace puis Espace pilote JEC-conNEcT.
+3. Depuis Membres, invite le compte de test aeyenga31@gmail.com (déjà vérifié).
+4. Connecte-toi avec ce second compte et accepte l'invitation dans Mes espaces.
+5. Teste le fil d'équipe, les projets, les tâches, la réunion, les documents et la messagerie depuis les deux comptes.
 
-### Limites connues de cette première tranche
+### Limites actuelles
 
-- Aucun fournisseur de visioconférence n'est encore intégré : les réunions conservent un lien externe fourni manuellement.
-- Notifications e-mail/push, compteur de messages non lus, accusés de lecture, présence, recherche et pièces jointes de messagerie restent à développer.
-- Les enregistrements audio/vidéo de réunion et transcriptions ne sont pas intégrés.
-- Versionnage documentaire, approbation, journal d'audit et recherche plein texte restent à développer.
-- La désignation des administrateurs d'espace et les modèles d'organisation institutionnels définitifs doivent être validés par la JEC.
-- Le contrôle Supabase signale toujours la protection contre les mots de passe compromis désactivée. L'alerte RLS de la table privée d'administrateurs doit aussi être traitée avant mise en production.
+- Les réunions utilisent un lien de visioconférence externe fourni manuellement ; aucun service de visioconférence n'est intégré.
+- Les notifications e-mail/push, messages non lus, accusés de lecture, présence, recherche, pièces jointes de messagerie et modération restent à développer.
+- Les enregistrements/transcriptions de réunion, versions documentaires, approbations et recherche plein texte restent à développer.
+- Les espaces institutionnels définitifs doivent être créés après validation de l'organisation et des responsables réels par la JEC.
+- Le contrôle Supabase signale toujours la protection contre les mots de passe compromis désactivée ; l'alerte de politique RLS sur private.jec_admins reste à examiner avant la production institutionnelle.
