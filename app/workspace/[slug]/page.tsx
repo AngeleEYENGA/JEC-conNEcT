@@ -13,7 +13,7 @@ type Profile={user_id:string;first_name:string|null;last_name:string|null;displa
 type Post={id:string;author_id:string;body:string;is_pinned:boolean;created_at:string};
 type Task={id:string;title:string;description:string|null;task_status:string;priority:string;assigned_to:string|null;due_at:string|null;created_by:string};
 type Project={id:string;title:string;objective:string|null;project_status:string;priority:string;owner_id:string;due_date:string|null};
-type Meeting={id:string;title:string;agenda:string|null;starts_at:string;ends_at:string|null;location:string|null;meeting_url:string|null;meeting_status:string};
+type Meeting={id:string;project_id:string|null;title:string;agenda:string|null;starts_at:string;ends_at:string|null;location:string|null;meeting_url:string|null;meeting_status:string};
 type MeetingParticipant={meeting_id:string;user_id:string;attendance_status:"invited"|"accepted"|"declined"|"attended"|"absent";responded_at:string|null};
 type DocumentRow={id:string;title:string;description:string|null;file_name:string;storage_path:string;mime_type:string|null;file_size:number|null;document_category:string;uploaded_by:string;created_at:string};
 
@@ -63,10 +63,12 @@ export default function WorkspaceDetailPage(){
   const [taskTitle,setTaskTitle]=useState("");
   const [taskDue,setTaskDue]=useState("");
   const [taskPriority,setTaskPriority]=useState("normal");
+  const [taskProjectId,setTaskProjectId]=useState("");
   const [projectTitle,setProjectTitle]=useState("");
   const [projectObjective,setProjectObjective]=useState("");
   const [projectDue,setProjectDue]=useState("");
   const [meetingTitle,setMeetingTitle]=useState("");
+  const [meetingProjectId,setMeetingProjectId]=useState("");
   const [meetingAgenda,setMeetingAgenda]=useState("");
   const [meetingStart,setMeetingStart]=useState("");
   const [meetingEnd,setMeetingEnd]=useState("");
@@ -110,7 +112,7 @@ export default function WorkspaceDetailPage(){
       supabase.from("jec_workspace_posts").select("id,author_id,body,is_pinned,created_at").eq("workspace_id",space.id).order("created_at",{ascending:false}).limit(100),
       supabase.from("jec_workspace_tasks").select("id,title,description,task_status,priority,assigned_to,due_at,created_by").eq("workspace_id",space.id).order("created_at",{ascending:false}).limit(150),
       supabase.from("jec_projects").select("id,title,objective,project_status,priority,owner_id,due_date").eq("workspace_id",space.id).order("created_at",{ascending:false}),
-      supabase.from("jec_meetings").select("id,title,agenda,starts_at,ends_at,location,meeting_url,meeting_status").eq("workspace_id",space.id).order("starts_at",{ascending:true}),
+      supabase.from("jec_meetings").select("id,project_id,title,agenda,starts_at,ends_at,location,meeting_url,meeting_status").eq("workspace_id",space.id).order("starts_at",{ascending:true}),
       supabase.from("jec_documents").select("id,title,description,file_name,storage_path,mime_type,file_size,document_category,uploaded_by,created_at").eq("workspace_id",space.id).order("created_at",{ascending:false})
     ]);
     const queryError=rosterResult.error||postResult.error||taskResult.error||projectResult.error||meetingResult.error||documentResult.error;
@@ -166,11 +168,11 @@ export default function WorkspaceDetailPage(){
     const supabase=getSupabaseBrowserClient();if(!supabase)return;
     setBusy(true);setError("");setNotice("");
     const {error:insertError}=await supabase.from("jec_workspace_tasks").insert({
-      workspace_id:workspace.id,title:taskTitle.trim(),task_status:"todo",priority:taskPriority,
+      workspace_id:workspace.id,project_id:taskProjectId||null,title:taskTitle.trim(),task_status:"todo",priority:taskPriority,
       due_at:taskDue?new Date(taskDue).toISOString():null,created_by:userId
     });
     if(insertError)setError(insertError.message);
-    else {setTaskTitle("");setTaskDue("");setTaskPriority("normal");setNotice(en?"Task added.":"Tâche ajoutée.");await load();}
+    else {setTaskTitle("");setTaskDue("");setTaskPriority("normal");setTaskProjectId("");setNotice(en?"Task added.":"Tâche ajoutée.");await load();}
     setBusy(false);
   }
 
@@ -198,7 +200,7 @@ export default function WorkspaceDetailPage(){
     const supabase=getSupabaseBrowserClient();if(!supabase)return;
     setBusy(true);setError("");setNotice("");
     const {data:createdMeeting,error:insertError}=await supabase.from("jec_meetings").insert({
-      workspace_id:workspace.id,title:meetingTitle.trim(),agenda:meetingAgenda.trim()||null,
+      workspace_id:workspace.id,project_id:meetingProjectId||null,title:meetingTitle.trim(),agenda:meetingAgenda.trim()||null,
       starts_at:new Date(meetingStart).toISOString(),ends_at:meetingEnd?new Date(meetingEnd).toISOString():null,
       location:meetingLocation.trim()||null,meeting_url:meetingUrl.trim()||null,
       meeting_status:"scheduled",created_by:userId
@@ -215,7 +217,7 @@ export default function WorkspaceDetailPage(){
         const {error:participantError}=await supabase.from("jec_meeting_participants").insert(participants);
         if(participantError)setError(participantError.message);
       }
-      setMeetingTitle("");setMeetingAgenda("");setMeetingStart("");setMeetingEnd("");setMeetingLocation("");setMeetingUrl("");
+      setMeetingTitle("");setMeetingProjectId("");setMeetingAgenda("");setMeetingStart("");setMeetingEnd("");setMeetingLocation("");setMeetingUrl("");
       setNotice(en?"Meeting scheduled and workspace members invited.":"Réunion programmée et invitations envoyées aux membres de l'espace.");
       await load();
     }
@@ -317,6 +319,7 @@ export default function WorkspaceDetailPage(){
             <div className="collab-section-heading"><div><p className="eyebrow">{en?"ACTION TRACKING":"SUIVI DES ACTIONS"}</p><h2>{en?"Tasks":"Tâches"}</h2></div><span>{tasks.length}</span></div>
             <form className="collab-form task-create-form" onSubmit={createTask}>
               <label>{en?"Task title":"Intitulé de la tâche"}<input value={taskTitle} onChange={e=>setTaskTitle(e.target.value)} required maxLength={180}/></label>
+              <label>{en?"Related project":"Projet associé"}<select value={taskProjectId} onChange={e=>setTaskProjectId(e.target.value)}><option value="">—</option>{projects.map(p=><option key={p.id} value={p.id}>{p.title}</option>)}</select></label>
               <label>{en?"Priority":"Priorité"}<select value={taskPriority} onChange={e=>setTaskPriority(e.target.value)}><option value="low">{en?"Low":"Basse"}</option><option value="normal">{en?"Normal":"Normale"}</option><option value="high">{en?"High":"Haute"}</option><option value="critical">{en?"Critical":"Critique"}</option></select></label>
               <label>{en?"Due date":"Échéance"}<input type="date" value={taskDue} onChange={e=>setTaskDue(e.target.value)}/></label>
               <button className="primary-button" disabled={busy}>{en?"Add task":"Ajouter la tâche"}</button>
@@ -332,13 +335,14 @@ export default function WorkspaceDetailPage(){
               <label>{en?"Target date":"Date cible"}<input type="date" value={projectDue} onChange={e=>setProjectDue(e.target.value)}/></label>
               <button className="primary-button" disabled={busy}>{en?"Create project":"Créer le projet"}</button>
             </form>}
-            {projects.length?<div className="collab-grid">{projects.map(project=><article className="collab-card project-card" key={project.id}><span className={"project-status "+project.project_status}>{project.project_status.replace("_"," ")}</span><h3>{project.title}</h3><p>{project.objective|| (en?"No objective provided.":"Aucun objectif renseigné.")}</p><div className="collab-card-footer"><span>{project.priority}</span><span>{project.due_date?formatDate(project.due_date,en):(en?"No due date":"Sans échéance")}</span></div></article>)}</div>:<div className="collab-empty compact"><p>{en?"No project has been created in this workspace.":"Aucun projet n'a encore été créé dans cet espace."}</p></div>}
+            {projects.length?<div className="collab-grid">{projects.map(project=><article className="collab-card project-card" key={project.id}><span className={"project-status "+project.project_status}>{project.project_status.replace("_"," ")}</span><h3>{project.title}</h3><p>{project.objective|| (en?"No objective provided.":"Aucun objectif renseigné.")}</p><div className="collab-card-footer"><span>{project.priority}</span><span>{project.due_date?formatDate(project.due_date,en):(en?"No due date":"Sans échéance")}</span></div><Link href={"/projets/"+project.id} className="project-open-link">{en?"Open project →":"Ouvrir le projet →"}</Link></article>)}</div>:<div className="collab-empty compact"><p>{en?"No project has been created in this workspace.":"Aucun projet n'a encore été créé dans cet espace."}</p></div>}
           </section>}
 
           {activeTab==="meetings"&&<section className="workspace-panel">
             <div className="collab-section-heading"><div><p className="eyebrow">{en?"TEAM MEETINGS":"RENCONTRES DE L'ÉQUIPE"}</p><h2>{en?"Meetings":"Réunions"}</h2></div><span>{meetings.length}</span></div>
             {manager&&<form className="collab-form" onSubmit={createMeeting}>
               <label>{en?"Meeting title":"Intitulé de la réunion"}<input value={meetingTitle} onChange={e=>setMeetingTitle(e.target.value)} required maxLength={180}/></label>
+              <label>{en?"Related project (optional)":"Projet associé (facultatif)"}<select value={meetingProjectId} onChange={e=>setMeetingProjectId(e.target.value)}><option value="">—</option>{projects.map(p=><option key={p.id} value={p.id}>{p.title}</option>)}</select></label>
               <label>{en?"Agenda":"Ordre du jour"}<textarea rows={3} value={meetingAgenda} onChange={e=>setMeetingAgenda(e.target.value)}/></label>
               <div className="task-create-form"><label>{en?"Starts at":"Début"}<input type="datetime-local" value={meetingStart} onChange={e=>setMeetingStart(e.target.value)} required/></label><label>{en?"Ends at":"Fin"}<input type="datetime-local" value={meetingEnd} onChange={e=>setMeetingEnd(e.target.value)}/></label></div>
               <label>{en?"Location (optional)":"Lieu (facultatif)"}<input value={meetingLocation} onChange={e=>setMeetingLocation(e.target.value)}/></label>
@@ -349,7 +353,7 @@ export default function WorkspaceDetailPage(){
               const participation=meetingParticipants.find(item=>item.meeting_id===meeting.id&&item.user_id===userId);
               return <article className="workspace-meeting-row" key={meeting.id}>
                 <div className="meeting-date-block"><strong>{new Date(meeting.starts_at).toLocaleDateString(en?"en-GB":"fr-FR",{day:"2-digit"})}</strong><span>{new Date(meeting.starts_at).toLocaleDateString(en?"en-GB":"fr-FR",{month:"short"})}</span></div>
-                <div className="workspace-meeting-main"><strong>{meeting.title}</strong><small>{formatDate(meeting.starts_at,en,true)}{meeting.location?" · "+meeting.location:""}</small>{meeting.agenda&&<p>{meeting.agenda}</p>}{meeting.meeting_url&&<a href={meeting.meeting_url} target="_blank" rel="noreferrer">{en?"Join video meeting →":"Rejoindre la visioconférence →"}</a>}
+                <div className="workspace-meeting-main"><strong>{meeting.title}</strong><small>{formatDate(meeting.starts_at,en,true)}{meeting.location?" · "+meeting.location:""}</small>{meeting.project_id&&<Link href={"/projets/"+meeting.project_id} className="project-open-link">{en?"Related project":"Projet associé"} →</Link>}<Link href={"/reunions/"+meeting.id} className="project-open-link">{en?"Meeting workspace →":"Espace de réunion →"}</Link>{meeting.agenda&&<p>{meeting.agenda}</p>}{meeting.meeting_url&&<a href={meeting.meeting_url} target="_blank" rel="noreferrer">{en?"Join video meeting →":"Rejoindre la visioconférence →"}</a>}
                   {participation&&<div className="meeting-participation">
                     {participation.attendance_status==="invited"?<><span>{en?"Your response is pending":"Ta réponse est attendue"}</span><button className="primary-button" onClick={()=>void respondToMeeting(meeting.id,"accepted")}>{en?"Attend":"Participer"}</button><button className="quiet-button" onClick={()=>void respondToMeeting(meeting.id,"declined")}>{en?"Decline":"Décliner"}</button></>:<span className="project-status">{participation.attendance_status==="accepted"?(en?"Attending":"Présence confirmée"):participation.attendance_status==="declined"?(en?"Declined":"Décliné"):participation.attendance_status}</span>}
                   </div>}
