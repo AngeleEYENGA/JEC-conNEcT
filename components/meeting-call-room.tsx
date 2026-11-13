@@ -272,15 +272,27 @@ export default function MeetingCallRoom({
           if (state === "CHANNEL_ERROR" || state === "TIMED_OUT" || state === "CLOSED") reject(new Error("Impossible de rejoindre la salle privée (" + state + ")."));
         });
       });
-      await channel.track({ userId: user.id, displayName, joinedAt: new Date().toISOString() });
       channelRef.current = channel;
+      await channel.track({ userId: user.id, displayName, joinedAt: new Date().toISOString() });
       joinedRef.current = true;
       setJoined(true);
       setStatus(subscribeResult === "SUBSCRIBED" ? "Salle connectée · en attente des participants" : "Connexion à la salle…");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Impossible de rejoindre l'appel.");
+      if (sessionIdRef.current) {
+        if (hostIdRef.current === userIdRef.current) {
+          await supabase.rpc("jec_end_meeting_call", { target_session_id: sessionIdRef.current });
+        } else {
+          await supabase.rpc("jec_leave_meeting_call", { target_session_id: sessionIdRef.current });
+        }
+      }
+      if (channelRef.current) {
+        await supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
       await localStreamRef.current?.getTracks().forEach(track => track.stop());
       localStreamRef.current = null;
+      sessionIdRef.current = "";
     } finally {
       startingRef.current = false;
     }
