@@ -301,3 +301,29 @@ Ce module n'appartient pas au premier périmètre du prototype. Il sera spécifi
 - Le stockage documentaire reste privé. Les chemins Storage sont organisés par identifiant d'espace et identifiant de déposant ; les liens de consultation sont signés et temporaires.
 - La suppression d'un fichier passe par l'API Storage, puis par la suppression de sa métadonnée. Le rôle anonyme ne possède aucun privilège direct sur les tables collaboratives.
 - L'administration globale, la responsabilité d'un espace et l'appartenance JEC sont trois niveaux distincts. Un administrateur global n'est pas automatiquement participant à une conversation privée ni membre de chaque espace.
+
+## 29. Gestion de projet approfondie
+
+- Chaque projet possède un objectif, une description, un responsable, un statut, une priorité, des dates de début et d'échéance.
+- Les jalons définissent les livrables, responsables, dates cibles et états (à venir, en cours, à risque, terminé).
+- Les tâches peuvent être liées au projet et à une réunion, avec statut, priorité, responsable et échéance.
+- Un tableau de tâches répartit le travail par statut ; le fil de commentaires de chaque tâche conserve les échanges liés à son exécution.
+- Les droits de modification tiennent compte des rôles de l'espace, du créateur de tâche, de la personne assignée et du propriétaire du projet.
+
+## 30. Réunions, appels, transcriptions et comptes rendus
+
+- Chaque réunion possède une page de préparation et de suivi : date, durée, lieu ou lien, participants et réponses de présence.
+- L'ordre du jour est composé de points ordonnés, avec description, présentateur et statut (à traiter, traité, reporté).
+- Les décisions sont consignées dans un registre distinct. Les actions décidées sont converties en tâches attribuées et échéancées, liées à la réunion.
+- Le compte rendu peut rester en brouillon, être partagé aux participants puis approuvé par un responsable autorisé. Une version approuvée devient non modifiable ; une correction ultérieure devra créer une nouvelle version ou un addendum contrôlé.
+- Le salon audio/vidéo intégré utilise une connexion WebRTC pair-à-pair et une signalisation Supabase Realtime privée. L'accès est limité aux participants ayant accepté l'invitation.
+- La connexion WebRTC nécessite un service STUN et, pour une fiabilité au-delà de réseaux simples, un service TURN. Le choix et l'hébergement du relais doivent être validés avant la production.
+- Aucun enregistrement audio ou vidéo n'est effectué par défaut. Toute future fonction d'enregistrement devra être explicite, visible, consentie et assortie d'une politique de conservation.
+- La transcription manuelle est disponible. Une dictée navigateur peut être proposée si le navigateur la prend en charge ; elle est expérimentale et peut transmettre l'audio à un service de reconnaissance externe selon le navigateur. Les participants doivent être informés et donner leur consentement.
+- JEC-conNEcT conserve les textes de transcription après confirmation de consentement, pas les flux audio bruts. L'IA de synthèse, les comptes rendus assistés et l'extraction d'actions sont reportés à la phase IA.
+
+## 31. IA et archives — phases ultérieures
+
+- L'IA pourra proposer une synthèse de réunion, un brouillon de compte rendu, les décisions et actions, et des relances ; toute production sera vérifiée et validée par un humain.
+- Les archives devront gérer les versions, l'historique, les exports, la conservation, la passation des responsabilités, les droits de consultation et le journal d'audit.
+- Les documents et réunions internes ne seront jamais utilisés comme source IA externe sans règle explicite, information des personnes concernées et choix du fournisseur/contrat adaptés.
