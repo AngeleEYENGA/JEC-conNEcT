@@ -839,3 +839,40 @@
  .call-video-grid{grid-template-columns:1fr}
  .meeting-detail-actions{align-items:stretch;flex-direction:column}
 }
+
+
+/* Global private notification center */
+.global-notification-center{position:fixed;right:22px;bottom:22px;z-index:1200;font-family:inherit}
+.global-notification-trigger{position:relative;display:grid;place-items:center;width:50px;height:50px;border:1px solid #e4e8ef;border-radius:50%;background:#fff;color:#263451;box-shadow:0 8px 28px #1d29451f;cursor:pointer;transition:transform .18s,box-shadow .18s}
+.global-notification-trigger:hover{transform:translateY(-2px);box-shadow:0 12px 32px #1d29452b}
+.global-notification-count{position:absolute;top:-4px;right:-4px;min-width:19px;height:19px;padding:0 5px;border-radius:12px;background:#b63e4c;color:#fff;font-size:10px;font-weight:800;line-height:19px;text-align:center;border:2px solid #fff}
+.global-notification-panel{position:absolute;right:0;bottom:62px;width:min(390px,calc(100vw - 28px));max-height:min(72vh,610px);display:flex;flex-direction:column;overflow:hidden;border:1px solid #e5e9f0;border-radius:16px;background:#fff;box-shadow:0 18px 54px #1d29452b}
+.global-notification-header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 17px;border-bottom:1px solid #edf0f4;background:#fff}
+.global-notification-header>div:first-child{display:flex;flex-direction:column;gap:3px}
+.global-notification-header strong{font-size:14px;color:#1f2b45}
+.global-notification-header small{font-size:11px;color:#788397}
+.global-notification-actions{display:flex;align-items:center;gap:8px}
+.global-notification-actions button,.global-notification-footer button{display:inline-flex;align-items:center;gap:6px;border:0;background:transparent;color:#52617b;font:inherit;font-size:11px;font-weight:700;cursor:pointer;padding:6px;border-radius:7px}
+.global-notification-actions button:hover,.global-notification-footer button:hover{background:#f3f5f8;color:#1f2b45}
+.global-notification-list{overflow:auto;overscroll-behavior:contain}
+.global-notification-item{display:flex;gap:11px;padding:13px 16px;border-bottom:1px solid #f0f2f6;color:inherit;text-decoration:none;transition:background .15s}
+.global-notification-item:hover{background:#f8f9fc}
+.global-notification-item.unread{background:#f7f9fd}
+.global-notification-indicator{flex:none;width:8px;height:8px;margin-top:5px;border-radius:50%;background:transparent}
+.global-notification-item.unread .global-notification-indicator{background:#5673aa;box-shadow:0 0 0 3px #5673aa18}
+.global-notification-copy{min-width:0;display:flex;flex-direction:column;gap:4px}
+.global-notification-copy strong{font-size:12px;line-height:1.4;color:#263451}
+.global-notification-copy>span{font-size:11px;line-height:1.5;color:#68748a}
+.global-notification-copy time{font-size:10px;color:#9aa3b3}
+.global-notification-empty{padding:25px 18px;text-align:center;font-size:12px;color:#808b9c}
+.global-notification-error{margin:10px 14px 0;padding:8px 10px;border-radius:8px;background:#fff3f2;color:#9d4242;font-size:10px}
+.global-notification-footer{display:flex;justify-content:flex-end;padding:7px 11px;border-top:1px solid #edf0f4;background:#fbfcfd}
+.activity-timeline{margin-top:16px}
+.activity-timeline-list{display:flex;flex-direction:column;gap:0;margin-top:12px}
+.activity-timeline-item{position:relative;display:grid;grid-template-columns:14px minmax(0,1fr) auto;align-items:start;gap:10px;padding:9px 0}
+.activity-timeline-item:not(:last-child):after{content:"";position:absolute;left:6px;top:22px;bottom:-7px;width:1px;background:#e8ecf2}
+.activity-timeline-dot{width:13px;height:13px;border:3px solid #d9e2f2;border-radius:50%;background:#fff;z-index:1}
+.activity-timeline-item p{margin:0;color:#53617a;font-size:11px;line-height:1.5}
+.activity-timeline-item p strong{color:#263451}
+.activity-timeline-item time{white-space:nowrap;color:#98a1af;font-size:10px}
+@media(max-width:640px){.global-notification-center{right:14px;bottom:82px}.global-notification-panel{max-height:68vh}.activity-timeline-item{grid-template-columns:14px minmax(0,1fr)}.activity-timeline-item time{grid-column:2}}
