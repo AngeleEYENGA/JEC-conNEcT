@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Bell, CheckCheck, X } from "lucide-react";
+import type { AuthChangeEvent, Session, User } from "@supabase/supabase-js";
 import { useLanguage } from "@/components/language-provider";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
@@ -45,17 +45,21 @@ export default function NotificationCenter() {
     if (!supabase) return;
     let mounted = true;
 
-    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event: AuthChangeEvent, session: Session | null) => {
       const nextId = session?.user?.id ?? "";
       setUserId(nextId);
       if (!nextId) setItems([]);
     });
 
-    void supabase.auth.getUser().then(({ data, error: authError }) => {
+    void (async () => {
+      const authResult = await supabase.auth.getUser() as {
+        data: { user: User | null };
+        error: { message: string } | null;
+      };
       if (!mounted) return;
-      if (authError) setError(authError.message);
-      setUserId(data.user?.id ?? "");
-    });
+      if (authResult.error) setError(authResult.error.message);
+      setUserId(authResult.data.user?.id ?? "");
+    })();
 
     return () => {
       mounted = false;
@@ -101,7 +105,7 @@ export default function NotificationCenter() {
           table: "jec_user_notifications",
           filter: "recipient_id=eq." + userId
         },
-        payload => {
+        (payload: { new: UserNotification }) => {
           const incoming = payload.new as UserNotification;
           if (!active) return;
           setItems(current => [
@@ -165,7 +169,7 @@ export default function NotificationCenter() {
         aria-expanded={open}
         onClick={() => setOpen(value => !value)}
       >
-        <Bell size={19} aria-hidden="true" />
+        <span className="notification-glyph" aria-hidden="true">♧</span>
         {unreadCount > 0 && <span className="global-notification-count">{unreadCount > 99 ? "99+" : unreadCount}</span>}
       </button>
 
@@ -179,12 +183,12 @@ export default function NotificationCenter() {
             <div className="global-notification-actions">
               {unreadCount > 0 && (
                 <button type="button" onClick={() => void markAllAsRead()}>
-                  <CheckCheck size={15} />
+                  <span aria-hidden="true">✓✓</span>
                   <span>{en ? "Mark all read" : "Tout lire"}</span>
                 </button>
               )}
               <button type="button" aria-label={en ? "Close" : "Fermer"} onClick={() => setOpen(false)}>
-                <X size={17} />
+                <span aria-hidden="true">×</span>
               </button>
             </div>
           </header>
