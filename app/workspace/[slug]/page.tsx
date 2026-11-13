@@ -14,6 +14,7 @@ type Post={id:string;author_id:string;body:string;is_pinned:boolean;created_at:s
 type Task={id:string;title:string;description:string|null;task_status:string;priority:string;assigned_to:string|null;due_at:string|null;created_by:string};
 type Project={id:string;title:string;objective:string|null;project_status:string;priority:string;owner_id:string;due_date:string|null};
 type Meeting={id:string;title:string;agenda:string|null;starts_at:string;ends_at:string|null;location:string|null;meeting_url:string|null;meeting_status:string};
+type MeetingParticipant={meeting_id:string;user_id:string;attendance_status:"invited"|"accepted"|"declined"|"attended"|"absent";responded_at:string|null};
 type DocumentRow={id:string;title:string;description:string|null;file_name:string;storage_path:string;mime_type:string|null;file_size:number|null;document_category:string;uploaded_by:string;created_at:string};
 
 const tabs:Record<Tab,{fr:string;en:string;icon:string}>={
@@ -52,6 +53,7 @@ export default function WorkspaceDetailPage(){
   const [tasks,setTasks]=useState<Task[]>([]);
   const [projects,setProjects]=useState<Project[]>([]);
   const [meetings,setMeetings]=useState<Meeting[]>([]);
+  const [meetingParticipants,setMeetingParticipants]=useState<MeetingParticipant[]>([]);
   const [documents,setDocuments]=useState<DocumentRow[]>([]);
   const [activeTab,setActiveTab]=useState<Tab>("feed");
   const [error,setError]=useState("");
@@ -68,6 +70,7 @@ export default function WorkspaceDetailPage(){
   const [meetingAgenda,setMeetingAgenda]=useState("");
   const [meetingStart,setMeetingStart]=useState("");
   const [meetingEnd,setMeetingEnd]=useState("");
+  const [meetingLocation,setMeetingLocation]=useState("");
   const [meetingUrl,setMeetingUrl]=useState("");
   const [inviteEmail,setInviteEmail]=useState("");
   const [inviteRole,setInviteRole]=useState<"member"|"manager">("member");
@@ -118,6 +121,13 @@ export default function WorkspaceDetailPage(){
     setTasks((taskResult.data??[]) as Task[]);
     setProjects((projectResult.data??[]) as Project[]);
     setMeetings((meetingResult.data??[]) as Meeting[]);
+    const meetingIds=(meetingResult.data??[]).map((row:{id:string})=>row.id);
+    if(meetingIds.length){
+      const {data:participantRows,error:participantError}=await supabase.from("jec_meeting_participants")
+        .select("meeting_id,user_id,attendance_status,responded_at").in("meeting_id",meetingIds);
+      if(participantError)setError(participantError.message);
+      setMeetingParticipants((participantRows??[]) as MeetingParticipant[]);
+    }else setMeetingParticipants([]);
     setDocuments((documentResult.data??[]) as DocumentRow[]);
     const ids=rosterRows.map(row=>row.user_id);
     if(ids.length){
@@ -187,14 +197,39 @@ export default function WorkspaceDetailPage(){
     event.preventDefault();if(!workspace||!userId)return;
     const supabase=getSupabaseBrowserClient();if(!supabase)return;
     setBusy(true);setError("");setNotice("");
-    const {error:insertError}=await supabase.from("jec_meetings").insert({
+    const {data:createdMeeting,error:insertError}=await supabase.from("jec_meetings").insert({
       workspace_id:workspace.id,title:meetingTitle.trim(),agenda:meetingAgenda.trim()||null,
       starts_at:new Date(meetingStart).toISOString(),ends_at:meetingEnd?new Date(meetingEnd).toISOString():null,
-      meeting_url:meetingUrl.trim()||null,meeting_status:"scheduled",created_by:userId
-    });
+      location:meetingLocation.trim()||null,meeting_url:meetingUrl.trim()||null,
+      meeting_status:"scheduled",created_by:userId
+    }).select("id").single();
     if(insertError)setError(insertError.message);
-    else {setMeetingTitle("");setMeetingAgenda("");setMeetingStart("");setMeetingEnd("");setMeetingUrl("");setNotice(en?"Meeting scheduled.":"Réunion programmée.");await load();}
+    else if(createdMeeting){
+      const participants=roster.filter(member=>member.membership_status==="active").map(member=>({
+        meeting_id:createdMeeting.id,
+        user_id:member.user_id,
+        attendance_status:member.user_id===userId?"accepted" as const:"invited" as const,
+        responded_at:member.user_id===userId?new Date().toISOString():null
+      }));
+      if(participants.length){
+        const {error:participantError}=await supabase.from("jec_meeting_participants").insert(participants);
+        if(participantError)setError(participantError.message);
+      }
+      setMeetingTitle("");setMeetingAgenda("");setMeetingStart("");setMeetingEnd("");setMeetingLocation("");setMeetingUrl("");
+      setNotice(en?"Meeting scheduled and workspace members invited.":"Réunion programmée et invitations envoyées aux membres de l'espace.");
+      await load();
+    }
     setBusy(false);
+  }
+
+  async function respondToMeeting(meetingId:string,status:"accepted"|"declined"){
+    const supabase=getSupabaseBrowserClient();if(!supabase)return;
+    setError("");setNotice("");
+    const {error:responseError}=await supabase.from("jec_meeting_participants").update({
+      attendance_status:status,responded_at:new Date().toISOString()
+    }).eq("meeting_id",meetingId).eq("user_id",userId);
+    if(responseError)setError(responseError.message);
+    else{setNotice(en?"Your response has been saved.":"Ta réponse a été enregistrée.");await load();}
   }
 
   async function inviteMember(event:FormEvent<HTMLFormElement>){
@@ -306,10 +341,21 @@ export default function WorkspaceDetailPage(){
               <label>{en?"Meeting title":"Intitulé de la réunion"}<input value={meetingTitle} onChange={e=>setMeetingTitle(e.target.value)} required maxLength={180}/></label>
               <label>{en?"Agenda":"Ordre du jour"}<textarea rows={3} value={meetingAgenda} onChange={e=>setMeetingAgenda(e.target.value)}/></label>
               <div className="task-create-form"><label>{en?"Starts at":"Début"}<input type="datetime-local" value={meetingStart} onChange={e=>setMeetingStart(e.target.value)} required/></label><label>{en?"Ends at":"Fin"}<input type="datetime-local" value={meetingEnd} onChange={e=>setMeetingEnd(e.target.value)}/></label></div>
+              <label>{en?"Location (optional)":"Lieu (facultatif)"}<input value={meetingLocation} onChange={e=>setMeetingLocation(e.target.value)}/></label>
               <label>{en?"Video meeting link (optional)":"Lien de visioconférence (facultatif)"}<input type="url" value={meetingUrl} onChange={e=>setMeetingUrl(e.target.value)} placeholder="https://…"/></label>
               <button className="primary-button" disabled={busy}>{en?"Schedule meeting":"Programmer la réunion"}</button>
             </form>}
-            {meetings.length?meetings.map(meeting=><article className="workspace-meeting-row" key={meeting.id}><div className="meeting-date-block"><strong>{new Date(meeting.starts_at).toLocaleDateString(en?"en-GB":"fr-FR",{day:"2-digit"})}</strong><span>{new Date(meeting.starts_at).toLocaleDateString(en?"en-GB":"fr-FR",{month:"short"})}</span></div><div className="workspace-meeting-main"><strong>{meeting.title}</strong><small>{formatDate(meeting.starts_at,en,true)}{meeting.location?" · "+meeting.location:""}</small>{meeting.agenda&&<p>{meeting.agenda}</p>}{meeting.meeting_url&&<a href={meeting.meeting_url} target="_blank" rel="noreferrer">{en?"Join video meeting →":"Rejoindre la visioconférence →"}</a>}</div><span className={"project-status "+meeting.meeting_status}>{meeting.meeting_status}</span></article>):<div className="collab-empty compact"><p>{en?"No meeting scheduled.":"Aucune réunion programmée."}</p></div>}
+            {meetings.length?meetings.map(meeting=>{
+              const participation=meetingParticipants.find(item=>item.meeting_id===meeting.id&&item.user_id===userId);
+              return <article className="workspace-meeting-row" key={meeting.id}>
+                <div className="meeting-date-block"><strong>{new Date(meeting.starts_at).toLocaleDateString(en?"en-GB":"fr-FR",{day:"2-digit"})}</strong><span>{new Date(meeting.starts_at).toLocaleDateString(en?"en-GB":"fr-FR",{month:"short"})}</span></div>
+                <div className="workspace-meeting-main"><strong>{meeting.title}</strong><small>{formatDate(meeting.starts_at,en,true)}{meeting.location?" · "+meeting.location:""}</small>{meeting.agenda&&<p>{meeting.agenda}</p>}{meeting.meeting_url&&<a href={meeting.meeting_url} target="_blank" rel="noreferrer">{en?"Join video meeting →":"Rejoindre la visioconférence →"}</a>}
+                  {participation&&<div className="meeting-participation">
+                    {participation.attendance_status==="invited"?<><span>{en?"Your response is pending":"Ta réponse est attendue"}</span><button className="primary-button" onClick={()=>void respondToMeeting(meeting.id,"accepted")}>{en?"Attend":"Participer"}</button><button className="quiet-button" onClick={()=>void respondToMeeting(meeting.id,"declined")}>{en?"Decline":"Décliner"}</button></>:<span className="project-status">{participation.attendance_status==="accepted"?(en?"Attending":"Présence confirmée"):participation.attendance_status==="declined"?(en?"Declined":"Décliné"):participation.attendance_status}</span>}
+                  </div>}
+                </div><span className={"project-status "+meeting.meeting_status}>{meeting.meeting_status}</span>
+              </article>;
+            }):<div className="collab-empty compact"><p>{en?"No meeting scheduled.":"Aucune réunion programmée."}</p></div>}
           </section>}
 
           {activeTab==="documents"&&<section className="workspace-panel">
