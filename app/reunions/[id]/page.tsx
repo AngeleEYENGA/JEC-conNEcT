@@ -144,19 +144,21 @@ export default function MeetingDetailPage(){
  }
 
  async function saveMinutes(status:"draft"|"shared"){
-  if(!meeting)return;const supabase=getSupabaseBrowserClient();if(!supabase)return;
+  if(!meeting)return;
+  const supabase=getSupabaseBrowserClient();if(!supabase)return;
   setBusy(true);setError("");
+  let saveError="";
   if(minutes){
    const {error:e}=await supabase.from("jec_meeting_minutes").update({content:minutesText,minutes_status:status,updated_at:new Date().toISOString()}).eq("id",minutes.id);
-   if(e)setError(e.message);
+   if(e)saveError=e.message;
   }else{
    const {error:e}=await supabase.from("jec_meeting_minutes").insert({workspace_id:meeting.workspace_id,meeting_id:meetingId,content:minutesText,minutes_status:status,prepared_by:userId});
-   if(e)setError(e.message);
+   if(e)saveError=e.message;
   }
-  if(!error){setNotice(status==="shared"?(en?"Minutes shared with meeting participants.":"Compte rendu partagé aux participants."):(en?"Draft saved.":"Brouillon enregistré."));await load();}
+  if(saveError)setError(saveError);
+  else{setNotice(status==="shared"?(en?"Minutes shared with meeting participants.":"Compte rendu partagé aux participants."):(en?"Draft saved.":"Brouillon enregistré."));await load();}
   setBusy(false);
  }
-
  async function approveMinutes(){
   if(!minutes)return;const supabase=getSupabaseBrowserClient();if(!supabase)return;
   setBusy(true);const {error:e}=await supabase.rpc("jec_approve_meeting_minutes",{target_minutes_id:minutes.id});
@@ -173,7 +175,7 @@ export default function MeetingDetailPage(){
    language:transcriptLanguage,source_type:source,transcript_status:"draft",consent_confirmed:true,
    created_by:userId
   });
-  if(e)setError(e.message);else{setTranscriptText("");setTranscriptConsent(false);setNotice(en?"Transcript saved privately.":"Transcription enregistrée en privé.");await load();}
+  if(e)setError(e.message);else{setTranscriptText("");setTranscriptConsent(false);setTranscriptSource("manual");setNotice(en?"Transcript saved privately.":"Transcription enregistrée en privé.");await load();}
   setBusy(false);
  }
 
@@ -182,6 +184,7 @@ export default function MeetingDetailPage(){
   const w=window as SpeechWindow;const Recognition=w.SpeechRecognition||w.webkitSpeechRecognition;
   if(!Recognition){setError(en?"Speech recognition is not supported by this browser.":"La reconnaissance vocale n'est pas prise en charge par ce navigateur.");return;}
   const recognition=new Recognition();recognition.lang=transcriptLanguage;recognition.continuous=true;recognition.interimResults=true;
+  setTranscriptSource("browser_speech_api");
   recognition.onresult=(event)=>{
    let finalText="";
    for(let i=event.resultIndex;i<event.results.length;i++)if(event.results[i].isFinal)finalText+=event.results[i][0].transcript+" ";
@@ -262,7 +265,7 @@ export default function MeetingDetailPage(){
      <div className="transcript-capture-controls">{transcriptSupported?<button className="secondary-outline-button" disabled={!transcriptConsent||recognizing} onClick={startRecognition}>{recognizing?(en?"Recognition running":"Reconnaissance en cours"):(en?"Start browser speech recognition":"Démarrer la reconnaissance vocale")}</button>:<span className="collab-muted">{en?"Speech recognition is unavailable in this browser; use manual notes.":"La reconnaissance vocale n'est pas disponible ; utilise la saisie manuelle."}</span>}
       {recognizing&&<button className="danger-outline-button" onClick={()=>recognitionRef.current?.stop()}>{en?"Stop":"Arrêter"}</button>}</div>
      <textarea className="minutes-editor" rows={12} value={transcriptText} onChange={e=>setTranscriptText(e.target.value)} placeholder={en?"Paste or type the transcript here…":"Colle ou saisis ici la transcription…"}/>
-     <div className="minutes-actions"><button className="primary-button" onClick={()=>void addTranscript(recognizing?"browser_speech_api":"manual")} disabled={busy||!transcriptConsent||!transcriptText.trim()}>{en?"Save private transcript":"Enregistrer la transcription privée"}</button></div>
+     <div className="minutes-actions"><button className="primary-button" onClick={()=>void addTranscript(transcriptSource)} disabled={busy||!transcriptConsent||!transcriptText.trim()}>{en?"Save private transcript":"Enregistrer la transcription privée"}</button></div>
     </section>
     {transcripts.map(item=><section className="collab-card" key={item.id}><div className="collab-card-heading"><strong>{date(item.created_at,en)}</strong><span className="project-status">{item.source_type}</span></div><p className="transcript-saved-text">{item.transcript_text}</p></section>)}
    </div>}
