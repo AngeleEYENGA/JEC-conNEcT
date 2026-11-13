@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { LanguageProvider } from "@/components/language-provider";
+import NotificationCenter from "@/components/notification-center";
 
 export const metadata: Metadata = {
   title: "JEC-conNEcT — La communauté JEC, unie",
@@ -29,7 +30,7 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="fr">
-      <body><LanguageProvider>{children}</LanguageProvider></body>
+      <body><LanguageProvider><NotificationCenter />{children}</LanguageProvider></body>
     </html>
   );
 }
