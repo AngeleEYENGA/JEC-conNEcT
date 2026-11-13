@@ -91,7 +91,7 @@ export default function MeetingCallRoom({
       iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
     });
     const cameraStream = localStreamRef.current;
-    cameraStream?.getAudioTracks().forEach(track => pc.addTrack(track, cameraStream));
+    if (cameraStream) cameraStream.getAudioTracks().forEach(track => pc.addTrack(track, cameraStream));
     const activeVideoStream = screenStreamRef.current ?? cameraStream;
     const activeVideoTrack = activeVideoStream?.getVideoTracks()[0];
     if (activeVideoTrack && activeVideoStream) pc.addTrack(activeVideoTrack, activeVideoStream);
@@ -216,9 +216,7 @@ export default function MeetingCallRoom({
       setSharingScreen(true);
       setError("");
     } catch (e) {
-      screenStreamRef.current?.getTracks().forEach(track => track.stop());
-      screenStreamRef.current = null;
-      setSharingScreen(false);
+      if (screenStreamRef.current) await stopScreenShare();
       setError(e instanceof Error ? e.message : "Impossible de partager l'écran.");
     }
   }
