@@ -290,3 +290,14 @@ Ce module n'appartient pas au premier périmètre du prototype. Il sera spécifi
 - Les messages ne sont accessibles qu'aux participants actifs, sans accès automatique de l'administrateur global.
 - Réception des nouveaux messages en temps réel, avec chargement sécurisé de l'historique.
 - Prévoir ultérieurement notifications, accusés de lecture, présence, recherche, pièces jointes, modération et archivage.
+
+## 28. Collaboration — règles opérationnelles détaillées
+
+- La création d'un espace est atomique : la création de l'espace et l'ajout du propriétaire se font dans la même opération serveur.
+- Les invitations par e-mail ne donnent jamais accès à un compte non existant ou non vérifié ; le membre invité doit accepter explicitement.
+- Les conversations directes, de groupe et d'espace sont privées. Les participants sont validés côté serveur ; un utilisateur non participant ne peut pas consulter l'historique.
+- Les messages sont diffusés via Supabase Realtime, mais les données restent protégées par les règles RLS.
+- Les réunions d'un espace créent une ligne de participation pour chaque membre actif : le créateur est marqué comme présent, les autres comme invités. Chaque participant peut accepter ou décliner.
+- Le stockage documentaire reste privé. Les chemins Storage sont organisés par identifiant d'espace et identifiant de déposant ; les liens de consultation sont signés et temporaires.
+- La suppression d'un fichier passe par l'API Storage, puis par la suppression de sa métadonnée. Le rôle anonyme ne possède aucun privilège direct sur les tables collaboratives.
+- L'administration globale, la responsabilité d'un espace et l'appartenance JEC sont trois niveaux distincts. Un administrateur global n'est pas automatiquement participant à une conversation privée ni membre de chaque espace.
