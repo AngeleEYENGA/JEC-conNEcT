@@ -54,6 +54,7 @@ export default function MeetingDetailPage(){
  const [transcriptText,setTranscriptText]=useState(""); const [transcriptConsent,setTranscriptConsent]=useState(false);
  const [transcriptLanguage,setTranscriptLanguage]=useState(en?"en-GB":"fr-FR");
  const [recognizing,setRecognizing]=useState(false);
+ const [transcriptSource,setTranscriptSource]=useState<"manual"|"browser_speech_api">("manual");
  const [transcriptSupported,setTranscriptSupported]=useState(false);
  const [activeTab,setActiveTab]=useState<"agenda"|"minutes"|"transcript"|"actions"|"participants">("agenda");
  const recognitionRef=useState<{current:SpeechRecognitionLike|null}>({current:null})[0];
