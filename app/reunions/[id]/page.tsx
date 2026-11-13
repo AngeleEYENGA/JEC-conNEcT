@@ -106,6 +106,19 @@ export default function MeetingDetailPage(){
 
  useEffect(()=>{void load();},[load]);
  useEffect(()=>{
+  const supabase=getSupabaseBrowserClient();if(!supabase||!meetingId)return;
+  const channel=supabase.channel("jec-meeting-detail:"+meetingId)
+   .on("postgres_changes",{event:"*",schema:"public",table:"jec_meetings",filter:"id=eq."+meetingId},()=>{void load();})
+   .on("postgres_changes",{event:"*",schema:"public",table:"jec_meeting_participants",filter:"meeting_id=eq."+meetingId},()=>{void load();})
+   .on("postgres_changes",{event:"*",schema:"public",table:"jec_meeting_agenda_items",filter:"meeting_id=eq."+meetingId},()=>{void load();})
+   .on("postgres_changes",{event:"*",schema:"public",table:"jec_meeting_decisions",filter:"meeting_id=eq."+meetingId},()=>{void load();})
+   .on("postgres_changes",{event:"*",schema:"public",table:"jec_meeting_minutes",filter:"meeting_id=eq."+meetingId},()=>{void load();})
+   .on("postgres_changes",{event:"*",schema:"public",table:"jec_meeting_transcripts",filter:"meeting_id=eq."+meetingId},()=>{void load();})
+   .on("postgres_changes",{event:"*",schema:"public",table:"jec_workspace_tasks",filter:"meeting_id=eq."+meetingId},()=>{void load();})
+   .subscribe();
+  return ()=>{void supabase.removeChannel(channel);};
+ },[meetingId,load]);
+ useEffect(()=>{
   const w=window as SpeechWindow;
   setTranscriptSupported(Boolean(w.SpeechRecognition||w.webkitSpeechRecognition));
   return ()=>{recognitionRef.current?.stop();};
@@ -142,6 +155,52 @@ export default function MeetingDetailPage(){
   const {error:e2}=await supabase.from("jec_meeting_decisions").insert({workspace_id:meeting.workspace_id,meeting_id:meetingId,title:decisionTitle.trim(),detail:decisionDetail.trim()||null,created_by:userId});
   if(e2)setError(e2.message);else{setDecisionTitle("");setDecisionDetail("");setNotice(en?"Decision recorded.":"Décision enregistrée.");await load();}
   setBusy(false);
+ }
+
+ function downloadTextFile(fileName:string,content:string,mimeType="text/markdown;charset=utf-8"){
+  const blob=new Blob([content],{type:mimeType});const url=URL.createObjectURL(blob);
+  const anchor=document.createElement("a");anchor.href=url;anchor.download=fileName;anchor.style.display="none";
+  document.body.appendChild(anchor);anchor.click();anchor.remove();URL.revokeObjectURL(url);
+ }
+
+ function buildMinutesDraft(){
+  if(!meeting)return;
+  const attendance=participants.map(p=>{
+   const status=p.attendance_status==="accepted"?(en?"confirmed":"présence confirmée"):p.attendance_status==="declined"?(en?"declined":"déclinée"):p.attendance_status==="attended"?(en?"attended":"présent(e)"):(en?"invited":"invité(e)");
+   return "- "+(names[p.user_id]||(en?"JEC member":"Membre JEC"))+" — "+status;
+  });
+  const agenda=agendaItems.map((item,index)=>`${index+1}. ${item.title} — ${item.item_status}${item.description?"\\n   "+item.description:""}`);
+  const decisionLines=decisions.map(item=>"- "+item.title+(item.detail?" — "+item.detail:""));
+  const actionLines=tasks.map(item=>"- [ "+(item.task_status==="done"?"x":" ")+" ] "+item.title+" — "+(item.assigned_to?(names[item.assigned_to]||(en?"JEC member":"Membre JEC")):(en?"Unassigned":"Non attribuée"))+(item.due_at?" — "+date(item.due_at,en,false):""));
+  const content=[
+   "# "+(en?"Meeting minutes":"Compte rendu de réunion"),
+   "",
+   "**"+(en?"Meeting":"Réunion")+" :** "+meeting.title,
+   "**"+(en?"Date":"Date")+" :** "+date(meeting.starts_at,en),
+   "**"+(en?"Workspace":"Espace de travail")+" :** "+(meeting.workspace?.name||"JEC-conNEcT"),
+   meeting.location?"**"+(en?"Location":"Lieu")+" :** "+meeting.location:"",
+   "",
+   "## "+(en?"Participants":"Participants"),
+   ...(attendance.length?attendance:[en?"- To be completed":"- À compléter"]),
+   "",
+   "## "+(en?"Agenda":"Ordre du jour"),
+   ...(agenda.length?agenda:[en?"- No agenda item recorded":"- Aucun point enregistré"]),
+   "",
+   "## "+(en?"Decisions":"Décisions"),
+   ...(decisionLines.length?decisionLines:[en?"- No decision recorded":"- Aucune décision enregistrée"]),
+   "",
+   "## "+(en?"Action items and follow-up":"Actions et suivi"),
+   ...(actionLines.length?actionLines:[en?"- No action item recorded":"- Aucune action enregistrée"]),
+   "",
+   "## "+(en?"Discussion notes":"Notes des échanges"),
+   en?"To be completed by the meeting secretary.":"À compléter par le ou la secrétaire de séance.",
+   "",
+   "## "+(en?"Next meeting":"Prochaine réunion"),
+   en?"To be confirmed.":"À confirmer."
+  ].filter(Boolean).join("\\n");
+  setMinutesText(content);
+  setActiveTab("minutes");
+  setNotice(en?"A structured draft has been prepared from the meeting data. Review it before sharing.":"Un brouillon structuré a été préparé à partir des données de la réunion. Relis-le avant partage.");
  }
 
  async function saveMinutes(status:"draft"|"shared"){
@@ -199,7 +258,7 @@ export default function MeetingDetailPage(){
  async function addActionTask(e:FormEvent<HTMLFormElement>){
   e.preventDefault();if(!meeting)return;const supabase=getSupabaseBrowserClient();if(!supabase)return;
   setBusy(true);setError("");
-  const {error:e2}=await supabase.from("jec_workspace_tasks").insert({workspace_id:meeting.workspace_id,meeting_id:meetingId,title:taskTitle.trim(),assigned_to:taskAssignee||null,due_at:taskDue?new Date(taskDue+"T12:00:00").toISOString():null,created_by:userId,priority:"normal"});
+  const {error:e2}=await supabase.from("jec_workspace_tasks").insert({workspace_id:meeting.workspace_id,project_id:meeting.project_id,meeting_id:meetingId,title:taskTitle.trim(),assigned_to:taskAssignee||null,due_at:taskDue?new Date(taskDue+"T12:00:00").toISOString():null,created_by:userId,priority:"normal"});
   if(e2)setError(e2.message);else{setTaskTitle("");setTaskAssignee("");setTaskDue("");setNotice(en?"Action item added.":"Action à réaliser ajoutée.");await load();}
   setBusy(false);
  }
@@ -251,7 +310,8 @@ export default function MeetingDetailPage(){
    {activeTab==="minutes"&&<section className="collab-card">
     <div className="collab-card-heading"><div><p className="eyebrow">{en?"OFFICIAL MEETING RECORD":"DOCUMENT DE SUIVI"}</p><h2>{en?"Minutes / report":"Compte rendu"}</h2></div>{minutes&&<span className={"project-status "+minutes.minutes_status}>{minutes.minutes_status}</span>}</div>
     {minutes?.minutes_status==="approved"?<div className="minutes-approved"><p>{en?"Approved minutes — read only":"Compte rendu approuvé — lecture seule"}</p><div className="minutes-text-render">{minutes.content}</div><small>{en?"Approved by":"Approuvé par"} : {names[minutes.approved_by||""]||"Responsable JEC"} · {minutes.approved_at?date(minutes.approved_at,en):""}</small></div>:<>
-      <p className="collab-muted">{en?"Structure the report with context, discussion, decisions and follow-up.":"Structure le compte rendu autour du contexte, des échanges, des décisions et du suivi."}</p>
+      <p className="collab-muted">{en?"Use the meeting data to prepare a draft, then review and validate it before sharing.":"Prépare un brouillon à partir des éléments de la réunion, puis relis-le et valide-le avant partage."}</p>
+      <div className="minutes-actions"><button className="secondary-outline-button" onClick={buildMinutesDraft}>{en?"Prepare structured draft":"Préremplir le compte rendu"}</button><button className="secondary-outline-button" onClick={()=>downloadTextFile("jec-meeting-minutes-"+meetingId+".md",minutes?.minutes_status==="approved"?minutes.content:minutesText)} disabled={!(minutes?.content||minutesText).trim()}>{en?"Download report (.md)":"Télécharger le compte rendu (.md)"}</button></div>
       <textarea className="minutes-editor" rows={18} value={minutesText} onChange={e=>setMinutesText(e.target.value)} placeholder={en?"Meeting date and participants\\n1. Context\\n2. Discussion\\n3. Decisions\\n4. Action owners and deadlines":"Date et participants\\n1. Contexte\\n2. Échanges\\n3. Décisions\\n4. Responsables et échéances"}/>
       <div className="minutes-actions"><button className="secondary-outline-button" onClick={()=>void saveMinutes("draft")} disabled={busy||!minutesText.trim()}>{en?"Save draft":"Enregistrer le brouillon"}</button><button className="primary-button" onClick={()=>void saveMinutes("shared")} disabled={busy||!minutesText.trim()}>{en?"Share with participants":"Partager aux participants"}</button>{manager&&minutes&&minutes.minutes_status==="shared"&&<button className="approve-minutes-button" onClick={()=>void approveMinutes()} disabled={busy}>{en?"Approve and lock":"Approuver et verrouiller"}</button>}</div>
     </>}
@@ -268,7 +328,7 @@ export default function MeetingDetailPage(){
      <textarea className="minutes-editor" rows={12} value={transcriptText} onChange={e=>setTranscriptText(e.target.value)} placeholder={en?"Paste or type the transcript here…":"Colle ou saisis ici la transcription…"}/>
      <div className="minutes-actions"><button className="primary-button" onClick={()=>void addTranscript(transcriptSource)} disabled={busy||!transcriptConsent||!transcriptText.trim()}>{en?"Save private transcript":"Enregistrer la transcription privée"}</button></div>
     </section>
-    {transcripts.map(item=><section className="collab-card" key={item.id}><div className="collab-card-heading"><strong>{date(item.created_at,en)}</strong><span className="project-status">{item.source_type}</span></div><p className="transcript-saved-text">{item.transcript_text}</p></section>)}
+    {transcripts.map(item=><section className="collab-card" key={item.id}><div className="collab-card-heading"><strong>{date(item.created_at,en)}</strong><span className="project-status">{item.source_type}</span></div><p className="transcript-saved-text">{item.transcript_text}</p><div className="minutes-actions"><button className="secondary-outline-button" onClick={()=>downloadTextFile("jec-transcript-"+item.id+".txt",item.transcript_text,"text/plain;charset=utf-8")}>{en?"Download transcript (.txt)":"Télécharger la transcription (.txt)"}</button></div></section>)}
    </div>}
 
    {activeTab==="actions"&&<section className="collab-card"><div className="collab-card-heading"><div><p className="eyebrow">{en?"FOLLOW-UP":"SUIVI"}</p><h2>{en?"Action items":"Actions à réaliser"}</h2></div><span className="collab-count">{tasks.length}</span></div>
