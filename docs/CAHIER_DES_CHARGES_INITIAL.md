@@ -275,7 +275,7 @@ Ce module n'appartient pas au premier périmètre du prototype. Il sera spécifi
 - Prévoir des conversations directes entre membres, des groupes et des discussions rattachées à un espace.
 - Chaque conversation possède ses participants et ses permissions ; un non-participant ne peut ni lire les messages, ni récupérer les pièces jointes.
 - Prévoir accusés de lecture, notifications, recherche, pièces jointes, modération et archivage.
-- La messagerie directe et de groupe fera l'objet d'une phase dédiée ; elle ne doit pas être confondue avec le fil d'échanges d'un espace.
+- Une première messagerie directe, de groupe et liée à un espace est intégrée ; elle reste distincte du fil d'échanges d'un espace. Les notifications, accusés de lecture, présence, recherche et pièces jointes feront l'objet d'itérations complémentaires.
 
 ### Sécurité et gouvernance
 - Toutes les tables de collaboration sont protégées par RLS ; chaque ligne est rattachée à un espace.
