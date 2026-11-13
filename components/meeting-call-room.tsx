@@ -135,7 +135,7 @@ export default function MeetingCallRoom({
             from: userIdRef.current,
             to: peerId,
             type: "description",
-        description: offer
+            description: answer
           });
         }
       } else if (signal.type === "candidate" && signal.candidate) {
@@ -163,7 +163,7 @@ export default function MeetingCallRoom({
         from: userIdRef.current,
         to: peerId,
         type: "description",
-        description: { type: pc.localDescription?.type ?? "offer", sdp: pc.localDescription?.sdp ?? "" }
+        description: offer
       });
     } catch (e) {
       setError(e instanceof Error ? e.message : "Impossible de démarrer la connexion.");
