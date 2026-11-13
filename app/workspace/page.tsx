@@ -84,7 +84,7 @@ export default function WorkspaceIndexPage(){
     const slug=slugify(name);
     if(!slug){setError(en?"Please enter a valid workspace name.":"Saisis un nom d'espace valide.");return;}
     setCreating(true);
-    const {data:createdId,error:createError}=await supabase.rpc("jec_create_workspace",{
+    const {error:createError}=await supabase.rpc("jec_create_workspace",{
       target_name:name.trim(),
       target_slug:slug,
       target_type:type,
