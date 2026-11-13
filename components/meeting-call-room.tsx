@@ -42,11 +42,13 @@ export default function MeetingCallRoom({
   const [joined, setJoined] = useState(false);
   const [muted, setMuted] = useState(false);
   const [cameraOff, setCameraOff] = useState(false);
+  const [sharingScreen, setSharingScreen] = useState(false);
   const [status, setStatus] = useState("Préparation de la salle");
   const [error, setError] = useState("");
   const [remoteStreams, setRemoteStreams] = useState<Record<string, MediaStream>>({});
   const [remoteNames, setRemoteNames] = useState<Record<string, string>>({});
   const localStreamRef = useRef<MediaStream | null>(null);
+  const screenStreamRef = useRef<MediaStream | null>(null);
   const channelRef = useRef<any>(null);
   const peersRef = useRef<Map<string, RTCPeerConnection>>(new Map());
   const pendingCandidatesRef = useRef<Map<string, RTCIceCandidateInit[]>>(new Map());
@@ -88,7 +90,12 @@ export default function MeetingCallRoom({
     const pc = new RTCPeerConnection({
       iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
     });
-    localStreamRef.current?.getTracks().forEach(track => pc.addTrack(track, localStreamRef.current!));
+    const cameraStream = localStreamRef.current;
+    cameraStream?.getAudioTracks().forEach(track => pc.addTrack(track, cameraStream));
+    const activeVideoStream = screenStreamRef.current ?? cameraStream;
+    const activeVideoTrack = activeVideoStream?.getVideoTracks()[0];
+    if (activeVideoTrack && activeVideoStream) pc.addTrack(activeVideoTrack, activeVideoStream);
+    else pc.addTransceiver("video", { direction: "sendrecv" });
     pc.onicecandidate = event => {
       if (event.candidate && userIdRef.current) {
         void sendSignal({
@@ -170,6 +177,52 @@ export default function MeetingCallRoom({
     }
   }, [ensurePeer, sendSignal]);
 
+  async function stopScreenShare() {
+    const screenStream = screenStreamRef.current;
+    if (!screenStream) return;
+    const cameraTrack = localStreamRef.current?.getVideoTracks()[0] ?? null;
+    for (const pc of peersRef.current.values()) {
+      const videoTransceiver = pc.getTransceivers().find(transceiver =>
+        transceiver.sender.track?.kind === "video" || transceiver.receiver.track.kind === "video"
+      );
+      if (videoTransceiver) {
+        try { await videoTransceiver.sender.replaceTrack(cameraTrack); } catch { /* Peer may already be closing. */ }
+      }
+    }
+    screenStream.getTracks().forEach(track => track.stop());
+    screenStreamRef.current = null;
+    setSharingScreen(false);
+  }
+
+  async function startScreenShare() {
+    if (!joinedRef.current) return;
+    if (!navigator.mediaDevices?.getDisplayMedia) {
+      setError("Le partage d'écran n'est pas pris en charge par ce navigateur.");
+      return;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: 15 }, audio: false });
+      const screenTrack = stream.getVideoTracks()[0];
+      if (!screenTrack) throw new Error("Aucune source d'écran n'a été sélectionnée.");
+      screenStreamRef.current = stream;
+      for (const pc of peersRef.current.values()) {
+        let videoTransceiver = pc.getTransceivers().find(transceiver =>
+          transceiver.sender.track?.kind === "video" || transceiver.receiver.track.kind === "video"
+        );
+        if (!videoTransceiver) videoTransceiver = pc.addTransceiver("video", { direction: "sendrecv" });
+        await videoTransceiver.sender.replaceTrack(screenTrack);
+      }
+      screenTrack.onended = () => { void stopScreenShare(); };
+      setSharingScreen(true);
+      setError("");
+    } catch (e) {
+      screenStreamRef.current?.getTracks().forEach(track => track.stop());
+      screenStreamRef.current = null;
+      setSharingScreen(false);
+      setError(e instanceof Error ? e.message : "Impossible de partager l'écran.");
+    }
+  }
+
   const leaveCall = useCallback(async (endForEveryone = false) => {
     const supabase = getSupabaseBrowserClient();
     if (endForEveryone && sessionIdRef.current && supabase) {
@@ -191,6 +244,9 @@ export default function MeetingCallRoom({
     peersRef.current.forEach(pc => pc.close());
     peersRef.current.clear();
     pendingCandidatesRef.current.clear();
+    screenStreamRef.current?.getTracks().forEach(track => track.stop());
+    screenStreamRef.current = null;
+    setSharingScreen(false);
     localStreamRef.current?.getTracks().forEach(track => track.stop());
     localStreamRef.current = null;
     setRemoteStreams({});
@@ -292,6 +348,9 @@ export default function MeetingCallRoom({
         await supabase.removeChannel(channelRef.current);
         channelRef.current = null;
       }
+      screenStreamRef.current?.getTracks().forEach(track => track.stop());
+      screenStreamRef.current = null;
+      setSharingScreen(false);
       await localStreamRef.current?.getTracks().forEach(track => track.stop());
       localStreamRef.current = null;
       sessionIdRef.current = "";
@@ -305,11 +364,12 @@ export default function MeetingCallRoom({
       const supabase = getSupabaseBrowserClient();
       if (channelRef.current && supabase) void supabase.removeChannel(channelRef.current);
       peersRef.current.forEach(pc => pc.close());
+      screenStreamRef.current?.getTracks().forEach(track => track.stop());
       localStreamRef.current?.getTracks().forEach(track => track.stop());
     };
   }, []);
 
-  const localStream = localStreamRef.current;
+  const localStream = screenStreamRef.current ?? localStreamRef.current;
   const remoteEntries = Object.entries(remoteStreams);
 
   return (
@@ -353,6 +413,9 @@ export default function MeetingCallRoom({
               localStreamRef.current?.getVideoTracks().forEach(track => { track.enabled = cameraOff; });
               setCameraOff(!cameraOff);
             }}>{cameraOff ? "Activer la caméra" : "Couper la caméra"}</button>
+            <button className={sharingScreen ? "call-control active" : "call-control"} onClick={() => void (sharingScreen ? stopScreenShare() : startScreenShare())}>
+              {sharingScreen ? "Arrêter le partage" : "Partager l’écran"}
+            </button>
             {hostId === userId
               ? <button className="call-hangup" onClick={() => void leaveCall(true)}>Terminer pour tous</button>
               : <button className="call-hangup" onClick={() => void leaveCall(false)}>Quitter l'appel</button>}
