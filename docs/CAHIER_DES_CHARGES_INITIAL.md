@@ -327,3 +327,11 @@ Ce module n'appartient pas au premier périmètre du prototype. Il sera spécifi
 - L'IA pourra proposer une synthèse de réunion, un brouillon de compte rendu, les décisions et actions, et des relances ; toute production sera vérifiée et validée par un humain.
 - Les archives devront gérer les versions, l'historique, les exports, la conservation, la passation des responsabilités, les droits de consultation et le journal d'audit.
 - Les documents et réunions internes ne seront jamais utilisés comme source IA externe sans règle explicite, information des personnes concernées et choix du fournisseur/contrat adaptés.
+
+## 32. Intégrité des données collaboratives
+
+- Toute tâche associée à un projet ou à une réunion doit référencer le même espace de travail que ces objets.
+- Tout jalon appartient au même espace que son projet ; tout commentaire au même espace que sa tâche.
+- L'ordre du jour, les décisions, les comptes rendus et les transcriptions doivent appartenir au même espace que la réunion concernée.
+- Les documents rattachés à un projet ou une réunion doivent appartenir au même espace ; ces contrôles sont effectués au niveau de la base, et non seulement dans l'interface.
+- Les nouvelles tables phase 2 disposent de RLS et n'accordent aucun accès au rôle anonyme.
