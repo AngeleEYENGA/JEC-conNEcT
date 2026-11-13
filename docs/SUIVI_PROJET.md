@@ -197,3 +197,42 @@ Le schéma de collaboration existait déjà dans Supabase ; cette itération a r
 - Les enregistrements/transcriptions de réunion, versions documentaires, approbations et recherche plein texte restent à développer.
 - Les espaces institutionnels définitifs doivent être créés après validation de l'organisation et des responsables réels par la JEC.
 - Le contrôle Supabase signale toujours la protection contre les mots de passe compromis désactivée ; l'alerte de politique RLS sur private.jec_admins reste à examiner avant la production institutionnelle.
+
+## Mise à jour — 13 novembre 2026 : Collaboration phase 2 (gestion de projet et réunions enrichies)
+
+### Projets
+- Page dédiée `/projets/[id]` : paramètres, objectif, description, dates, priorité et statut.
+- Tableau de tâches par état (à faire, en cours, bloqué, terminé), avec responsable, échéance et priorité.
+- Jalons de projet avec responsable, date cible et état (à venir, en cours, à risque, terminé).
+- Fil de commentaires privé pour chaque tâche.
+- Les tâches et réunions peuvent être rattachées à un projet depuis un espace.
+- Les contrôles de modification tiennent compte du créateur, de la personne assignée, du propriétaire de projet et des responsables d'espace ; les règles RLS restent la protection finale.
+
+### Réunions
+- Page dédiée `/reunions/[id]` : préparation, déroulé détaillé et liste des participants.
+- Ordre du jour structuré : points, description, présentateur et statut (à traiter, traité, reporté).
+- Registre de décisions avec état et contexte.
+- Actions de suivi liées à la réunion, attribuables à un membre et assorties d'une échéance.
+- Comptes rendus en brouillon ou partagés, puis approbation par un responsable d'espace ; un compte rendu approuvé est verrouillé en lecture seule.
+- Transcription manuelle et dictée navigateur expérimentale, avec confirmation du consentement. Seul le texte est stocké par JEC-conNEcT ; les données audio brutes ne sont pas enregistrées par l'application.
+- Les utilisateurs peuvent utiliser un lien externe de visioconférence fourni manuellement ou le salon d'appel intégré.
+
+### Appels audio / vidéo
+- Route `/reunions/[id]/appel` avec salon audio/vidéo navigateur à navigateur via WebRTC.
+- Signalisation et présence via canal Supabase Realtime privé, autorisé uniquement aux participants dont la présence est acceptée/confirmée.
+- Gestion du cycle de vie des sessions d'appel et des participants ; fermeture de la salle par son hôte ou un responsable.
+- L'application ne stocke ni n'enregistre le son ou la vidéo.
+- Le service de relais TURN n'est pas encore configuré. La connexion directe fonctionne en fonction des réseaux et peut échouer derrière certains NAT/pare-feu ; un service TURN sera nécessaire pour une fiabilité de production.
+
+### Migrations et sécurité
+- Migration `collaboration_phase_two` : jalons, commentaires, points d'ordre du jour, décisions, comptes rendus, transcriptions, règles RLS et autorisation des canaux privés d'appel.
+- Migration `meeting_call_sessions` : sessions et participants aux appels, RPC de jointure, sortie et fermeture.
+- Les nouvelles tables ont RLS activé ; le rôle `anon` ne peut pas les lire. Les fonctions de gestion d'appel et d'approbation des comptes rendus sont exécutables uniquement par `authenticated`.
+- Test transactionnel réussi avec deux comptes : invitation temporaire du second compte au workspace, création d'une réunion de test, entrée des deux comptes dans la même session d'appel, puis fermeture de la session. La transaction a été annulée : aucune donnée de test n'est conservée.
+- Le test technique du cycle de salle n'est pas un test de qualité audio/vidéo sur deux appareils. La validation caméra, micro, audio bidirectionnel et traversée réseau reste à effectuer dans deux vrais navigateurs.
+- Le contrôle Supabase signale toujours la protection contre les mots de passe compromis désactivée. Elle devra être activée avant une mise en production institutionnelle.
+
+### Reporté explicitement à la phase suivante
+- Assistant IA : synthèse des transcriptions, génération assistée de comptes rendus, extraction de décisions et d'actions, suggestions de suivi. Aucun bouton IA n'est présenté comme opérationnel tant qu'un fournisseur/modèle et ses règles de confidentialité ne sont pas choisis.
+- Archives : versionnage documentaire, historique institutionnel, journal d'audit, passation des responsabilités, exports et conservation à long terme.
+- TURN, enregistrement éventuel et politique de conservation des réunions feront l'objet d'un choix technique et budgétaire séparé. L'enregistrement ne doit jamais être activé implicitement.
