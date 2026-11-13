@@ -135,7 +135,7 @@ export default function MeetingCallRoom({
             from: userIdRef.current,
             to: peerId,
             type: "description",
-            description: pc.localDescription?.toJSON()
+            description: { type: pc.localDescription?.type ?? "offer", sdp: pc.localDescription?.sdp ?? "" }
           });
         }
       } else if (signal.type === "candidate" && signal.candidate) {
@@ -174,17 +174,19 @@ export default function MeetingCallRoom({
     const supabase = getSupabaseBrowserClient();
     if (endForEveryone && sessionIdRef.current && supabase) {
       await supabase.rpc("jec_end_meeting_call", { target_session_id: sessionIdRef.current });
-      await channelRef.current?.send({
-        type: "broadcast",
-        event: "signal",
-        payload: { from: userIdRef.current, to: "*", type: "ended" }
-      });
+      if (channelRef.current) {
+        await channelRef.current.send({
+          type: "broadcast",
+          event: "signal",
+          payload: { from: userIdRef.current, to: "*", type: "ended" }
+        });
+      }
     } else if (sessionIdRef.current && supabase) {
       await supabase.rpc("jec_leave_meeting_call", { target_session_id: sessionIdRef.current });
     }
     joinedRef.current = false;
     setJoined(false);
-    void channelRef.current && supabase?.removeChannel(channelRef.current);
+    if (channelRef.current && supabase) void supabase.removeChannel(channelRef.current);
     channelRef.current = null;
     peersRef.current.forEach(pc => pc.close());
     peersRef.current.clear();
@@ -301,7 +303,7 @@ export default function MeetingCallRoom({
   useEffect(() => {
     return () => {
       const supabase = getSupabaseBrowserClient();
-      void channelRef.current && supabase?.removeChannel(channelRef.current);
+      if (channelRef.current && supabase) void supabase.removeChannel(channelRef.current);
       peersRef.current.forEach(pc => pc.close());
       localStreamRef.current?.getTracks().forEach(track => track.stop());
     };
