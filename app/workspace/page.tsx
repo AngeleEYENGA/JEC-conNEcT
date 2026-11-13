@@ -84,16 +84,13 @@ export default function WorkspaceIndexPage(){
     const slug=slugify(name);
     if(!slug){setError(en?"Please enter a valid workspace name.":"Saisis un nom d'espace valide.");return;}
     setCreating(true);
-    const {data:created,error:createError}=await supabase.from("jec_workspaces").insert({
-      name:name.trim(),slug,workspace_type:type,description:description.trim()||null,
-      visibility:"private",created_by:userId
-    }).select("id").single();
-    if(createError){setError(createError.message);setCreating(false);return;}
-    const {error:ownerError}=await supabase.from("jec_workspace_members").insert({
-      workspace_id:created.id,user_id:userId,workspace_role:"owner",
-      membership_status:"active",invited_by:userId,joined_at:new Date().toISOString()
+    const {data:createdId,error:createError}=await supabase.rpc("jec_create_workspace",{
+      target_name:name.trim(),
+      target_slug:slug,
+      target_type:type,
+      target_description:description.trim()||null
     });
-    if(ownerError){setError(en?"Workspace created, but owner membership could not be added: ":"Espace créé, mais impossible d'ajouter le propriétaire : "+ownerError.message);setCreating(false);return;}
+    if(createError){setError(createError.message);setCreating(false);return;}
     window.location.href="/workspace/"+slug;
   }
 
