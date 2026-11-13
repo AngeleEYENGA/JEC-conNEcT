@@ -236,3 +236,11 @@ Le schéma de collaboration existait déjà dans Supabase ; cette itération a r
 - Assistant IA : synthèse des transcriptions, génération assistée de comptes rendus, extraction de décisions et d'actions, suggestions de suivi. Aucun bouton IA n'est présenté comme opérationnel tant qu'un fournisseur/modèle et ses règles de confidentialité ne sont pas choisis.
 - Archives : versionnage documentaire, historique institutionnel, journal d'audit, passation des responsabilités, exports et conservation à long terme.
 - TURN, enregistrement éventuel et politique de conservation des réunions feront l'objet d'un choix technique et budgétaire séparé. L'enregistrement ne doit jamais être activé implicitement.
+
+### Complément sécurité — intégrité des périmètres de collaboration
+
+- Migration `collaboration_scope_integrity` appliquée : les références projet/réunion/tâche/document sont contrôlées par des triggers serveur afin qu'un enregistrement ne puisse pas relier des objets de plusieurs espaces.
+- Les politiques d'insertion de jalons, commentaires, points d'ordre du jour, décisions, comptes rendus et transcriptions utilisent des références explicites à l'espace concerné.
+- Contrôle final Supabase : RLS active sur les huit nouvelles tables phase 2 ; aucune lecture par `anon`. L'advisor santé ne signale aucun problème. L'unique alerte sécurité restante concerne la protection contre les mots de passe compromis désactivée.
+- Déploiement Vercel du socle phase 2 et de l'intégrité des périmètres validé READY ; les routes de liste et de détail projet/réunion/appel répondent en HTTP 200.
+- Le scénario SQL de salle d'appel a été testé avec deux participants dans une transaction annulée. Le test de média (micro, caméra, audio bidirectionnel et réseau) nécessite encore deux vrais navigateurs.
