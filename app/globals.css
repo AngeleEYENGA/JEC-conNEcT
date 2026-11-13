@@ -716,3 +716,126 @@
  .message-composer .primary-button{align-self:flex-end}
  .chat-message{max-width:96%}
 }
+
+
+/* Collaboration phase 2 — project and meeting workspaces */
+.meeting-detail-content,.project-detail-content{max-width:1120px}
+.meeting-detail-header,.project-detail-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;margin:8px 0 20px}
+.meeting-detail-header h1,.project-detail-heading h1{font:800 clamp(27px,4vw,38px)/1.12 Manrope;color:#302b47;letter-spacing:-1px;margin:6px 0}
+.meeting-workspace-link{font-size:10px;color:#827b8e;margin-top:7px}
+.meeting-detail-actions{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin:0 0 18px}
+.meeting-detail-actions .primary-button,.meeting-detail-actions .secondary-outline-button{font-size:10px;padding:11px 15px}
+.call-not-available{font-size:9px;color:#8d8696;padding:9px 0}
+.meeting-detail-tabs{display:flex;gap:6px;overflow-x:auto;border-bottom:1px solid #e9e5ee;margin:17px 0 16px;padding:3px 0 10px}
+.meeting-detail-tabs button{flex:none;border:1px solid transparent;border-radius:9px;padding:9px 13px;background:transparent;color:#817b8e;font-size:9px;font-weight:750}
+.meeting-detail-tabs button.active{background:#f2ecfa;color:#65409e;border-color:#e6daf3}
+.meeting-agenda-item,.meeting-decision-row,.project-milestone-row{display:flex;align-items:center;gap:11px;border-top:1px solid #f0edf4;padding:13px 0}
+.agenda-item-number,.milestone-marker,.decision-check{display:grid;place-items:center;width:28px;height:28px;flex:none;border-radius:9px;background:#f0eafa;color:#68439f;font-size:10px;font-weight:800}
+.agenda-item-main,.milestone-main{min-width:0;flex:1;display:flex;flex-direction:column;gap:4px}
+.agenda-item-main strong,.milestone-main strong,.meeting-decision-row strong{font-size:10px;color:#3e394f}
+.agenda-item-main p,.milestone-main p,.meeting-decision-row p{font-size:9px;color:#827b8e;line-height:1.6;margin:2px 0;white-space:pre-wrap}
+.agenda-item-main small,.milestone-main small,.meeting-decision-row small{font-size:8px;color:#948d9d}
+.meeting-agenda-item select,.project-milestone-row select{border:1px solid #e7e2ec;border-radius:7px;padding:7px;font-size:8px;background:#fff;color:#534b64}
+.agenda-create-form{margin-top:16px;padding-top:15px;border-top:1px solid #eeeaf3}
+.agenda-create-form h3,.collab-form h3{font:800 12px Manrope;color:#443b57;margin:0}
+.meeting-decision-row{align-items:flex-start}
+.decision-check{background:#eef7f0;color:#348252}
+.meeting-decision-row>div{min-width:0;flex:1}
+.meeting-participation{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:9px}
+.meeting-participation>span{font-size:8px;color:#827b8e}
+.meeting-participation button{font-size:8px;padding:6px 9px}
+.collab-form-label{display:flex;flex-direction:column;gap:6px;color:#5e576d;font-size:9px;font-weight:700;max-width:320px}
+.collab-form-label select{border:1px solid #e5e0ea;border-radius:8px;padding:9px;background:#fff;color:#443b57;font-size:10px}
+.transcript-privacy-warning{border:1px solid #f0dfc4;background:#fff9ef;border-radius:9px;padding:12px;color:#795d35;font-size:9px;line-height:1.7;margin:12px 0}
+.transcript-capture-controls{display:flex;gap:9px;align-items:center;flex-wrap:wrap;margin:12px 0}
+.transcript-saved-text{font-size:10px;line-height:1.85;color:#514b60;white-space:pre-wrap;overflow-wrap:anywhere}
+.minutes-editor{width:100%;min-height:220px;resize:vertical;border:1px solid #e3deea;border-radius:10px;padding:13px;background:#fff;color:#39334f;font:400 10px/1.8 inherit;outline-color:#9273bc}
+.minutes-actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:12px}
+.minutes-actions button,.approve-minutes-button{font-size:9px;padding:10px 13px}
+.minutes-approved{background:#f6faf6;border:1px solid #e0ece1;border-radius:10px;padding:14px}
+.minutes-approved>p{font-size:9px;font-weight:800;color:#36734b;margin:0 0 10px}
+.minutes-text-render{white-space:pre-wrap;font-size:10px;line-height:1.85;color:#484d49}
+.minutes-approved>small{display:block;font-size:8px;color:#6c8471;margin-top:12px}
+.approve-minutes-button{border:1px solid #cfe3d2;border-radius:8px;color:#31764a;background:#f0f8f1;font-weight:800;padding:10px 13px}
+.meeting-detail-content .collab-invitation{margin:12px 0 16px}
+.meeting-detail-content .collab-invitation>div{display:flex;gap:8px;flex-wrap:wrap}
+.meeting-agenda-text{font-size:10px;line-height:1.8;color:#60596d;white-space:pre-wrap}
+.project-open-link{display:inline-flex;align-items:center;gap:6px;color:#6741a7;text-decoration:none;font-size:9px;font-weight:800;margin-top:9px}
+.project-open-link:hover{text-decoration:underline}
+.project-list-card{display:flex;flex-direction:column;align-items:flex-start}
+.project-list-card .collab-card-footer{width:100%;margin-top:auto}
+.project-detail-heading .collab-lead{margin:5px 0 0;max-width:700px}
+.project-kpi-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:15px 0}
+.project-kpi{display:flex;flex-direction:column;gap:5px;background:#fff;border:1px solid #ece8f1;border-radius:12px;padding:14px}
+.project-kpi strong{font:800 22px Manrope;color:#493467}
+.project-kpi span{font-size:8px;color:#8d8696;font-weight:700}
+.project-progress{background:#fff;border:1px solid #ece8f1;border-radius:12px;padding:13px 15px;margin-bottom:15px}
+.project-progress>div:first-child{display:flex;justify-content:space-between;align-items:center;font-size:9px;color:#716a7c;margin-bottom:8px}
+.project-progress strong{color:#634098}
+.progress-track{height:7px;background:#eeeaf3;border-radius:20px;overflow:hidden}
+.progress-track span{display:block;height:100%;background:linear-gradient(90deg,#8b6aba,#5c8e7b);border-radius:20px}
+.project-edit-details{margin:0 0 15px}
+.project-edit-details summary{font-size:10px;font-weight:800;color:#5a4b70;cursor:pointer}
+.project-edit-details[open] summary{margin-bottom:14px}
+.project-milestone-row{align-items:center}
+.project-milestone-row .milestone-main{flex:1}
+.project-kanban{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;align-items:start;margin-top:12px}
+.project-kanban-column{min-width:0;background:#f8f6fa;border:1px solid #eeeaf3;border-radius:11px;padding:10px}
+.project-kanban-column h3{display:flex;align-items:center;justify-content:space-between;gap:8px;color:#5b536a;font-size:9px;margin:0 0 9px}
+.project-kanban-column h3 span{display:grid;place-items:center;min-width:19px;height:19px;border-radius:10px;background:#ece7f1;font-size:8px}
+.project-task-card{display:flex;flex-direction:column;align-items:flex-start;gap:6px;width:100%;border:1px solid #ece8f1;border-radius:9px;background:#fff;padding:10px;text-align:left;margin-bottom:8px}
+.project-task-card.selected{border-color:#bba8d2;box-shadow:0 0 0 2px #f0eafa}
+.project-task-card strong{font-size:9px;color:#413a54;line-height:1.5}
+.project-task-card small{font-size:7px;color:#928b9b}
+.project-task-card .project-status{margin-top:2px}
+.project-task-create{border-top:1px solid #eeeaf3;margin-top:15px;padding-top:15px}
+.task-detail-controls{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin:12px 0 15px}
+.task-detail-controls label{display:flex;flex-direction:column;gap:5px;font-size:8px;color:#756e80;font-weight:700}
+.task-detail-controls select{min-width:115px;border:1px solid #e7e2ec;border-radius:7px;padding:8px;background:#fff;color:#4c445f;font-size:9px}
+.task-comment-list{border-top:1px solid #eeeaf3;padding-top:12px}
+.task-comment-list h3{font:800 11px Manrope;color:#504664;margin:0 0 10px}
+.task-comment{display:flex;align-items:flex-start;gap:9px;border-bottom:1px solid #f1eef4;padding:10px 0}
+.task-comment>div:last-child{min-width:0;flex:1}
+.task-comment strong{display:block;font-size:9px;color:#51485f}
+.task-comment small{font-size:7px;color:#978f9f}
+.task-comment p{font-size:9px;color:#675f72;line-height:1.7;white-space:pre-wrap;margin:6px 0 0;overflow-wrap:anywhere}
+.project-related-links{display:flex;gap:12px;flex-wrap:wrap;padding:14px 3px}
+.project-related-links a{color:#6741a7;font-size:9px;font-weight:800;text-decoration:none}
+.meeting-call-room{background:#fff;border:1px solid #eae6f0;border-radius:16px;padding:20px}
+.call-room-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:15px;margin-bottom:15px}
+.call-room-heading h2{font:800 20px Manrope;color:#302b47;margin:6px 0}
+.call-room-heading p:not(.eyebrow){font-size:9px;color:#8b8495;margin:5px 0}
+.call-room-security{border-radius:20px;background:#eff7f0;color:#3e8150;padding:7px 10px;font-size:8px;white-space:nowrap}
+.call-preflight{display:flex;flex-direction:column;align-items:flex-start;gap:12px;max-width:670px;margin:10px auto;padding:23px 10px}
+.call-preflight-icon{display:grid;place-items:center;width:56px;height:56px;border-radius:17px;background:#f2edf8;color:#6942a0;font-size:27px}
+.call-preflight h3{font:800 16px Manrope;color:#3b3450;margin:0}
+.call-preflight>p{font-size:10px;line-height:1.75;color:#736c7d;margin:0}
+.call-consent{display:flex;gap:10px;align-items:flex-start;padding:12px;border:1px solid #e9e4ed;border-radius:9px;background:#faf9fb;color:#665e72;font-size:9px;line-height:1.7}
+.call-consent input{margin-top:2px;accent-color:#6d49a3;flex:none}
+.call-network-note{font-size:8px!important;color:#978e9d!important}
+.call-video-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;margin:14px 0}
+.call-video-tile,.call-waiting-tile{position:relative;min-height:180px;aspect-ratio:16/10;background:#22253a;border-radius:12px;overflow:hidden}
+.call-video-tile video{width:100%;height:100%;object-fit:cover;background:#22253a}
+.call-video-tile span{position:absolute;left:9px;bottom:9px;background:#191b2ccc;color:#fff;border-radius:15px;padding:5px 9px;font-size:8px}
+.call-waiting-tile{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:#fff;background:linear-gradient(135deg,#3d3655,#242e46)}
+.call-waiting-tile span{font-size:32px;color:#d4c3eb}
+.call-waiting-tile strong{font-size:10px}
+.call-controls{display:flex;justify-content:center;gap:9px;flex-wrap:wrap;border-top:1px solid #eeeaf3;padding-top:14px}
+.call-control,.call-hangup{border:1px solid #e6e1eb;border-radius:9px;background:#fff;color:#554b64;padding:10px 14px;font-size:9px;font-weight:800}
+.call-control.active{background:#f8f0e9;border-color:#ecd9c6;color:#94612f}
+.call-hangup{background:#a83e4c;border-color:#a83e4c;color:#fff}
+.call-page-content{max-width:1120px}
+@media(max-width:850px){
+ .project-kanban{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:640px){
+ .meeting-detail-header,.project-detail-heading,.call-room-heading{flex-direction:column;align-items:flex-start}
+ .project-kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .project-kanban{grid-template-columns:1fr}
+ .meeting-agenda-item,.project-milestone-row{flex-wrap:wrap}
+ .meeting-agenda-item .agenda-item-main,.project-milestone-row .milestone-main{flex-basis:calc(100% - 50px)}
+ .meeting-call-room{padding:13px}
+ .call-room-security{white-space:normal}
+ .call-video-grid{grid-template-columns:1fr}
+ .meeting-detail-actions{align-items:stretch;flex-direction:column}
+}
