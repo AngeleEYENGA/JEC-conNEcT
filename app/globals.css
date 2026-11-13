@@ -852,7 +852,7 @@
 .global-notification-header strong{font-size:14px;color:#1f2b45}
 .global-notification-header small{font-size:11px;color:#788397}
 .global-notification-actions{display:flex;align-items:center;gap:8px}
-.global-notification-actions button,.global-notification-footer button{display:inline-flex;align-items:center;gap:6px;border:0;background:transparent;color:#52617b;font:700 11px inherit;cursor:pointer;padding:6px;border-radius:7px}
+.global-notification-actions button,.global-notification-footer button{display:inline-flex;align-items:center;gap:6px;border:0;background:transparent;color:#52617b;font:inherit;font-size:11px;font-weight:700;cursor:pointer;padding:6px;border-radius:7px}
 .global-notification-actions button:hover,.global-notification-footer button:hover{background:#f3f5f8;color:#1f2b45}
 .global-notification-list{overflow:auto;overscroll-behavior:contain}
 .global-notification-item{display:flex;gap:11px;padding:13px 16px;border-bottom:1px solid #f0f2f6;color:inherit;text-decoration:none;transition:background .15s}
