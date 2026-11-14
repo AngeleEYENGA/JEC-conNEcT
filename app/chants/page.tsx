@@ -11,14 +11,8 @@ type SongId = "rally" | "anthem";
 type Copy = { en: string; fr: string };
 
 const officialLyrics: Record<SongId, Record<"fr"|"en", string>> = {
-  "rally": {
-    "fr": "UN MÊME ÉLAN • UNE MÊME FOI • UN MÊME ENGAGEMENT\n\nNous irons jusqu'au bout du monde.\nLa JEC ne périra pas ! (bis)\n\nLa JEC : oui, oui, oui.\nLa JEC : oui, c'est vrai.\nLa JEC : ne périra pas ! (bis)\n\nSur ma tombe il faut qu'on inscrive les initiales de la JEC. (bis)\n\nLes initiales : oui, oui, oui !\nLes initiales : oui, c'est vrai !\nLes initiales : de la JEC ! (bis)\n\nPar la foi et par la prière, nous serons forts pour changer les cœurs ; (bis)\n\nPar la foi : oui, oui, oui !\nPar la prière : oui, c'est vrai !\nNous serons forts pour changer les cœurs ! (bis)\n\nVoir • Juger • Agir",
-    "en": "ONE SHARED SPIRIT • ONE SHARED FAITH • ONE SHARED COMMITMENT\n\nWe will go to the ends of the earth.\nThe YCS shall never perish! (twice)\n\nYCS: yes, yes, yes!\nYCS: yes, that's right!\nThe YCS shall never perish! (twice)\n\nOn my grave, the initials of the YCS must be inscribed. (twice)\n\nThe initials: yes, yes, yes!\nThe initials: yes, that's right!\nThe initials of the YCS! (twice)\n\nThrough faith and prayer, we will be strong enough to change hearts! (twice)\n\nThrough faith: yes, yes, yes!\nThrough prayer: yes, that's right!\nWe will be strong enough to change hearts! (twice)\n\nSEE • JUDGE • ACT"
-  },
-  "anthem": {
-    "fr": "REFRAIN\n\nChantons amis la vie est belle\nPour nos cœurs joyeux et fervents\nJécistes le Christ nous appelle (bis)\nVers l'avenir, en avant (bis)\n\nCOUPLET 1\n\nNous sommes la jeunesse ardente\nPhalange sans regret ni peur\nEt dans nos poitrines vibrantes\nBat le cœur du Christ Rédempteur\n\nPortons à travers nos écoles\nSon nom, sa joie, sa charité\nQue tous entendent ses paroles\nQu'ils naissent à la vérité\n\nREFRAIN — À REPRENDRE\n\nChantons amis la vie est belle\nPour nos cœurs joyeux et fervents\nJécistes le Christ nous appelle (bis)\nVers l'avenir, en avant (bis)\n\nVERS L'AVENIR, EN AVANT",
-    "en": "CHORUS\n\nCome, friends, let us sing: life is beautiful,\nWith joyful and fervent hearts.\nYoung Christian Students, Christ calls us (twice),\nForward into the future, onward! (twice)\n\nVERSE 1\n\nWe are a passionate, youthful band,\nA fearless company, steadfast and strong;\nAnd in our hearts, alive and vibrant,\nBeats the heart of Christ our Redeemer.\n\nLet us carry through our schools\nHis name, His joy, His charity;\nMay all hear His words resounding,\nAnd be born anew into truth.\n\nCHORUS — REPEAT\n\nCome, friends, let us sing: life is beautiful,\nWith joyful and fervent hearts.\nYoung Christian Students, Christ calls us (twice),\nForward into the future, onward! (twice)\n\nSEE • JUDGE • ACT"
-  }
+  rally: { fr: "CHANT DE RALLIEMENT\n\n1. Nous irons jusqu’au bout du monde, la JEC ne périra pas (2x)\n\nRefrain (à reprendre)\nLa J.E.C., oui, oui, oui !\nLa J.E.C., oui, c’est vrai !\nLa J.E.C. ne périra pas (2x)\n\n2. Tous ensemble, il faut qu’on s’imprègne de l’idéal de la J.E.C. (2x)\n\nRefrain\nDe l’idéal, oui, oui, oui !\nDe l’idéal, oui, c’est vrai !\nDe l’idéal de la J.E.C. (2x)\n\n3. Travaillons avec tous nos frères à rendre meilleur le monde étudiant (2x)\n\nRefrain\nÀ rendre meilleur, oui, oui, oui !\nÀ rendre meilleur, oui, c’est vrai !\nÀ rendre meilleur le monde étudiant (2x)\n\n4. Par l’action et par la prière, nous serons forts pour changer les cœurs (2x)\n\nRefrain\nPar l’action, oui, oui, oui !\nPar la prière, oui, c’est vrai !\nNous serons forts pour changer les cœurs (2x)\n\n5. Si je meurs, il faut qu’on m’enterre à la centrale de la J.E.C. (2x)\n\nRefrain\nÀ la centrale, oui, oui, oui !\nÀ la centrale, oui, c’est vrai !\nÀ la centrale de la J.E.C. (2x)\n\n6. Ce jour-là, il faut qu’on invite les aumôniers de la JEC (2x)\n\nRefrain\nLes aumôniers, oui, oui, oui !\nLes aumôniers, oui, c’est vrai !\nLes aumôniers de la J.E.C. (2x)\n\n7. Sur ma tombe, il faut qu’on inscrive les initiales de la J.E.C. (2x)\n\nRefrain\nLes initiales, oui, oui, oui !\nLes initiales, oui, c’est vrai !\nLes initiales de la J.E.C. (2x)", en: "SONG OF RALLIEMENT — ENGLISH VERSION\n\n1. We shall go to the ends of the world and the YCS shall never perish (twice).\n\nRefrain (repeat)\nThe YCS, yes, yes, yes!\nThe YCS, yes, it’s true!\nThe YCS shall never perish (twice).\n\n2. Together, we have to be filled with the ideal of the YCS (twice).\n\nRefrain\nThe ideal, yes, yes, yes!\nThe ideal, yes, it’s true!\nThe ideal of the YCS (twice).\n\n3. Let us work with all our brothers to make the student world a better place (twice).\n\nRefrain\nTo make it better, yes, yes, yes!\nTo make it better, yes, it’s true!\nTo make the student world better (twice).\n\n4. By action and prayer, we shall be strong enough to change hearts (twice).\n\nRefrain\nBy action, yes, yes, yes!\nBy prayer, yes, it’s true!\nWe shall be strong enough to change hearts (twice).\n\n5. If I die, I shall be buried at the centre of the YCS (twice).\n\nRefrain\nAt the centre, yes, yes, yes!\nAt the centre, yes, it’s true!\nAt the centre of the YCS (twice).\n\n6. On that day, we must invite the YCS chaplains (twice).\n\nRefrain\nThe chaplains, yes, yes, yes!\nThe chaplains, yes, it’s true!\nThe chaplains of the YCS (twice).\n\n7. On my tomb, the initials of the YCS must be written (twice).\n\nRefrain\nThe initials, yes, yes, yes!\nThe initials, yes, it’s true!\nThe initials of the YCS (twice)." },
+  anthem: { fr: "HYMNE DE LA JEC — FRANÇAIS\n\nREFRAIN\nChantons amis, la vie est belle,\nPour nos cœurs joyeux et fervents ;\nJécistes, le Christ nous appelle (2x)\nVers l’avenir, en avant (2x).\n\nCOUPLET\nNous sommes la jeunesse ardente,\nPhalanges sans regret ni peur,\nEt dans nos poitrines vibrantes\nBat le cœur du Christ Rédempteur.\n\nPortons à travers les écoles\nSon nom, sa loi, sa charité ;\nQue tous entendent ses paroles,\nQu’ils naissent à la vérité.", en: "YCS HYMN — ENGLISH VERSION\n\nCHORUS\nLet us sing, friends, life is beautiful,\nFor our joyful and fervent hearts;\nYoung Christian Students, Christ calls us (twice),\nTowards the future, forward (twice).\n\nSTANZA\nWe are the fiery youth,\nPhalanxes without regret or fear,\nAnd in our vibrant hearts\nBeats the heart of Christ the Redeemer.\n\nLet us carry through the schools\nHis name, His law, His charity;\nMay everyone hear His words,\nAnd be born into the truth." }
 };
 
 const officialSources: Record<SongId, Record<"fr"|"en", string>> = {
@@ -110,7 +104,7 @@ export default function ChantsPage() {
   const [saved,setSaved]=useState(false);
   const audioInput=useRef<HTMLInputElement>(null);
 
-  const storageKey = `jec-connect-song-${selected}-${lyricsLang}-v4`;
+  const storageKey = `jec-connect-song-${selected}-${lyricsLang}-v5`;
   const audioStorageKey = `jec-connect-audio-${selected}-${lyricsLang}`;
 
   useEffect(()=>{
@@ -352,7 +346,7 @@ export default function ChantsPage() {
   return (
     <main className="songs-page">
       <header className="songs-header">
-        <Link href="/" className="brand-lockup"><span className="brand-mark"><span>JEC</span><i>✳</i></span><span>conNEcT</span></Link>
+        <Link href="/" className="brand-lockup"><span className="brand-mark"><span>JEC</span><i aria-hidden="true">✝</i></span><span>conNEcT</span></Link>
         <div className="songs-header-actions"><PWAInstallButton/><LanguageSwitcher/><Link href="/" className="back-link-inline">← {tr("home",lang)}</Link></div>
       </header>
 
@@ -422,6 +416,88 @@ export default function ChantsPage() {
               <small className="audio-privacy">{audioIsPublic?tr("audioPublished",lang):audioCloudSaved?tr("audioCloudPrivate",lang):tr("addAudioHint",lang)+" "+tr("localStorageLimit",lang)}{isAdmin&&audioCloudSaved&&!audioIsPublic?<span className="audio-privacy-admin"> {tr("publishPending",lang)}</span>:null}</small>
             </aside>
           </div>
+        </section>
+
+        <section className="jec-spiritual-heritage">
+          <div className="songs-intro-row"><div><p className="eyebrow">{lang==="fr"?"TRANSMISSION ET IDENTITÉ":"TRANSMISSION AND IDENTITY"}</p><h2>{lang==="fr"?"Repères du jéciste":"YCS identity and prayer"}</h2></div><p>{lang==="fr"?"Des repères spirituels et communautaires repris dans le livret du Camp national universitaire Garoua 2026.":"Spiritual and community references included in the Garoua 2026 National University Camp booklet."}</p></div>
+          <div className="jec-heritage-grid">
+            <article className="collab-card jec-heritage-card">
+              <p className="eyebrow">{lang==="fr"?"LA LOI DU JÉCISTE":"THE YCS LAW"}</p>
+              <h3>{lang==="fr"?"Le jéciste…":"The YCS member…"}</h3>
+              <ul>
+                {(lang==="fr"?[
+                  "A le sens de l’Église.",
+                  "Combat pour la pureté.",
+                  "A le sens de ses responsabilités.",
+                  "Croit en l’amitié vraie.",
+                  "Est au service de ses frères.",
+                  "Vit en état de grâce.",
+                  "Comprend la joie du travail.",
+                  "Ne s’appartient pas, mais appartient au Christ.",
+                  "Respecte la hiérarchie du mouvement et de l’Église.",
+                  "Est fier, joyeux, pur et conséquent."
+                ]:[
+                  "Has a sense of the Church.",
+                  "Strives for purity.",
+                  "Takes responsibility seriously.",
+                  "Believes in true friendship.",
+                  "Serves brothers and sisters.",
+                  "Seeks to live in a state of grace.",
+                  "Understands the joy of work.",
+                  "Does not belong to oneself, but to Christ.",
+                  "Respects the hierarchy of the movement and the Church.",
+                  "Is proud, joyful, pure and consistent."
+                ]).map((item,i)=><li key={i}>{item}</li>)}
+              </ul>
+            </article>
+            <article className="collab-card jec-heritage-card">
+              <p className="eyebrow">{lang==="fr"?"PRIÈRE DU JÉCISTE":"YCS PRAYER"}</p>
+              <h3>{lang==="fr"?"Prière commune":"A prayer for the movement"}</h3>
+              <p>{lang==="fr"
+                ?"Notre Père qui es aux cieux, nous te confions notre jeunesse, afin de préparer dès maintenant la fidélité sans défaillance de toute notre vie. Donne-nous la grâce de conserver vaillamment la pureté de nos âmes. Affermis en nos cœurs le désir de vivre selon ta volonté, d’être toujours et partout porteurs de ta parole pour la faire rayonner dans le monde. Donne-nous le courage d’imiter le Christ et d’être prêts aux sacrifices que tu nous demandes. Rends-nous dignes d’annoncer à nos camarades ta lumière, ta charité et ta vérité. Fais de nous une âme fraternelle qui aime tous ceux qui, dans toutes les classes de la société et toutes les nations du monde, recherchent la justice. Donne-nous la foi conquérante de tes apôtres afin d’être les messagers de ta parole dans notre milieu. Amen."
+                :"Our Father in heaven, we entrust our youth to you and ask you to prepare us now for lifelong faithfulness. Give us the grace to preserve the purity of our souls. Strengthen in our hearts the desire to live according to your will and to carry your word everywhere. Give us the courage to imitate Christ and to accept the sacrifices you ask of us. Make us worthy to share your light, charity and truth with our friends. Give us a fraternal heart that loves all people who seek justice in every part of society and every nation. Give us the conquering faith of your apostles, so that we may be messengers of your word in our own environment. Amen."}</p>
+            </article>
+            <article className="collab-card jec-heritage-card">
+              <p className="eyebrow">{lang==="fr"?"QUALITÉS D’UN BON JÉCISTE":"QUALITIES OF A GOOD YCS MEMBER"}</p>
+              <h3>{lang==="fr"?"Un engagement au quotidien":"A daily commitment"}</h3>
+              <ul>
+                {(lang==="fr"?[
+                  "Prier chaque jour, matin et soir.",
+                  "Faire sa révision de vie journalière, hebdomadaire, mensuelle et annuelle.",
+                  "Faire une bonne action chaque jour.",
+                  "Lire régulièrement la Bible pour mieux prier.",
+                  "Avoir un accompagnateur ou guide spirituel.",
+                  "Se confesser régulièrement.",
+                  "Participer activement aux activités de son groupe, de sa section, de son secteur, de sa région et du Bureau national.",
+                  "Faire au moins une récollection ou retraite spirituelle par an.",
+                  "Avoir sa carte de militant et payer régulièrement sa cotisation.",
+                  "Être serviable et attentif aux besoins des autres.",
+                  "Rendre visite aux malades et aider les personnes dans le besoin.",
+                  "Participer à la messe chaque dimanche et aux activités de sa paroisse.",
+                  "Pardonner et demander pardon autant que possible.",
+                  "Être studieux et persévérant dans ses études et dans la vie.",
+                  "Aimer Dieu et aimer son prochain."
+                ]:[
+                  "Pray every day, in the morning and in the evening.",
+                  "Review one’s life daily, weekly, monthly and yearly.",
+                  "Do one good deed every day.",
+                  "Read the Bible regularly in order to pray better.",
+                  "Have a spiritual guide or companion.",
+                  "Go to confession regularly.",
+                  "Take an active part in the basic group, section, sector, region and National Office.",
+                  "Take part in at least one spiritual retreat each year.",
+                  "Hold a member card and pay the regular group contribution.",
+                  "Be helpful and attentive to others’ needs.",
+                  "Visit the sick and help people in need.",
+                  "Attend Sunday Mass and take part in parish life.",
+                  "Forgive and ask forgiveness as often as possible.",
+                  "Work diligently at school and in life.",
+                  "Love God and love one’s neighbour."
+                ]).map((item,i)=><li key={i}>{item}</li>)}
+              </ul>
+            </article>
+          </div>
+          <p className="songs-disclaimer">{lang==="fr"?"Transcription du livret reçu. Les variantes locales éventuelles restent à documenter avec les responsables nationaux.":"Transcribed from the supplied booklet. Any local variants should be documented with the national leaders."}</p>
         </section>
 
         <section className="songs-memory-banner">
