@@ -16,6 +16,7 @@ export default function LoginPage() {
   const [loading,setLoading]=useState(false);
   const [error,setError]=useState("");
   const [message,setMessage]=useState("");
+  const [signupEmailBlocked,setSignupEmailBlocked]=useState(false);
   const [configured,setConfigured]=useState(false);
 
   useEffect(()=>{
@@ -30,8 +31,15 @@ export default function LoginPage() {
   },[en]);
 
   function authErrorText(value:string) {
-    if(value.toLowerCase().includes("provider is not enabled")) return en?"Google sign-in is not enabled in Supabase yet.":"La connexion Google n’est pas encore activée dans Supabase.";
-    if(value.toLowerCase().includes("redirect")) return en?"The callback URL is not allowed in Supabase. Add this app's /auth/callback URL to the redirect allow list.":"L’URL de retour n’est pas autorisée dans Supabase. Ajoute l’URL /auth/callback de cette application à la liste des redirections.";
+    const normalized=value.toLowerCase();
+    if(normalized.includes("provider is not enabled")) return en?"Google sign-in is not enabled in Supabase yet.":"La connexion Google n’est pas encore activée dans Supabase.";
+    if(normalized.includes("email_address_not_authorized")||normalized.includes("email address not authorized")) return en
+      ?"Supabase's default mailer only sends to addresses belonging to the project's organization team. A custom SMTP sender must be configured before this address can receive a confirmation email."
+      :"Le service e-mail par défaut de Supabase n’envoie qu’aux adresses des membres de l’équipe de l’organisation du projet. Un SMTP personnalisé doit être configuré pour que cette adresse reçoive un e-mail de confirmation.";
+    if(normalized.includes("over_email_send_rate_limit")||normalized.includes("only request this after")) return en
+      ?"Too many confirmation emails were requested. Wait at least 60 seconds before retrying. Repeated sign-ups will not bypass this limit."
+      :"Trop de demandes d’e-mail de confirmation ont été effectuées. Attends au moins 60 secondes avant de réessayer. Répéter l’inscription ne contournera pas cette limite.";
+    if(normalized.includes("redirect")) return en?"The callback URL is not allowed in Supabase. Add this app's /auth/callback URL to the redirect allow list.":"L’URL de retour n’est pas autorisée dans Supabase. Ajoute l’URL /auth/callback de cette application à la liste des redirections.";
     return value;
   }
 
@@ -51,7 +59,7 @@ export default function LoginPage() {
   }
 
   async function submit(event:FormEvent<HTMLFormElement>) {
-    event.preventDefault();setError("");setMessage("");
+    event.preventDefault();setError("");setMessage("");setSignupEmailBlocked(false);
     const supabase=getSupabaseBrowserClient();
     if(!supabase){setError(en?"Supabase is not configured on this deployment yet.":"Supabase n’est pas encore configuré sur ce déploiement.");return;}
     setLoading(true);
@@ -70,9 +78,10 @@ export default function LoginPage() {
           :"Un compte existe déjà pour cette adresse. Utilise la même méthode de connexion qu'auparavant (pour ce compte, Google). Refaire une inscription ne crée pas de mot de passe et ne déclenche pas un nouvel e-mail de confirmation.");
         setMode("login");
       }else{
+        setSignupEmailBlocked(true);
         setMessage(en
-          ?"The sign-up request was accepted. Email delivery is not guaranteed yet: JEC-conNEcT still needs a production SMTP sender. If no message arrives, do not create the account again; contact the platform administrator."
-          :"La demande d'inscription a été enregistrée. L'envoi du mail n'est pas encore garanti : JEC-conNEcT doit encore disposer d'un serveur SMTP de production. Si aucun message n'arrive, ne recrée pas le compte ; contacte l'administrateur de la plateforme.");
+          ?"Your account record was created, but it is not active until the email is confirmed. The current Supabase test mailer only delivers to the project organisation's team addresses, so new JEC members outside that team will not receive this email. Do not sign up again. The platform administrator must configure custom SMTP, then resend the confirmation."
+          :"Le compte a bien été créé dans Supabase, mais il reste inactif tant que l’adresse e-mail n’est pas confirmée. Le serveur de test Supabase n’envoie qu’aux adresses de l’équipe de l’organisation du projet : les nouveaux jécistes extérieurs à cette équipe ne recevront donc pas ce mail. Ne recommence pas l’inscription. L’administrateur doit configurer un SMTP personnalisé, puis renvoyer la confirmation.");
       }
     } else {
       const {error:authError}=await supabase.auth.signInWithPassword({email,password});
@@ -118,7 +127,7 @@ export default function LoginPage() {
             <span className="google-g">G</span> {en?"Continue with Google":"Continuer avec Google"}
           </button>
           {!configured && <p className="auth-config-note">{en?"Google and email sign-in are waiting for the public Supabase key and provider setup.":"La connexion Google et e-mail attendent la clé publique Supabase et la configuration du fournisseur."}</p>}
-          {mode==="signup"&&<p className="auth-config-note">{en?"Email confirmation is currently not production-ready. A custom SMTP sender must be configured before public email sign-up can reliably deliver confirmation messages.":"La confirmation par e-mail n'est pas encore prête pour la production. Un serveur SMTP personnalisé doit être configuré pour garantir l'envoi des messages de confirmation."}</p>}
+          {mode==="signup"&&<p className="auth-config-note">{en?"Important: the built-in Supabase test mailer only sends to members of the project's organisation team. To let all JEC members sign up with their own email addresses, JEC-conNEcT needs a custom SMTP sender. Email confirmation remains enabled for account security.":"Important : le service e-mail de test intégré à Supabase n’envoie qu’aux membres de l’équipe de l’organisation du projet. Pour permettre à tous les jécistes de créer un compte avec leur propre adresse, JEC-conNEcT doit configurer un SMTP personnalisé. La confirmation e-mail reste activée pour protéger les comptes."}</p>}
           <div className="or-divider"><span/>{en?"or use your email address":"ou avec ton adresse e-mail"}<span/></div>
           <form onSubmit={submit} className="auth-form">
             <label>{en?"Email address":"Adresse e-mail"}<input type="email" autoComplete="email" required value={email} onChange={e=>setEmail(e.target.value)} placeholder="prenom@exemple.fr"/></label>
@@ -127,8 +136,8 @@ export default function LoginPage() {
           </form>
           {mode==="login" && <button className="forgot-password" onClick={resetPassword} disabled={loading}>{en?"Forgot your password?":"Mot de passe oublié ?"}</button>}
           {error && <p className="alert error">{error}</p>}
-          {message && <p className="alert success">{message}</p>}
-          <p className="switch-auth">{mode==="login"?(en?"New to JEC-conNEcT?":"Pas encore de compte ?"):(en?"Already have an account?":"Tu as déjà un compte ?")} <button onClick={()=>{setMode(mode==="login"?"signup":"login");setError("");setMessage("");}}>{mode==="login"?(en?"Create an account":"Créer un compte"):(en?"Sign in":"Se connecter")}</button></p>
+          {message && <p className={signupEmailBlocked?"alert error":"alert success"}>{message}</p>}
+          <p className="switch-auth">{mode==="login"?(en?"New to JEC-conNEcT?":"Pas encore de compte ?"):(en?"Already have an account?":"Tu as déjà un compte ?")} <button onClick={()=>{setMode(mode==="login"?"signup":"login");setError("");setMessage("");setSignupEmailBlocked(false);}}>{mode==="login"?(en?"Create an account":"Créer un compte"):(en?"Sign in":"Se connecter")}</button></p>
           <p className="auth-note">{en?"By continuing, you agree to the platform's terms of use and privacy policy.":"En continuant, tu acceptes les règles d’utilisation et la politique de confidentialité de la plateforme."}</p>
         </div>
       </section>
