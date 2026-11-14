@@ -18,7 +18,7 @@ declare
   pending_members uuid[];
   member_id uuid;
   inserted_count integer := 0;
-  row_count integer := 0;
+  affected_rows integer := 0;
   current_count integer := 0;
   target_status text;
 begin
@@ -108,18 +108,11 @@ begin
           joined_at=excluded.joined_at
       where public.jec_conversation_members.membership_status='left';
 
-    get diagnostics row_count = row_count + row_count;
+    get diagnostics affected_rows = row_count;
+    inserted_count := inserted_count + affected_rows;
   end loop;
 
-  -- Recount after the inserts. Existing active/invited members are left unchanged.
-  select count(*)::integer into inserted_count
-  from public.jec_conversation_members cm
-  where cm.conversation_id=target_conversation_id
-    and cm.user_id=any(distinct_members)
-    and cm.membership_status=target_status
-    and cm.invited_by=current_user_id;
-
-  if cardinality(pending_members)=0 then
+  if inserted_count=0 then
     raise exception 'All selected people are already participants' using errcode='22023';
   end if;
 
@@ -127,7 +120,7 @@ begin
   set updated_at=now()
   where id=target_conversation_id;
 
-  return cardinality(pending_members);
+  return inserted_count;
 end;
 $$;
 revoke all on function private.jec_add_conversation_members(uuid,uuid[]) from public,anon,authenticated;
