@@ -266,7 +266,7 @@ export default function ArchivesPage() {
         if (uploadError) throw uploadError;
         uploadedPaths.push(path);
         const { error: metadataError } = await supabase.from("jec_archive_files").insert({
-          archive_item_id:itemId,storage_path:path,file_name:file.name,mime_type:file.type||null,
+          archive_item_id:itemId,storage_path:path,file_name:file.name,mime_type:contentType,
           file_size:file.size,sort_order:index,created_by:userId
         });
         if (metadataError) throw metadataError;
@@ -404,6 +404,12 @@ export default function ArchivesPage() {
           </form>
         </section>
       )}
+
+      <section className="archives-connected-resources">
+        <div><p className="eyebrow">{en ? "ALREADY DOCUMENTED" : "DÉJÀ DOCUMENTÉ"}</p><h3>{en ? "Explore existing JEC heritage resources" : "Retrouver les ressources patrimoniales déjà documentées"}</h3></div>
+        <Link href="/decouvrir#frise-chronologique"><span>⌛</span><div><strong>{en ? "Interactive timeline" : "Frise chronologique"}</strong><small>{en ? "Historical milestones with their source references." : "Repères historiques reliés à leurs sources."}</small></div><b>↗</b></Link>
+        <Link href="/chants"><span>♫</span><div><strong>{en ? "Songs & anthems" : "Chants & hymnes"}</strong><small>{en ? "Rallying song and JEC anthem in French and English." : "Chant de ralliement et hymne JEC en français et en anglais."}</small></div><b>↗</b></Link>
+      </section>
 
       <div className="archives-content-grid">
         <aside className="archives-filters">
