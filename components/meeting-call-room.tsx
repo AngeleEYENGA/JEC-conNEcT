@@ -705,6 +705,7 @@ export default function MeetingCallRoom({
       await localStreamRef.current?.getTracks().forEach(track => track.stop());
       localStreamRef.current = null;
       sessionIdRef.current = "";
+      setMicrophoneReady(false);
     } finally {
       startingRef.current = false;
     }
@@ -787,8 +788,10 @@ export default function MeetingCallRoom({
           </div>
           <div className="call-controls">
             <button className={muted ? "call-control active" : "call-control"} onClick={() => {
-              localStreamRef.current?.getAudioTracks().forEach(track => { track.enabled = muted; });
-              setMuted(!muted);
+              const nextMuted = !muted;
+              localStreamRef.current?.getAudioTracks().forEach(track => { track.enabled = !nextMuted; });
+              if (nextMuted && liveTranscribingRef.current) stopLiveTranscription();
+              setMuted(nextMuted);
             }}>{muted ? "Activer le micro" : "Couper le micro"}</button>
             <button className={cameraOff ? "call-control active" : "call-control"} onClick={() => {
               localStreamRef.current?.getVideoTracks().forEach(track => { track.enabled = cameraOff; });
