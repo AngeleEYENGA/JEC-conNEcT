@@ -991,3 +991,26 @@
 
 .call-screen-share-note{margin:10px auto 0;max-width:720px;color:#756b83;font-size:12px;line-height:1.55;text-align:center;background:#f6f2fa;border:1px solid #e6ddef;border-radius:12px;padding:10px 14px}
 .call-control:disabled{opacity:.55;cursor:not-allowed;background:#f4f1f6;color:#8d8497;border-color:#e7e1eb}
+
+
+/* Live meeting media: remote autoplay, microphone state and opt-in transcript */
+.call-play-audio{position:absolute;top:12px;right:12px;z-index:3;border:0;border-radius:999px;padding:9px 13px;background:#fff;color:#40345f;font-size:10px;font-weight:800;box-shadow:0 5px 18px #17132935}
+.call-mic-status{display:inline-flex;align-items:center;margin-top:6px;padding:5px 9px;border-radius:999px;font-size:9px;font-weight:800;background:#fff1f0;color:#9d4148}
+.call-mic-status.active{background:#eaf7ef;color:#27784e}
+.call-transcription-optin{display:grid;gap:10px;margin:12px 0;padding:12px;border:1px solid #e6ddef;border-radius:12px;background:#faf8fd}
+.call-language-select{display:grid;gap:6px;font-size:10px;font-weight:800;color:#574a6b}
+.call-language-select select{min-height:38px;border:1px solid #e5deed;border-radius:8px;background:#fff;padding:8px 10px;color:#40364f;font:inherit}
+.call-transcription-privacy{margin:0;color:#81778b;font-size:9px;line-height:1.6}
+.call-live-transcript{margin:14px 0 0;border:1px solid #e8e1f0;border-radius:13px;padding:13px;background:#fcfbfe}
+.call-live-transcript-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;color:#3e315f;font-size:11px}
+.call-live-status{font-size:9px;font-weight:800;color:#877a94;background:#f0edf4;border-radius:999px;padding:5px 9px}
+.call-live-status.active{color:#28774d;background:#e8f6ed}
+.call-live-transcript-lines{display:grid;gap:7px;max-height:190px;overflow:auto;margin-top:10px}
+.call-live-transcript-lines p{display:grid;grid-template-columns:minmax(80px,auto) 1fr;gap:10px;align-items:start;margin:0;padding:8px 0;border-top:1px solid #eee9f3;font-size:10px;line-height:1.55;color:#62596e}
+.call-live-transcript-lines p strong{color:#5c4385}
+.call-live-transcript-empty,.call-transcription-error{font-size:10px;line-height:1.6;color:#82798c;margin:9px 0 0}
+.call-transcription-error{color:#a44048}
+@media(max-width:620px){
+ .call-live-transcript-lines p{grid-template-columns:1fr;gap:2px}
+ .call-transcription-optin{padding:10px}
+}
