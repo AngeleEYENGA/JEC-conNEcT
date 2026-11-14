@@ -7,7 +7,8 @@ import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
 type Conversation={id:string;conversation_type:"direct"|"group"|"workspace";title:string|null;workspace_id:string|null;created_at:string};
 type ConversationMembership={conversation_id:string;conversation_role:"owner"|"member";membership_status:"invited"|"active"|"left"};
-type ConversationParticipant={user_id:string;conversation_role:"owner"|"member";membership_status:"invited"|"active"};
+type ConversationParticipant={user_id:string;conversation_role:"owner"|"member";membership_status:"invited"|"active"|"left"};
+type WorkspaceCandidate={user_id:string;workspace_role:string;display_name:string};
 type Message={id:string;conversation_id:string;sender_id:string;body:string;created_at:string;edited_at:string|null;deleted_at:string|null};
 type Profile={user_id:string;first_name:string|null;last_name:string|null;display_name:string|null;avatar_url:string|null};
 type Workspace={id:string;name:string;slug:string};
@@ -37,6 +38,11 @@ export default function MessagesPage(){
   const [newTitle,setNewTitle]=useState("");
   const [memberEmails,setMemberEmails]=useState("");
   const [workspaceId,setWorkspaceId]=useState("");
+  const [workspaceCandidates,setWorkspaceCandidates]=useState<WorkspaceCandidate[]>([]);
+  const [selectedWorkspaceMemberIds,setSelectedWorkspaceMemberIds]=useState<string[]>([]);
+  const [groupInviteEmails,setGroupInviteEmails]=useState("");
+  const [showMemberManager,setShowMemberManager]=useState(false);
+  const [addingMembers,setAddingMembers]=useState(false);
 
   const selected=conversations.find(c=>c.id===selectedId)??null;
   const membershipByConversation=useMemo(()=>new Map(myMemberships.map(m=>[m.conversation_id,m.membership_status])),[myMemberships]);
@@ -87,7 +93,7 @@ export default function MessagesPage(){
 
   useEffect(()=>{
     if(!selectedId||membershipByConversation.get(selectedId)!=="active") {
-      setMessages([]);setParticipants([]);setProfiles([]);return;
+      setMessages([]);setParticipants([]);setProfiles([]);setWorkspaceCandidates([]);return;
     }
     const supabase=getSupabaseBrowserClient();if(!supabase)return;
     let active=true;
@@ -103,12 +109,44 @@ export default function MessagesPage(){
       setMessages((messageRows??[]) as Message[]);
       const roster=(participantRows??[]) as ConversationParticipant[];
       setParticipants(roster);
-      const ids=roster.filter(row=>row.membership_status==="active").map(row=>row.user_id);
+
+      let workspaceRows:Array<{user_id:string;workspace_role:string}>=[];
+      if(selected?.conversation_type==="workspace"&&selected.workspace_id){
+        const {data:memberRows,error:workspaceRosterError}=await supabase
+          .from("jec_workspace_members")
+          .select("user_id,workspace_role")
+          .eq("workspace_id",selected.workspace_id)
+          .eq("membership_status","active");
+        if(workspaceRosterError)setError(workspaceRosterError.message);
+        workspaceRows=(memberRows??[]) as Array<{user_id:string;workspace_role:string}>;
+      }
+
+      const ids=[...new Set([
+        ...roster.filter(row=>row.membership_status!=="left").map(row=>row.user_id),
+        ...workspaceRows.map(row=>row.user_id)
+      ])];
+      let profileRows:Profile[]=[];
       if(ids.length){
-        const {data:profileRows,error:profileError}=await supabase.from("jec_profiles")
+        const {data:foundProfiles,error:profileError}=await supabase.from("jec_profiles")
           .select("user_id,first_name,last_name,display_name,avatar_url").in("user_id",ids);
         if(active&&profileError)setError(profileError.message);
-        if(active)setProfiles((profileRows??[]) as Profile[]);
+        profileRows=(foundProfiles??[]) as Profile[];
+        if(active)setProfiles(profileRows);
+      }else if(active)setProfiles([]);
+
+      if(active){
+        const byId=new Map(profileRows.map(profile=>[profile.user_id,profile]));
+        const alreadyInConversation=new Set(roster.filter(member=>member.membership_status!=="left").map(member=>member.user_id));
+        setWorkspaceCandidates(workspaceRows
+          .filter(member=>!alreadyInConversation.has(member.user_id))
+          .map(member=>{
+            const profile=byId.get(member.user_id);
+            return {
+              user_id:member.user_id,
+              workspace_role:member.workspace_role,
+              display_name:profile?.display_name||[profile?.first_name,profile?.last_name].filter(Boolean).join(" ")||"Membre JEC"
+            };
+          }));
       }
       if(active)setMessagesLoading(false);
     }
@@ -118,13 +156,15 @@ export default function MessagesPage(){
       .on("postgres_changes",{event:"INSERT",schema:"public",table:"jec_messages",filter:"conversation_id=eq."+selectedId},(payload: {new: Message})=>{
         const incoming=payload.new as Message;
         setMessages(current=>current.some(message=>message.id===incoming.id)?current:[...current,incoming]);
-      }).subscribe();
+      })
+      .on("postgres_changes",{event:"*",schema:"public",table:"jec_conversation_members",filter:"conversation_id=eq."+selectedId},()=>{void loadConversation();})
+      .subscribe();
 
     return ()=>{
       active=false;
       void supabase.removeChannel(channel);
     };
-  },[selectedId,membershipByConversation]);
+  },[selectedId,membershipByConversation,selected?.conversation_type,selected?.workspace_id]);
 
   async function acceptInvitation(conversationId:string){
     const supabase=getSupabaseBrowserClient();if(!supabase)return;
@@ -153,6 +193,58 @@ export default function MessagesPage(){
     setCreating(false);
   }
 
+  async function refreshConversationRoster(supabase:NonNullable<ReturnType<typeof getSupabaseBrowserClient>>){
+    const {data:rosterRows,error:rosterError}=await supabase.from("jec_conversation_members")
+      .select("user_id,conversation_role,membership_status").eq("conversation_id",selectedId);
+    if(rosterError){setError(rosterError.message);return;}
+    const roster=(rosterRows??[]) as ConversationParticipant[];
+    setParticipants(roster);
+    const ids=roster.filter(row=>row.membership_status!=="left").map(row=>row.user_id);
+    if(ids.length){
+      const {data:profileRows,error:profileError}=await supabase.from("jec_profiles")
+        .select("user_id,first_name,last_name,display_name,avatar_url").in("user_id",ids);
+      if(profileError)setError(profileError.message);
+      setProfiles((profileRows??[]) as Profile[]);
+    }
+  }
+
+  async function addConversationMembers(event:FormEvent<HTMLFormElement>){
+    event.preventDefault();
+    if(!selected||!selectedId)return;
+    const supabase=getSupabaseBrowserClient();if(!supabase)return;
+    setAddingMembers(true);setError("");setNotice("");
+    let result:{data:number|null;error:{message:string}|null};
+    if(selected.conversation_type==="workspace"){
+      if(!selectedWorkspaceMemberIds.length){setAddingMembers(false);return;}
+      result=await supabase.rpc("jec_add_conversation_members",{
+        target_conversation_id:selectedId,
+        target_member_ids:selectedWorkspaceMemberIds
+      });
+    }else if(selected.conversation_type==="group"){
+      const emails=groupInviteEmails.split(/[;,\\n]/).map(value=>value.trim()).filter(Boolean);
+      if(!emails.length){setAddingMembers(false);return;}
+      result=await supabase.rpc("jec_add_conversation_members_by_email",{
+        target_conversation_id:selectedId,
+        target_member_emails:emails
+      });
+    }else{
+      setAddingMembers(false);return;
+    }
+    if(result.error){
+      setError(result.error.message);
+    }else{
+      await refreshConversationRoster(supabase);
+      setSelectedWorkspaceMemberIds([]);
+      setGroupInviteEmails("");
+      setShowMemberManager(false);
+      setNotice(en
+        ? (result.data===1?"Participant added.":String(result.data)+" participants added.")
+        : (result.data===1?"Participant ajouté.":String(result.data)+" participants ajoutés."));
+      await loadList();
+    }
+    setAddingMembers(false);
+  }
+
   async function sendMessage(event:FormEvent<HTMLFormElement>){
     event.preventDefault();if(!selectedId||!newBody.trim()||!userId)return;
     const supabase=getSupabaseBrowserClient();if(!supabase)return;
@@ -172,6 +264,7 @@ export default function MessagesPage(){
   const invited=conversations.filter(c=>membershipByConversation.get(c.id)==="invited");
   const activeConversations=conversations.filter(c=>membershipByConversation.get(c.id)==="active");
   const otherParticipants=participants.filter(p=>p.user_id!==userId&&p.membership_status==="active");
+  const canManageSelected=Boolean(selected&&selected.conversation_type!=="direct"&&participants.some(p=>p.user_id===userId&&p.conversation_role==="owner"&&p.membership_status==="active"));
 
   return <main className="collab-page">
     <header className="account-header"><Link href="/" className="brand-lockup"><span className="brand-mark"><span>JEC</span><i>✳</i></span><span>conNEcT</span></Link><div><LanguageSwitcher/><Link href="/workspace" className="back-link-inline">{en?"Workspaces":"Espaces de travail"}</Link></div></header>
@@ -198,7 +291,44 @@ export default function MessagesPage(){
         </aside>
         <section className="message-thread">
           {!selected?<div className="collab-empty"><span>▤</span><h2>{en?"Select a conversation":"Sélectionne une conversation"}</h2><p>{en?"Your private messages will appear here.":"Tes messages privés apparaîtront ici."}</p></div>:membershipByConversation.get(selected.id)==="invited"?<div className="collab-empty"><span>✉</span><h2>{en?"Invitation pending":"Invitation en attente"}</h2><button className="primary-button" onClick={()=>acceptInvitation(selected.id)}>{en?"Accept invitation":"Accepter l'invitation"}</button></div>:<>
-            <div className="message-thread-header"><div><strong>{conversationLabel(selected)}</strong><small>{otherParticipants.length+1} {en?"participants":"participants"}</small></div><span className="online-dot-label">{en?"Private conversation":"Conversation privée"}</span></div>
+            <div className="message-thread-header">
+              <div><strong>{conversationLabel(selected)}</strong><small>{participants.filter(p=>p.membership_status==="active").length} {en?"participants":"participants"}</small></div>
+              <div className="message-thread-header-actions">
+                <span className="online-dot-label">{en?"Private conversation":"Conversation privée"}</span>
+                {canManageSelected&&<button className="manage-conversation-members" onClick={()=>setShowMemberManager(value=>!value)}>{showMemberManager?(en?"Close":"Fermer"):(en?"Manage members":"Gérer les membres")}</button>}
+              </div>
+            </div>
+            {showMemberManager&&canManageSelected&&selected.conversation_type!=="direct"&&<section className="message-member-manager">
+              <div className="message-member-manager-heading"><div><strong>{en?"Conversation participants":"Participants à la conversation"}</strong><small>{en?"Only the owner can manage this private conversation.":"Seul le propriétaire peut gérer cette conversation privée."}</small></div></div>
+              <div className="message-member-roster">
+                {participants.filter(member=>member.membership_status!=="left").map(member=><div className="message-member-row" key={member.user_id}>
+                  <span className="message-member-avatar">{initials(personName(member.user_id))}</span>
+                  <strong>{personName(member.user_id)}{member.user_id===userId?(en?" (you)":" (toi)"):""}</strong>
+                  <span className={"message-member-status "+member.membership_status}>{member.membership_status==="active"?(en?"Active":"Actif"):(en?"Invitation pending":"Invitation en attente")}</span>
+                </div>)}
+              </div>
+              <form className="message-add-members-form" onSubmit={addConversationMembers}>
+                {selected.conversation_type==="workspace"?<>
+                  <h3>{en?"Add active workspace members":"Ajouter des membres actifs de l'espace"}</h3>
+                  {workspaceCandidates.length?<>
+                    <div className="message-member-candidates">
+                      {workspaceCandidates.map(candidate=><label key={candidate.user_id} className="message-member-candidate">
+                        <input type="checkbox" checked={selectedWorkspaceMemberIds.includes(candidate.user_id)} onChange={event=>setSelectedWorkspaceMemberIds(current=>event.target.checked?[...current,candidate.user_id]:current.filter(id=>id!==candidate.user_id))}/>
+                        <span><strong>{candidate.display_name}</strong><small>{candidate.workspace_role}</small></span>
+                      </label>)}
+                    </div>
+                    <button className="primary-button" disabled={addingMembers||!selectedWorkspaceMemberIds.length}>{addingMembers?(en?"Adding…":"Ajout…"):(en?"Add selected members":"Ajouter les membres sélectionnés")}</button>
+                  </>:<p className="muted">{en?"All active workspace members are already in this conversation.":"Tous les membres actifs de l'espace sont déjà dans cette conversation."}</p>}
+                </>:<>
+                  <h3>{en?"Invite verified JEC members":"Inviter des membres JEC vérifiés"}</h3>
+                  <label>{en?"Account email address(es)":"Adresse(s) e-mail du compte"}
+                    <textarea rows={2} value={groupInviteEmails} onChange={event=>setGroupInviteEmails(event.target.value)} placeholder="membre@jecfrance.org" required/>
+                  </label>
+                  <small className="muted">{en?"Separate addresses with commas or semicolons. Invitations must be accepted before the new members can read or send messages.":"Sépare les adresses par des virgules ou des points-virgules. Les invitations doivent être acceptées avant de lire ou d'envoyer des messages."}</small>
+                  <button className="primary-button" disabled={addingMembers||!groupInviteEmails.trim()}>{addingMembers?(en?"Inviting…":"Invitation…"):(en?"Send invitations":"Envoyer les invitations")}</button>
+                </>}
+              </form>
+            </section>}
             <div className="message-history">
               {messagesLoading?<p className="muted">{en?"Loading messages…":"Chargement des messages…"}</p>:messages.length?messages.map(message=><article key={message.id} className={message.sender_id===userId?"chat-message own":"chat-message"}><div className="chat-message-avatar">{initials(message.sender_id===userId?(en?"You":"Toi"):personName(message.sender_id))}</div><div className="chat-message-bubble"><div className="chat-message-meta"><strong>{message.sender_id===userId?(en?"You":"Toi"):personName(message.sender_id)}</strong><time>{formatTime(message.created_at,en)}</time></div><p>{message.body}</p></div></article>):<div className="messages-empty-thread"><span>✦</span><p>{en?"No message yet. Say hello!":"Aucun message pour l'instant. Lance la conversation !"}</p></div>}
             </div>
