@@ -1,5 +1,5 @@
-const CACHE_NAME = "jec-connect-shell-v6";
-const APP_SHELL = ["/", "/chants", "/decouvrir", "/icon.svg", "/icon-192.png", "/icon-512.png", "/apple-touch-icon.png", "/images/jec-community-illustration.svg", "/images/jec-music-illustration.svg"];
+const CACHE_NAME = "jec-connect-shell-v7";
+const APP_SHELL = ["/", "/chants", "/decouvrir", "/icon.svg", "/icon-192.png", "/icon-512.png", "/apple-touch-icon.png", "/images/jec-community-illustration.svg", "/images/jec-music-illustration.svg", "/images/news-leaders.svg", "/images/news-learning.svg", "/images/news-wellbeing.svg"];
 
 self.addEventListener("install", event => {
   event.waitUntil(
