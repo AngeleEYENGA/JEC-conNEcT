@@ -97,7 +97,9 @@ export async function POST(request: NextRequest) {
     return json({ error: "KNOWLEDGE_SEARCH_FAILED", message: "La recherche dans les sources JEC est momentanément indisponible." }, 503);
   }
 
-  const sources = ((foundSources ?? []) as KnowledgeSource[]).slice(0, 8);
+  const sources = ((foundSources ?? []) as KnowledgeSource[])
+    .filter(source => Number(source.score) >= 0.18)
+    .slice(0, 8);
   if (!sources.length) {
     return json({
       answer: NO_SOURCE_ANSWER,
