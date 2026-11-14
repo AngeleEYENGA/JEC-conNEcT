@@ -26,9 +26,10 @@ export default function AccountPage() {
 
   useEffect(()=>{
     let active=true;
-    let membershipChannel:ReturnType<typeof supabase.channel>|null=null;
+    const supabaseClient=getSupabaseBrowserClient();
+    let membershipChannel:ReturnType<typeof supabaseClient.channel>|null=null;
     async function load(){
-      const supabase=getSupabaseBrowserClient();
+      const supabase=supabaseClient;
       if(!supabase){setError(en?"Supabase is not configured.":"Supabase n'est pas configuré.");setLoading(false);return;}
       const {data:{user},error:userError}=await supabase.auth.getUser();
       if(userError||!user){window.location.href="/login";return;}
@@ -65,7 +66,7 @@ export default function AccountPage() {
       active=false;
       window.removeEventListener("focus",refreshOnReturn);
       document.removeEventListener("visibilitychange",refreshOnReturn);
-      if(membershipChannel)void supabase?.removeChannel(membershipChannel);
+      if(membershipChannel&&supabaseClient)void supabaseClient.removeChannel(membershipChannel);
     };
   },[en]);
 
