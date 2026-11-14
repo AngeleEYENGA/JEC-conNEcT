@@ -15,6 +15,7 @@ type Source = {
   source_url: string | null;
   evidence_label: string;
   content_text: string;
+  search_aliases: string;
   visibility_scope: string;
   workspace_id: string | null;
   source_status: string;
@@ -42,6 +43,7 @@ export default function JecAiKnowledgeAdminPage() {
   const [scope, setScope] = useState("public");
   const [workspaceId, setWorkspaceId] = useState("");
   const [content, setContent] = useState("");
+  const [searchAliases, setSearchAliases] = useState("");
 
   async function load() {
     const supabase = getSupabaseBrowserClient();
@@ -90,6 +92,7 @@ export default function JecAiKnowledgeAdminPage() {
       source_url: url.trim() || null,
       evidence_label: label.trim(),
       content_text: content.trim(),
+      search_aliases: searchAliases.trim(),
       visibility_scope: scope,
       workspace_id: scope === "workspace" ? workspaceId : null,
       source_status: "draft",
@@ -99,7 +102,7 @@ export default function JecAiKnowledgeAdminPage() {
     if (insertError) setError(insertError.message);
     else {
       setMessage(en ? "Draft created. Review it before approving it for JEC AI." : "Brouillon créé. Relis-le avant de l’approuver pour JEC IA.");
-      setTitle(""); setUrl(""); setLabel(""); setContent("");
+      setTitle(""); setUrl(""); setLabel(""); setContent(""); setSearchAliases("");
       await load();
     }
     setSaving(false);
@@ -162,6 +165,7 @@ export default function JecAiKnowledgeAdminPage() {
                 <label>{en ? "Access scope" : "Périmètre d’accès"}<select value={scope} onChange={e=>setScope(e.target.value)}><option value="public">{en ? "Public" : "Public"}</option><option value="members">{en ? "Verified JEC members" : "Membres JEC vérifiés"}</option><option value="workspace">{en ? "Specific workspace" : "Espace de travail précis"}</option></select></label>
                 {scope==="workspace"&&<label>{en ? "Workspace" : "Espace de travail"}<select value={workspaceId} onChange={e=>setWorkspaceId(e.target.value)} required><option value="">{en ? "Choose a workspace" : "Choisir un espace"}</option>{workspaces.map(w=><option key={w.id} value={w.id}>{w.name}</option>)}</select></label>}
               </div>
+              <label>{en ? "Search aliases (optional)" : "Alias de recherche (facultatif)"}<input value={searchAliases} onChange={e=>setSearchAliases(e.target.value)} maxLength={1500} placeholder={en ? "French and English keywords, alternative titles…" : "Mots-clés français et anglais, titres alternatifs…"} /></label>
               <label>{en ? "Extracted text / verified content" : "Texte extrait / contenu vérifié"}<textarea value={content} onChange={e=>setContent(e.target.value)} rows={9} required maxLength={40000} placeholder={en ? "Paste the text that JEC AI may use. Do not include content you are not authorised to share." : "Colle le texte que JEC IA pourra utiliser. N’ajoute pas de contenu que tu n’es pas autorisé à partager."}/></label>
               <div className="jec-ai-source-form-footer"><small>{en ? "Draft only · not searchable by the assistant until approved" : "Brouillon uniquement · non consultable par l’assistant avant approbation"}</small><button className="primary-button" disabled={saving}>{saving?(en?"Saving…":"Enregistrement…"):(en?"Save draft":"Enregistrer le brouillon")}</button></div>
             </form>
@@ -174,6 +178,7 @@ export default function JecAiKnowledgeAdminPage() {
                 <div className="jec-ai-managed-source-top"><strong>{source.title}</strong><span className={"jec-ai-status "+source.source_status}>{source.source_status==="approved"?(en?"Approved":"Approuvée"):source.source_status==="archived"?(en?"Archived":"Archivée"):(en?"Draft":"Brouillon")}</span></div>
                 <small>{source.publisher} · {source.evidence_label}</small>
                 <small>{source.visibility_scope==="public"?(en?"Public": "Public"):source.visibility_scope==="members"?(en?"Verified members":"Membres vérifiés"):(en?"Workspace restricted":"Espace restreint")} · {source.language.toUpperCase()} · {source.source_type}</small>
+                {source.search_aliases&&<small>{en?"Search aliases: ":"Alias : "}{source.search_aliases}</small>}
                 {source.source_url&&<a href={source.source_url} target="_blank" rel="noreferrer">{source.source_url} ↗</a>}
                 <p>{source.content_text.slice(0,260)}{source.content_text.length>260?"…":""}</p>
               </div>
