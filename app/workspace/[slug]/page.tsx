@@ -199,27 +199,23 @@ export default function WorkspaceDetailPage(){
     event.preventDefault();if(!workspace||!userId)return;
     const supabase=getSupabaseBrowserClient();if(!supabase)return;
     setBusy(true);setError("");setNotice("");
-    const {data:createdMeeting,error:insertError}=await supabase.from("jec_meetings").insert({
-      workspace_id:workspace.id,project_id:meetingProjectId||null,title:meetingTitle.trim(),agenda:meetingAgenda.trim()||null,
-      starts_at:new Date(meetingStart).toISOString(),ends_at:meetingEnd?new Date(meetingEnd).toISOString():null,
-      location:meetingLocation.trim()||null,meeting_url:meetingUrl.trim()||null,
-      meeting_status:"scheduled",created_by:userId
-    }).select("id").single();
+    const {data:createdMeetingId,error:insertError}=await supabase.rpc("jec_create_workspace_meeting",{
+      target_workspace_id:workspace.id,
+      target_project_id:meetingProjectId||null,
+      target_title:meetingTitle.trim(),
+      target_agenda:meetingAgenda.trim()||null,
+      target_starts_at:new Date(meetingStart).toISOString(),
+      target_ends_at:meetingEnd?new Date(meetingEnd).toISOString():null,
+      target_location:meetingLocation.trim()||null,
+      target_meeting_url:meetingUrl.trim()||null
+    });
     if(insertError)setError(insertError.message);
-    else if(createdMeeting){
-      const participants=roster.filter(member=>member.membership_status==="active").map(member=>({
-        meeting_id:createdMeeting.id,
-        user_id:member.user_id,
-        attendance_status:member.user_id===userId?"accepted" as const:"invited" as const,
-        responded_at:member.user_id===userId?new Date().toISOString():null
-      }));
-      if(participants.length){
-        const {error:participantError}=await supabase.from("jec_meeting_participants").insert(participants);
-        if(participantError)setError(participantError.message);
-      }
+    else if(createdMeetingId){
       setMeetingTitle("");setMeetingProjectId("");setMeetingAgenda("");setMeetingStart("");setMeetingEnd("");setMeetingLocation("");setMeetingUrl("");
-      setNotice(en?"Meeting scheduled and workspace members invited.":"Réunion programmée et invitations envoyées aux membres de l'espace.");
+      setNotice(en?"Meeting scheduled. All active workspace members have been invited.":"Réunion programmée. Tous les membres actifs de l'espace ont été invités automatiquement.");
       await load();
+    }else{
+      setError(en?"The meeting could not be created.":"La réunion n'a pas pu être créée.");
     }
     setBusy(false);
   }
@@ -340,7 +336,8 @@ export default function WorkspaceDetailPage(){
 
           {activeTab==="meetings"&&<section className="workspace-panel">
             <div className="collab-section-heading"><div><p className="eyebrow">{en?"TEAM MEETINGS":"RENCONTRES DE L'ÉQUIPE"}</p><h2>{en?"Meetings":"Réunions"}</h2></div><span>{meetings.length}</span></div>
-            {manager&&<form className="collab-form" onSubmit={createMeeting}>
+            {canCollaborate&&<form className="collab-form" onSubmit={createMeeting}>
+              <p className="muted">{en?"Any active member can schedule a meeting. All active workspace members are invited automatically.":"Chaque membre actif peut programmer une réunion. Tous les membres actifs de l'espace sont invités automatiquement."}</p>
               <label>{en?"Meeting title":"Intitulé de la réunion"}<input value={meetingTitle} onChange={e=>setMeetingTitle(e.target.value)} required maxLength={180}/></label>
               <label>{en?"Related project (optional)":"Projet associé (facultatif)"}<select value={meetingProjectId} onChange={e=>setMeetingProjectId(e.target.value)}><option value="">—</option>{projects.map(p=><option key={p.id} value={p.id}>{p.title}</option>)}</select></label>
               <label>{en?"Agenda":"Ordre du jour"}<textarea rows={3} value={meetingAgenda} onChange={e=>setMeetingAgenda(e.target.value)}/></label>
