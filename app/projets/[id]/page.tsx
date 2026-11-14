@@ -11,8 +11,10 @@ type Task={id:string;title:string;description:string|null;task_status:string;pri
 type Milestone={id:string;title:string;description:string|null;due_date:string|null;milestone_status:string;owner_id:string|null};
 type Comment={id:string;task_id:string;author_id:string;body:string;created_at:string};
 type Roster={user_id:string;workspace_role:string;membership_status:string};
+type ActivityEvent={id:string;actor_id:string|null;event_type:string;summary_fr:string;summary_en:string;created_at:string};
 
 function fmt(value:string|null,en:boolean){return value?new Date(value).toLocaleDateString(en?"en-GB":"fr-FR"):"—";}
+function fmtDateTime(value:string,en:boolean){return new Date(value).toLocaleString(en?"en-GB":"fr-FR",{dateStyle:"medium",timeStyle:"short"});}
 
 export default function ProjectDetailPage(){
  const params=useParams<{id:string}>();const projectId=params.id;
@@ -20,7 +22,7 @@ export default function ProjectDetailPage(){
  const [project,setProject]=useState<Project|null>(null);const [loading,setLoading]=useState(true);
  const [userId,setUserId]=useState("");const [manager,setManager]=useState(false);const [canEdit,setCanEdit]=useState(false);
  const [roster,setRoster]=useState<Roster[]>([]);const [names,setNames]=useState<Record<string,string>>({});
- const [tasks,setTasks]=useState<Task[]>([]);const [milestones,setMilestones]=useState<Milestone[]>([]);
+ const [tasks,setTasks]=useState<Task[]>([]);const [milestones,setMilestones]=useState<Milestone[]>([]);const [activity,setActivity]=useState<ActivityEvent[]>([]);
  const [comments,setComments]=useState<Comment[]>([]);const [selectedTask,setSelectedTask]=useState("");
  const [error,setError]=useState("");const [notice,setNotice]=useState("");const [busy,setBusy]=useState(false);
  const [taskTitle,setTaskTitle]=useState("");const [taskDescription,setTaskDescription]=useState("");const [taskAssignee,setTaskAssignee]=useState("");const [taskDue,setTaskDue]=useState("");const [taskPriority,setTaskPriority]=useState("normal");
@@ -42,20 +44,24 @@ export default function ProjectDetailPage(){
   if(projectError||!pr){setError(en?"This project is unavailable.":"Ce projet n'est pas accessible.");setProject(null);setLoading(false);return;}
   const p=pr as Project;setProject(p);
   setEditObjective(p.objective??"");setEditDescription(p.description??"");setEditStatus(p.project_status);setEditPriority(p.priority);setEditStart(p.start_date??"");setEditDue(p.due_date??"");
-  const [membership,rosterResult,taskResult,milestoneResult]=await Promise.all([
+  const [membership,rosterResult,taskResult,milestoneResult,activityResult]=await Promise.all([
    supabase.from("jec_workspace_members").select("workspace_role,membership_status").eq("workspace_id",p.workspace_id).eq("user_id",user.id).maybeSingle(),
    supabase.from("jec_workspace_members").select("user_id,workspace_role,membership_status").eq("workspace_id",p.workspace_id).eq("membership_status","active"),
    supabase.from("jec_workspace_tasks").select("id,title,description,task_status,priority,assigned_to,due_at,created_by").eq("project_id",projectId).order("due_at"),
-   supabase.from("jec_project_milestones").select("id,title,description,due_date,milestone_status,owner_id").eq("project_id",projectId).order("due_date")
+   supabase.from("jec_project_milestones").select("id,title,description,due_date,milestone_status,owner_id").eq("project_id",projectId).order("due_date"),
+   supabase.from("jec_activity_events").select("id,actor_id,event_type,summary_fr,summary_en,created_at").eq("project_id",projectId).order("created_at",{ascending:false}).limit(30)
   ]);
   const role=membership.data?.workspace_role??"member";const isManager=role==="owner"||role==="manager";
   setManager(isManager);setCanEdit(isManager||p.owner_id===user.id);
   const people=(rosterResult.data??[]) as Roster[];setRoster(people);
   if(taskResult.error)setError(taskResult.error.message);
   if(milestoneResult.error)setError(milestoneResult.error.message);
+  if(activityResult.error)setError(activityResult.error.message);
+  const activityRows=(activityResult.data??[]) as ActivityEvent[];
+  setActivity(activityRows);
   setTasks((taskResult.data??[]) as Task[]);setMilestones((milestoneResult.data??[]) as Milestone[]);
   if(!selectedTask&&taskResult.data?.length)setSelectedTask(taskResult.data[0].id);
-  const ids=people.map(m=>m.user_id);
+  const ids=[...new Set([...people.map(m=>m.user_id),...activityRows.map(event=>event.actor_id).filter((id):id is string=>Boolean(id))])];
   if(ids.length){
    const {data:profiles}=await supabase.from("jec_profiles").select("user_id,display_name,first_name,last_name").in("user_id",ids);
    const map:Record<string,string>={};
@@ -66,6 +72,13 @@ export default function ProjectDetailPage(){
  },[projectId,en,selectedTask]);
 
  useEffect(()=>{void load();},[load]);
+ useEffect(()=>{
+  const supabase=getSupabaseBrowserClient();if(!supabase||!projectId)return;
+  const channel=supabase.channel("jec-project-activity:"+projectId)
+   .on("postgres_changes",{event:"INSERT",schema:"public",table:"jec_activity_events",filter:"project_id=eq."+projectId},()=>{void load();})
+   .subscribe();
+  return ()=>{void supabase.removeChannel(channel);};
+ },[projectId,load]);
 
  const loadComments=useCallback(async()=>{
   if(!selectedTask)return;const supabase=getSupabaseBrowserClient();if(!supabase)return;
@@ -145,6 +158,9 @@ export default function ProjectDetailPage(){
     <article className="project-kpi"><strong>{progress}%</strong><span>{en?"Progress":"Avancement"}</span></article>
    </div>
    <div className="project-progress"><div><span>{en?"Overall progress":"Avancement global"}</span><strong>{progress}%</strong></div><div className="progress-track"><span style={{width:progress+"%"}}/></div></div>
+   <section className="collab-card activity-timeline"><div className="collab-card-heading"><div><p className="eyebrow">{en?"PROJECT HISTORY":"HISTORIQUE DU PROJET"}</p><h2>{en?"Recent activity":"Activité récente"}</h2></div><span className="collab-count">{activity.length}</span></div>
+    {activity.length?<div className="activity-timeline-list">{activity.map(event=><article className="activity-timeline-item" key={event.id}><span className="activity-timeline-dot"/><p><strong>{event.actor_id?(names[event.actor_id]||(en?"JEC member":"Membre JEC")):(en?"JEC-conNEcT":"JEC-conNEcT")}</strong> {en?event.summary_en:event.summary_fr}</p><time>{fmtDateTime(event.created_at,en)}</time></article>)}</div>:<p className="collab-muted">{en?"Project updates will appear here.":"Les mises à jour du projet apparaîtront ici."}</p>}
+   </section>
    {canEdit&&<details className="collab-card project-edit-details"><summary>{en?"Project settings":"Paramètres du projet"}</summary><form className="collab-form" onSubmit={updateProject}>
     <label>{en?"Objective":"Objectif"}<textarea rows={2} value={editObjective} onChange={e=>setEditObjective(e.target.value)}/></label>
     <label>{en?"Description":"Description"}<textarea rows={3} value={editDescription} onChange={e=>setEditDescription(e.target.value)}/></label>

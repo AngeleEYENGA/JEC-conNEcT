@@ -1,5 +1,5 @@
-const CACHE_NAME = "jec-connect-shell-v5";
-const APP_SHELL = ["/", "/chants", "/decouvrir", "/icon.svg", "/images/jec-community-illustration.svg", "/images/jec-music-illustration.svg"];
+const CACHE_NAME = "jec-connect-shell-v6";
+const APP_SHELL = ["/", "/chants", "/decouvrir", "/icon.svg", "/icon-192.png", "/icon-512.png", "/apple-touch-icon.png", "/images/jec-community-illustration.svg", "/images/jec-music-illustration.svg"];
 
 self.addEventListener("install", event => {
   event.waitUntil(
@@ -29,7 +29,7 @@ self.addEventListener("fetch", event => {
     return;
   }
 
-  if (url.pathname.startsWith("/_next/") || url.pathname.startsWith("/images/") || url.pathname === "/icon.svg") {
+  if (url.pathname.startsWith("/_next/") || url.pathname.startsWith("/images/") || ["/icon.svg","/icon-192.png","/icon-512.png","/apple-touch-icon.png"].includes(url.pathname)) {
     event.respondWith(
       caches.match(request).then(cached => cached || fetch(request).then(response => {
         if (response.ok) {
