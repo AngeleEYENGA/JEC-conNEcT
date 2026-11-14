@@ -437,13 +437,15 @@ export default function MeetingCallRoom({
 
       recognition.onerror = event => {
         const code = event.error || "";
-        if (code === "not-allowed" || code === "service-not-allowed" || code === "audio-capture") {
+        if (code === "not-allowed" || code === "service-not-allowed" || code === "audio-capture" || code === "network") {
           liveTranscribingRef.current = false;
           setLiveTranscribing(false);
           setLiveTranscriptionError(
             code === "audio-capture"
               ? "Le service de transcription n'arrive pas à accéder au microphone. Vérifie les autorisations audio."
-              : "La reconnaissance vocale a été refusée par le navigateur. Vérifie son autorisation."
+              : code === "network"
+                ? "Le service de reconnaissance vocale est inaccessible. Vérifie la connexion puis relance la transcription."
+                : "La reconnaissance vocale a été refusée par le navigateur. Vérifie son autorisation."
           );
         } else if (code && code !== "no-speech" && code !== "aborted") {
           setLiveTranscriptionError("La reconnaissance vocale rencontre un problème (" + code + ").");
@@ -456,14 +458,10 @@ export default function MeetingCallRoom({
           setLiveTranscribing(false);
           return;
         }
-        transcriptionRetriesRef.current += 1;
-        if (transcriptionRetriesRef.current > 8) {
-          liveTranscribingRef.current = false;
-          setLiveTranscribing(false);
-          setLiveTranscriptionError("La reconnaissance vocale s'est interrompue à plusieurs reprises. Relance-la depuis les commandes de la réunion.");
-          return;
-        }
-        transcriptionRestartTimerRef.current = window.setTimeout(launchRecognition, 700);
+        // Chrome Android may accept continuous=true but still end the
+        // recognition service after a phrase. Restart it as long as the user
+        // has explicitly opted in and the meeting remains active.
+        transcriptionRestartTimerRef.current = window.setTimeout(launchRecognition, 450);
       };
 
       liveRecognitionRef.current = recognition;
@@ -580,6 +578,9 @@ export default function MeetingCallRoom({
       if (userError || !user) throw new Error("Connecte-toi pour rejoindre cet appel.");
       setUserId(user.id);
       userIdRef.current = user.id;
+      setMuted(false);
+      setCameraOff(false);
+      setSharingScreen(false);
       const { data: session, error: joinError } = await supabase.rpc("jec_join_meeting_call", {
         target_meeting_id: meetingId
       });
@@ -792,6 +793,7 @@ export default function MeetingCallRoom({
               localStreamRef.current?.getAudioTracks().forEach(track => { track.enabled = !nextMuted; });
               if (nextMuted && liveTranscribingRef.current) stopLiveTranscription();
               setMuted(nextMuted);
+              if (!nextMuted && liveTranscriptionConsent && liveTranscriptionSupported) startLiveTranscription();
             }}>{muted ? "Activer le micro" : "Couper le micro"}</button>
             <button className={cameraOff ? "call-control active" : "call-control"} onClick={() => {
               localStreamRef.current?.getVideoTracks().forEach(track => { track.enabled = cameraOff; });
