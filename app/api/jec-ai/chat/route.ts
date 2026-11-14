@@ -88,7 +88,8 @@ export async function POST(request: NextRequest) {
   // members receive only the additional scopes they are allowed to read.
   const { data: foundSources, error: searchError } = await supabase.rpc("jec_ai_search_sources", {
     search_text: question,
-    result_limit: 8
+    result_limit: 8,
+    search_language: body.language === "en" ? "en" : "fr"
   });
 
   if (searchError) {
