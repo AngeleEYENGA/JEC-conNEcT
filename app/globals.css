@@ -973,3 +973,18 @@
  .garoua-highlight-grid .partner-kpi:last-child{grid-column:1/-1}
  .jec-heritage-grid{grid-template-columns:1fr}
 }
+
+
+/* Meeting visibility in the default workspace feed */
+.workspace-feed-meetings{margin:20px 0;padding:18px;border:1px solid #e7e0f1;border-radius:18px;background:linear-gradient(135deg,#fbfaff,#fff)}
+.workspace-feed-meetings .collab-section-heading{margin-bottom:12px;align-items:center}
+.workspace-feed-meetings .collab-section-heading h3{margin:3px 0 0;font:800 15px/1.35 Manrope;color:#302b58}
+.workspace-feed-meetings .collab-section-heading .quiet-button{font-size:10px;white-space:nowrap}
+.workspace-feed-meetings .workspace-meeting-row{background:#fff;margin-top:8px}
+.workspace-feed-meetings .meeting-participation{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-top:9px}
+.workspace-feed-meetings .meeting-participation>span{font-size:10px;color:#806c9d}
+@media(max-width:640px){
+ .workspace-feed-meetings{padding:12px}
+ .workspace-feed-meetings .collab-section-heading{align-items:flex-start;gap:8px}
+ .workspace-feed-meetings .meeting-participation{gap:6px}
+}
