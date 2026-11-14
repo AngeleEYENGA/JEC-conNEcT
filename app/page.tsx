@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import JecAiAssistant from "@/components/jec-ai-assistant";
 import { useEffect, useMemo, useState } from "react";
 import { LanguageSwitcher, useLanguage } from "@/components/language-provider";
 import { PWAInstallButton } from "@/components/pwa-install-button";
@@ -207,6 +208,7 @@ export default function Home() {
   }
 
   function renderContent() {
+    if(active==="JEC AI") return <JecAiAssistant/>;
     if(active==="Chants & hymnes") return <section className="songs-preview-card">
       <div className="songs-preview-art"><span>♫</span><i>♪</i><b>JEC</b></div>
       <div className="songs-preview-copy"><p className="eyebrow">{t("PATRIMOINE MUSICAL","MUSICAL HERITAGE")}</p><h2>{t("Les chants et hymnes du mouvement","Songs and anthems of the movement")}</h2><p>{t("Retrouve le chant de ralliement et l’hymne JEC en français et en anglais. Consulte les paroles, ajoute les couplets validés et écoute les enregistrements lorsqu’ils sont disponibles.","Find the rallying song and the JEC anthem in French and English. Explore the lyrics, add approved verses and listen to recordings when available.")}</p><Link href="/chants" className="primary-button">{t("Ouvrir la bibliothèque musicale →","Open the music library →")}</Link></div>
