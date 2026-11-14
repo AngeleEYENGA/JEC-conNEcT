@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import type { FormEvent } from "react";
 import { LanguageSwitcher, useLanguage } from "@/components/language-provider";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
@@ -90,6 +91,22 @@ function formatSize(value: number | null, en: boolean) {
   return (value / (1024 * 1024)).toFixed(1) + (en ? " MB" : " Mo");
 }
 
+function archiveMimeType(file: File): string | null {
+  const extension = file.name.split(".").pop()?.toLowerCase() ?? "";
+  const allowed: Record<string,string> = {
+    pdf:"application/pdf",doc:"application/msword",
+    docx:"application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    ppt:"application/vnd.ms-powerpoint",
+    pptx:"application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    txt:"text/plain",jpg:"image/jpeg",jpeg:"image/jpeg",png:"image/png",webp:"image/webp",
+    gif:"image/gif",mp3:"audio/mpeg",m4a:"audio/mp4",aac:"audio/aac",wav:"audio/wav",
+    ogg:"audio/ogg",mp4:"video/mp4",webm:"video/webm"
+  };
+  const accepted = new Set(Object.values(allowed));
+  if (file.type && accepted.has(file.type)) return file.type;
+  return allowed[extension] ?? null;
+}
+
 function safeFileName(value: string) {
   const normalized = value.normalize("NFKD").replace(/[\u0300-\u036f]/g, "");
   return normalized.replace(/[^a-zA-Z0-9._-]+/g, "_").slice(-140) || "archive-file";
@@ -132,7 +149,7 @@ export default function ArchivesPage() {
   const [rightsHolder, setRightsHolder] = useState("");
   const [tags, setTags] = useState("");
 
-  async function load() {
+  const load = useCallback(async () => {
     if (!supabase) {
       setError(en ? "Supabase is not configured." : "Supabase n’est pas configuré.");
       setLoading(false);
@@ -163,17 +180,11 @@ export default function ArchivesPage() {
       setIsAdmin(false);
     }
     setLoading(false);
-  }
+  }, [supabase, en]);
 
   useEffect(() => {
-    let active = true;
-    async function initialLoad() {
-      await load();
-      if (!active) return;
-    }
-    void initialLoad();
-    return () => { active = false; };
-  }, [supabase, lang]);
+    void load();
+  }, [load]);
 
   const visibleItems = useMemo(() => {
     const needle = search.trim().toLocaleLowerCase();
@@ -216,6 +227,11 @@ export default function ArchivesPage() {
       setError(en ? "You can attach up to 8 files." : "Tu peux joindre jusqu’à 8 fichiers.");
       return;
     }
+    const unsupported = files.find((file) => !archiveMimeType(file));
+    if (unsupported) {
+      setError((en ? "Unsupported file type: " : "Format de fichier non pris en charge : ") + unsupported.name);
+      return;
+    }
     setSubmitting(true);setError("");setMessage("");
     let itemId: string | null = null;
     const uploadedPaths: string[] = [];
@@ -242,8 +258,10 @@ export default function ArchivesPage() {
       for (const [index, file] of files.entries()) {
         const fileId = crypto.randomUUID();
         const path = itemId + "/" + userId + "/" + fileId + "-" + safeFileName(file.name);
+        const contentType = archiveMimeType(file);
+        if (!contentType) throw new Error("Unsupported archive file type: " + file.name);
         const { error: uploadError } = await supabase.storage.from("jec-archives").upload(path,file,{
-          contentType:file.type||"application/octet-stream",upsert:false
+          contentType,upsert:false
         });
         if (uploadError) throw uploadError;
         uploadedPaths.push(path);
