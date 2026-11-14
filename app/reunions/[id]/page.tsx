@@ -11,7 +11,8 @@ type Meeting = {
   starts_at:string; ends_at:string|null; location:string|null; meeting_url:string|null;
   meeting_status:string; created_by:string; workspace?:{name:string;slug:string}|null;
 };
-type Participant = {user_id:string;attendance_status:string;responded_at:string|null};
+type Participant = {user_id:string;attendance_status:string;responded_at:string|null;attended_at:string|null};
+type CallAttendance = {session_id:string;user_id:string;joined_at:string;left_at:string|null;session_started_at:string;session_ended_at:string|null;session_status:string};
 type AgendaItem = {id:string;title:string;description:string|null;presenter_id:string|null;sort_order:number;item_status:string};
 type Decision = {id:string;title:string;detail:string|null;decision_status:string;created_at:string};
 type Minutes = {id:string;content:string;minutes_status:string;prepared_by:string;approved_by:string|null;approved_at:string|null};
@@ -39,6 +40,7 @@ export default function MeetingDetailPage(){
  const [loading,setLoading]=useState(true); const [meeting,setMeeting]=useState<Meeting|null>(null);
  const [userId,setUserId]=useState(""); const [manager,setManager]=useState(false);
  const [participants,setParticipants]=useState<Participant[]>([]);
+ const [callAttendance,setCallAttendance]=useState<CallAttendance[]>([]);
  const [roster,setRoster]=useState<Roster[]>([]);
  const [names,setNames]=useState<Record<string,string>>({});
  const [agendaItems,setAgendaItems]=useState<AgendaItem[]>([]);
@@ -74,7 +76,7 @@ export default function MeetingDetailPage(){
   const [memberResult,rosterResult,participantResult,agendaResult,decisionResult,minutesResult,transcriptResult,taskResult]=await Promise.all([
    supabase.from("jec_workspace_members").select("workspace_role,membership_status").eq("workspace_id",mt.workspace_id).eq("user_id",user.id).maybeSingle(),
    supabase.from("jec_workspace_members").select("user_id,workspace_role,membership_status").eq("workspace_id",mt.workspace_id).eq("membership_status","active"),
-   supabase.from("jec_meeting_participants").select("user_id,attendance_status,responded_at").eq("meeting_id",meetingId),
+   supabase.from("jec_meeting_participants").select("user_id,attendance_status,responded_at,attended_at").eq("meeting_id",meetingId),
    supabase.from("jec_meeting_agenda_items").select("id,title,description,presenter_id,sort_order,item_status").eq("meeting_id",meetingId).order("sort_order"),
    supabase.from("jec_meeting_decisions").select("id,title,detail,decision_status,created_at").eq("meeting_id",meetingId).order("created_at",{ascending:false}),
    supabase.from("jec_meeting_minutes").select("id,content,minutes_status,prepared_by,approved_by,approved_at").eq("meeting_id",meetingId).maybeSingle(),
