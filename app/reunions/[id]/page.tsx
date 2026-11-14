@@ -83,7 +83,30 @@ export default function MeetingDetailPage(){
    supabase.from("jec_meeting_transcripts").select("id,transcript_text,language,source_type,transcript_status,created_at").eq("meeting_id",meetingId).order("created_at",{ascending:false}),
    supabase.from("jec_workspace_tasks").select("id,title,task_status,priority,assigned_to,due_at,created_by").eq("meeting_id",meetingId).order("created_at",{ascending:false})
   ]);
-  const failures=[memberResult.error,rosterResult.error,participantResult.error,agendaResult.error,decisionResult.error,minutesResult.error,transcriptResult.error,taskResult.error].filter(Boolean);
+  const {data:callSessionRows,error:callSessionError}=await supabase.from("jec_meeting_call_sessions")
+   .select("id,started_at,ended_at,status")
+   .eq("meeting_id",meetingId)
+   .order("started_at",{ascending:true});
+  const callSessions=(callSessionRows??[]) as Array<{id:string;started_at:string;ended_at:string|null;status:string}>;
+  const callSessionIds=callSessions.map(session=>session.id);
+  let actualCallAttendance:CallAttendance[]=[];
+  if(callSessionIds.length){
+   const {data:callRows,error:callRowsError}=await supabase.from("jec_meeting_call_participants")
+    .select("session_id,user_id,joined_at,left_at")
+    .in("session_id",callSessionIds)
+    .order("joined_at",{ascending:true});
+   if(callRowsError)setError(callRowsError.message);
+   const sessionById=new Map(callSessions.map(session=>[session.id,session]));
+   actualCallAttendance=(callRows??[]).flatMap(row=>{
+    const session=sessionById.get(row.session_id);
+    return session?[{
+     session_id:row.session_id,user_id:row.user_id,joined_at:row.joined_at,left_at:row.left_at,
+     session_started_at:session.started_at,session_ended_at:session.ended_at,session_status:session.status
+    }]:[];
+   });
+  }
+  setCallAttendance(actualCallAttendance);
+  const failures=[memberResult.error,rosterResult.error,participantResult.error,agendaResult.error,decisionResult.error,minutesResult.error,transcriptResult.error,taskResult.error,callSessionError].filter(Boolean);
   if(failures.length)setError(failures[0]!.message);
   const role=memberResult.data?.workspace_role??"member";
   setManager(mt.created_by===user.id||role==="owner"||role==="manager");
