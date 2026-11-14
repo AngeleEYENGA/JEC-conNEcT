@@ -263,7 +263,6 @@ export default function MessagesPage(){
 
   const invited=conversations.filter(c=>membershipByConversation.get(c.id)==="invited");
   const activeConversations=conversations.filter(c=>membershipByConversation.get(c.id)==="active");
-  const otherParticipants=participants.filter(p=>p.user_id!==userId&&p.membership_status==="active");
   const canManageSelected=Boolean(selected&&selected.conversation_type!=="direct"&&participants.some(p=>p.user_id===userId&&p.conversation_role==="owner"&&p.membership_status==="active"));
 
   return <main className="collab-page">
