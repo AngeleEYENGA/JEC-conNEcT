@@ -1268,3 +1268,46 @@
  .jec-ai-composer{margin:0 9px}
  .jec-ai-privacy-note{margin-right:10px;margin-left:10px}
 }
+
+
+/* JEC IA editorial source management */
+.admin-title-actions{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap}
+.admin-title-actions h1{margin:7px 0 23px}
+.admin-ai-link{display:inline-flex;align-items:center;justify-content:center;margin:3px 0 20px;border:1px solid #ded2ee;border-radius:9px;padding:9px 12px;background:#faf7fd;color:#69469a;text-decoration:none;font-size:9px;font-weight:800;white-space:nowrap}
+.admin-ai-link:hover{background:#f0e8fa}
+.jec-ai-admin-page{min-height:100vh;background:#f8f7fb;color:#302d43}
+.jec-ai-admin-content{width:min(100% - 34px,1000px);margin:0 auto;padding:36px 0 75px}
+.jec-ai-admin-content h1{margin:7px 0 10px;color:#302b47;font:800 clamp(27px,4vw,38px)/1.15 Manrope;letter-spacing:-1px}
+.jec-ai-admin-intro{max-width:760px;margin:0 0 22px;color:#817b8e;font-size:11px;line-height:1.75}
+.jec-ai-source-form-card,.jec-ai-source-list-card{margin:16px 0;padding:21px;border:1px solid #ece8f1;border-radius:14px;background:#fff}
+.jec-ai-source-form-card h2,.jec-ai-source-list-card h2{margin:0;color:#39334e;font:800 16px Manrope}
+.jec-ai-source-form{display:grid;gap:12px;margin-top:16px}
+.jec-ai-source-form>label,.jec-ai-source-form-grid>label{display:grid;gap:6px;min-width:0;color:#4d465e;font-size:9px;font-weight:800}
+.jec-ai-source-form input,.jec-ai-source-form select,.jec-ai-source-form textarea{width:100%;min-width:0;box-sizing:border-box;border:1px solid #e5dfeb;border-radius:8px;background:#fff;padding:10px 11px;color:#38334b;font:400 10px/1.55 inherit;outline-color:#9877c6}
+.jec-ai-source-form textarea{resize:vertical;min-height:130px}
+.jec-ai-source-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.jec-ai-source-form-footer{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.jec-ai-source-form-footer small{color:#958d9d;font-size:8px;line-height:1.6}
+.jec-ai-source-form-footer .primary-button{font-size:9px;padding:9px 13px}
+.jec-ai-managed-source{display:flex;justify-content:space-between;align-items:flex-start;gap:15px;padding:14px 0;border-top:1px solid #f0edf4}
+.jec-ai-managed-source-copy{display:grid;gap:5px;min-width:0;flex:1}
+.jec-ai-managed-source-top{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.jec-ai-managed-source-top>strong{color:#39334d;font:800 10px/1.5 Manrope}
+.jec-ai-managed-source-copy>small{color:#8d8697;font-size:8px;line-height:1.5;overflow-wrap:anywhere}
+.jec-ai-managed-source-copy>a{color:#7350a5;font-size:8px;overflow-wrap:anywhere}
+.jec-ai-managed-source-copy>p{max-width:720px;margin:3px 0 0;color:#766f82;font-size:9px;line-height:1.65;white-space:pre-wrap}
+.jec-ai-status{display:inline-flex;border-radius:999px;padding:4px 7px;font-size:7px;font-weight:800;background:#f5f1f8;color:#77658a}
+.jec-ai-status.approved{background:#eaf7ef;color:#28784d}
+.jec-ai-status.archived{background:#f0eef2;color:#88818e}
+.jec-ai-status.draft{background:#fff4e5;color:#946629}
+.jec-ai-managed-actions{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:6px;max-width:210px;flex:none}
+.jec-ai-managed-actions button{font-size:8px;padding:8px 10px;white-space:nowrap}
+@media(max-width:680px){
+ .jec-ai-admin-content{width:calc(100% - 24px);padding:24px 0 45px}
+ .jec-ai-source-form-card,.jec-ai-source-list-card{padding:14px}
+ .jec-ai-source-form-grid{grid-template-columns:1fr}
+ .jec-ai-managed-source{flex-direction:column}
+ .jec-ai-managed-actions{justify-content:flex-start;max-width:none}
+ .admin-title-actions{align-items:flex-start;flex-direction:column;gap:0}
+ .admin-ai-link{margin:0 0 16px}
+}
