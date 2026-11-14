@@ -667,7 +667,9 @@ export default function MeetingCallRoom({
       await channel.track({ userId: user.id, displayName, joinedAt: new Date().toISOString() });
       joinedRef.current = true;
       setJoined(true);
-      setStatus("Salle connectée · microphone actif");
+      setStatus(subscribeResult === "SUBSCRIBED"
+        ? (hasMicrophone ? "Salle connectée · microphone actif" : "Salle connectée · microphone indisponible")
+        : "Connexion à la salle…");
 
       // Reconcile the roster again after our own Presence track.
       const currentPresence = channel.presenceState() as Record<string, Array<{ userId?: string; displayName?: string }>>;
@@ -735,6 +737,7 @@ export default function MeetingCallRoom({
           <p className="eyebrow">SALLE DE RÉUNION PRIVÉE</p>
           <h2>{meetingTitle}</h2>
           <p>{status}</p>
+          {joined && <span className={microphoneReady ? "call-mic-status active" : "call-mic-status"}>{microphoneReady ? (muted ? "Micro coupé" : "Micro actif") : "Micro indisponible"}</span>}
         </div>
         <span className="call-room-security">🔒 Accès participants acceptés</span>
       </div>
@@ -811,13 +814,14 @@ export default function MeetingCallRoom({
               ? <button className="call-hangup" onClick={() => void leaveCall(true)}>Terminer pour tous</button>
               : <button className="call-hangup" onClick={() => void leaveCall(false)}>Quitter l'appel</button>}
           </div>
-          {liveTranscriptionConsent && (
+          {(liveTranscriptionConsent || liveTranscriptSegments.length > 0) && (
             <section className="call-live-transcript">
               <div className="call-live-transcript-heading">
                 <strong>Transcription en direct</strong>
                 <span className={liveTranscribing ? "call-live-status active" : "call-live-status"}>{liveTranscribing ? "En cours" : "En pause"}</span>
               </div>
               {liveTranscriptionError && <p className="call-transcription-error">{liveTranscriptionError}</p>}
+              {!liveTranscriptionConsent && liveTranscriptSegments.length > 0 && <p className="call-live-transcript-empty">Transcription partagée par les participants ayant activé la reconnaissance vocale.</p>}
               {liveTranscriptSegments.length ? (
                 <div className="call-live-transcript-lines">
                   {liveTranscriptSegments.slice(-8).map(segment => (
