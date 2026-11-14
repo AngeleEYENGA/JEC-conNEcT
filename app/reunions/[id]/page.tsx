@@ -11,7 +11,8 @@ type Meeting = {
   starts_at:string; ends_at:string|null; location:string|null; meeting_url:string|null;
   meeting_status:string; created_by:string; workspace?:{name:string;slug:string}|null;
 };
-type Participant = {user_id:string;attendance_status:string;responded_at:string|null};
+type Participant = {user_id:string;attendance_status:string;responded_at:string|null;attended_at:string|null};
+type CallAttendance = {session_id:string;user_id:string;joined_at:string;left_at:string|null;session_started_at:string;session_ended_at:string|null;session_status:string};
 type AgendaItem = {id:string;title:string;description:string|null;presenter_id:string|null;sort_order:number;item_status:string};
 type Decision = {id:string;title:string;detail:string|null;decision_status:string;created_at:string};
 type Minutes = {id:string;content:string;minutes_status:string;prepared_by:string;approved_by:string|null;approved_at:string|null};
@@ -39,6 +40,7 @@ export default function MeetingDetailPage(){
  const [loading,setLoading]=useState(true); const [meeting,setMeeting]=useState<Meeting|null>(null);
  const [userId,setUserId]=useState(""); const [manager,setManager]=useState(false);
  const [participants,setParticipants]=useState<Participant[]>([]);
+ const [callAttendance,setCallAttendance]=useState<CallAttendance[]>([]);
  const [roster,setRoster]=useState<Roster[]>([]);
  const [names,setNames]=useState<Record<string,string>>({});
  const [agendaItems,setAgendaItems]=useState<AgendaItem[]>([]);
@@ -74,14 +76,37 @@ export default function MeetingDetailPage(){
   const [memberResult,rosterResult,participantResult,agendaResult,decisionResult,minutesResult,transcriptResult,taskResult]=await Promise.all([
    supabase.from("jec_workspace_members").select("workspace_role,membership_status").eq("workspace_id",mt.workspace_id).eq("user_id",user.id).maybeSingle(),
    supabase.from("jec_workspace_members").select("user_id,workspace_role,membership_status").eq("workspace_id",mt.workspace_id).eq("membership_status","active"),
-   supabase.from("jec_meeting_participants").select("user_id,attendance_status,responded_at").eq("meeting_id",meetingId),
+   supabase.from("jec_meeting_participants").select("user_id,attendance_status,responded_at,attended_at").eq("meeting_id",meetingId),
    supabase.from("jec_meeting_agenda_items").select("id,title,description,presenter_id,sort_order,item_status").eq("meeting_id",meetingId).order("sort_order"),
    supabase.from("jec_meeting_decisions").select("id,title,detail,decision_status,created_at").eq("meeting_id",meetingId).order("created_at",{ascending:false}),
    supabase.from("jec_meeting_minutes").select("id,content,minutes_status,prepared_by,approved_by,approved_at").eq("meeting_id",meetingId).maybeSingle(),
    supabase.from("jec_meeting_transcripts").select("id,transcript_text,language,source_type,transcript_status,created_at").eq("meeting_id",meetingId).order("created_at",{ascending:false}),
    supabase.from("jec_workspace_tasks").select("id,title,task_status,priority,assigned_to,due_at,created_by").eq("meeting_id",meetingId).order("created_at",{ascending:false})
   ]);
-  const failures=[memberResult.error,rosterResult.error,participantResult.error,agendaResult.error,decisionResult.error,minutesResult.error,transcriptResult.error,taskResult.error].filter(Boolean);
+  const {data:callSessionRows,error:callSessionError}=await supabase.from("jec_meeting_call_sessions")
+   .select("id,started_at,ended_at,status")
+   .eq("meeting_id",meetingId)
+   .order("started_at",{ascending:true});
+  const callSessions=(callSessionRows??[]) as Array<{id:string;started_at:string;ended_at:string|null;status:string}>;
+  const callSessionIds=callSessions.map(session=>session.id);
+  let actualCallAttendance:CallAttendance[]=[];
+  if(callSessionIds.length){
+   const {data:callRows,error:callRowsError}=await supabase.from("jec_meeting_call_participants")
+    .select("session_id,user_id,joined_at,left_at")
+    .in("session_id",callSessionIds)
+    .order("joined_at",{ascending:true});
+   if(callRowsError)setError(callRowsError.message);
+   const sessionById=new Map(callSessions.map(session=>[session.id,session]));
+   actualCallAttendance=(callRows??[]).flatMap((row:{session_id:string;user_id:string;joined_at:string;left_at:string|null})=>{
+    const session=sessionById.get(row.session_id);
+    return session?[{
+     session_id:row.session_id,user_id:row.user_id,joined_at:row.joined_at,left_at:row.left_at,
+     session_started_at:session.started_at,session_ended_at:session.ended_at,session_status:session.status
+    }]:[];
+   });
+  }
+  setCallAttendance(actualCallAttendance);
+  const failures=[memberResult.error,rosterResult.error,participantResult.error,agendaResult.error,decisionResult.error,minutesResult.error,transcriptResult.error,taskResult.error,callSessionError].filter(Boolean);
   if(failures.length)setError(failures[0]!.message);
   const role=memberResult.data?.workspace_role??"member";
   setManager(mt.created_by===user.id||role==="owner"||role==="manager");
@@ -165,23 +190,41 @@ export default function MeetingDetailPage(){
 
  function buildMinutesDraft(){
   if(!meeting)return;
+  const timeOnly=(value:string)=>new Date(value).toLocaleTimeString(en?"en-GB":"fr-FR",{hour:"2-digit",minute:"2-digit"});
   const attendance=participants.map(p=>{
-   const status=p.attendance_status==="accepted"?(en?"confirmed":"présence confirmée"):p.attendance_status==="declined"?(en?"declined":"déclinée"):p.attendance_status==="attended"?(en?"attended":"présent(e)"):(en?"invited":"invité(e)");
-   return "- "+(names[p.user_id]||(en?"JEC member":"Membre JEC"))+" — "+status;
+   const status=p.attendance_status==="attended"?(en?"actually attended":"présent(e) en réunion"):p.attendance_status==="accepted"?(en?"invitation accepted":"présence confirmée"):p.attendance_status==="declined"?(en?"declined":"déclinée"):(en?"invited":"invité(e)");
+   const sessions=callAttendance.filter(row=>row.user_id===p.user_id);
+   const actualTimes=sessions.map(row=>
+    (en?"joined ":"rejoint à ")+timeOnly(row.joined_at)+(row.left_at?(en?" · left ":" · parti à ")+timeOnly(row.left_at):(en?" · still connected":" · encore connecté"))
+   );
+   return "- "+(names[p.user_id]||(en?"JEC member":"Membre JEC"))+" — "+status
+    +(p.attended_at?(en?" · first attendance ":" · première présence ")+date(p.attended_at,en):"")
+    +(actualTimes.length?"\n  "+actualTimes.join("\n  "):"");
   });
-  const agenda=agendaItems.map((item,index)=>`${index+1}. ${item.title} — ${item.item_status}${item.description?"\n   "+item.description:""}`);
+  const callSessions=[...new Map(callAttendance.map(row=>[row.session_id,row])).values()];
+  const callSessionLines=callSessions.map(row=>
+   "- "+date(row.session_started_at,en)+(row.session_ended_at?(en?" · ended ":" · terminée ")+date(row.session_ended_at,en):en?" · active":" · en cours")
+  );
+  const agenda=agendaItems.map((item,index)=>(index+1)+". "+item.title+" — "+item.item_status+(item.description?"\n   "+item.description:""));
   const decisionLines=decisions.map(item=>"- "+item.title+(item.detail?" — "+item.detail:""));
   const actionLines=tasks.map(item=>"- [ "+(item.task_status==="done"?"x":" ")+" ] "+item.title+" — "+(item.assigned_to?(names[item.assigned_to]||(en?"JEC member":"Membre JEC")):(en?"Unassigned":"Non attribuée"))+(item.due_at?" — "+date(item.due_at,en,false):""));
+  const transcriptLines=[...transcripts].sort((a,b)=>new Date(a.created_at).getTime()-new Date(b.created_at).getTime()).map(item=>
+   "- "+timeOnly(item.created_at)+" · "+item.language.toUpperCase()+" · "+item.transcript_text
+  );
   const content=[
    "# "+(en?"Meeting minutes":"Compte rendu de réunion"),
    "",
    "**"+(en?"Meeting":"Réunion")+" :** "+meeting.title,
-   "**"+(en?"Date":"Date")+" :** "+date(meeting.starts_at,en),
+   "**"+(en?"Scheduled date":"Date prévue")+" :** "+date(meeting.starts_at,en),
+   meeting.ends_at?"**"+(en?"Scheduled end":"Fin prévue")+" :** "+date(meeting.ends_at,en):"",
    "**"+(en?"Workspace":"Espace de travail")+" :** "+(meeting.workspace?.name||"JEC-conNEcT"),
    meeting.location?"**"+(en?"Location":"Lieu")+" :** "+meeting.location:"",
    "",
-   "## "+(en?"Participants":"Participants"),
+   "## "+(en?"Attendance and participants":"Présences et participants"),
    ...(attendance.length?attendance:[en?"- To be completed":"- À compléter"]),
+   "",
+   "## "+(en?"Actual call sessions":"Sessions d'appel constatées"),
+   ...(callSessionLines.length?callSessionLines:[en?"- No call session recorded":"- Aucune session d'appel enregistrée"]),
    "",
    "## "+(en?"Agenda":"Ordre du jour"),
    ...(agenda.length?agenda:[en?"- No agenda item recorded":"- Aucun point enregistré"]),
@@ -192,15 +235,18 @@ export default function MeetingDetailPage(){
    "## "+(en?"Action items and follow-up":"Actions et suivi"),
    ...(actionLines.length?actionLines:[en?"- No action item recorded":"- Aucune action enregistrée"]),
    "",
-   "## "+(en?"Discussion notes":"Notes des échanges"),
-   en?"To be completed by the meeting secretary.":"À compléter par le ou la secrétaire de séance.",
+   "## "+(en?"Live transcript":"Transcription de la réunion"),
+   ...(transcriptLines.length?transcriptLines:[en?"- No transcript segment saved":"- Aucun segment de transcription enregistré"]),
+   "",
+   "## "+(en?"Secretary's review and additional notes":"Relecture du/de la secrétaire et notes complémentaires"),
+   en?"Review the transcript, correct speaker names and add context or decisions that were not captured automatically.":"Relire la transcription, corriger les noms des intervenants et ajouter le contexte ou les décisions qui n'ont pas été captés automatiquement.",
    "",
    "## "+(en?"Next meeting":"Prochaine réunion"),
    en?"To be confirmed.":"À confirmer."
   ].filter(Boolean).join("\n");
   setMinutesText(content);
   setActiveTab("minutes");
-  setNotice(en?"A structured draft has been prepared from the meeting data. Review it before sharing.":"Un brouillon structuré a été préparé à partir des données de la réunion. Relis-le avant partage.");
+  setNotice(en?"A draft with actual call attendance, session times and saved transcript has been prepared. Review it before approval.":"Un brouillon incluant les présences réellement constatées, les horaires d'appel et la transcription a été préparé. Relis-le avant validation.");
  }
 
  async function saveMinutes(status:"draft"|"shared"){

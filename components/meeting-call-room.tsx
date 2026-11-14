@@ -17,6 +17,8 @@ type ManagedPeerConnection = RTCPeerConnection & {
   ignoreOffer: boolean;
   isSettingRemoteAnswerPending: boolean;
   initialOfferStarted: boolean;
+  restartAttempts: number;
+  restartTimer: number | null;
 };
 
 type SpeechResultEvent = Event & {
@@ -107,16 +109,22 @@ export default function MeetingCallRoom({
   const [liveTranscriptionError, setLiveTranscriptionError] = useState("");
   const [liveTranscriptSegments, setLiveTranscriptSegments] = useState<LiveTranscriptSegment[]>([]);
   const [microphoneReady, setMicrophoneReady] = useState(false);
+  const [relayAvailable, setRelayAvailable] = useState(false);
   const [status, setStatus] = useState("Préparation de la salle");
   const [error, setError] = useState("");
   const [remoteStreams, setRemoteStreams] = useState<Record<string, MediaStream>>({});
   const [remoteNames, setRemoteNames] = useState<Record<string, string>>({});
+  const [remoteStates, setRemoteStates] = useState<Record<string, string>>({});
   const localStreamRef = useRef<MediaStream | null>(null);
   const screenStreamRef = useRef<MediaStream | null>(null);
   const channelRef = useRef<any>(null);
   const peersRef = useRef<Map<string, RTCPeerConnection>>(new Map());
   const pendingCandidatesRef = useRef<Map<string, RTCIceCandidateInit[]>>(new Map());
   const remoteStreamRefs = useRef<Map<string, MediaStream>>(new Map());
+  const iceServersRef = useRef<RTCIceServer[]>([
+    { urls: "stun:stun.l.google.com:19302" },
+    { urls: "stun:stun.cloudflare.com:3478" }
+  ]);
   const liveRecognitionRef = useRef<SpeechRecognitionLike | null>(null);
   const liveTranscribingRef = useRef(false);
   const transcriptionRestartTimerRef = useRef<number | null>(null);
@@ -143,6 +151,8 @@ export default function MeetingCallRoom({
     const pc = peersRef.current.get(peerId);
     remoteStreamRefs.current.delete(peerId);
     if (pc) {
+      const managedPc = pc as ManagedPeerConnection;
+      if (managedPc.restartTimer !== null) window.clearTimeout(managedPc.restartTimer);
       pc.ontrack = null;
       pc.onicecandidate = null;
       pc.close();
@@ -158,13 +168,20 @@ export default function MeetingCallRoom({
       delete next[peerId];
       return next;
     });
+    setRemoteStates(current => {
+      const next = { ...current };
+      delete next[peerId];
+      return next;
+    });
   }, []);
 
   const ensurePeer = useCallback((peerId: string, peerName: string) => {
     const existing = peersRef.current.get(peerId);
     if (existing) return existing;
     const pc = new RTCPeerConnection({
-      iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
+      iceServers: iceServersRef.current,
+      bundlePolicy: "max-bundle",
+      rtcpMuxPolicy: "require"
     });
     const cameraStream = localStreamRef.current;
     const audioTrack = cameraStream?.getAudioTracks()[0] ?? null;
@@ -187,6 +204,8 @@ export default function MeetingCallRoom({
     managedPc.ignoreOffer = false;
     managedPc.isSettingRemoteAnswerPending = false;
     managedPc.initialOfferStarted = false;
+    managedPc.restartAttempts = 0;
+    managedPc.restartTimer = null;
     pc.onicecandidate = event => {
       if (event.candidate && userIdRef.current) {
         void sendSignal({
@@ -227,11 +246,72 @@ export default function MeetingCallRoom({
       setRemoteStreams(current => ({ ...current, [peerId]: remoteStream! }));
       setRemoteNames(current => ({ ...current, [peerId]: peerName }));
     };
-    pc.onconnectionstatechange = () => {
-      if (pc.connectionState === "failed" || pc.connectionState === "closed") {
-        closePeer(peerId);
+    const scheduleIceRecovery = () => {
+      const iceState = pc.iceConnectionState;
+      setRemoteStates(current => ({
+        ...current,
+        [peerId]: iceState === "connected" || iceState === "completed"
+          ? "Média connecté"
+          : iceState === "checking" ? "Connexion média en cours…"
+          : iceState === "disconnected" ? "Reconnexion média…"
+          : iceState === "failed" ? "Relance de la connexion…"
+          : "Synchronisation du média…"
+      }));
+
+      if (iceState === "connected" || iceState === "completed") {
+        managedPc.restartAttempts = 0;
+        if (managedPc.restartTimer !== null) {
+          window.clearTimeout(managedPc.restartTimer);
+          managedPc.restartTimer = null;
+        }
+        return;
       }
-      if (pc.connectionState === "connected") setStatus("Appel connecté");
+
+      if (iceState !== "failed" && iceState !== "disconnected") return;
+      if (userIdRef.current.localeCompare(peerId) > 0 || managedPc.restartTimer !== null) return;
+
+      managedPc.restartTimer = window.setTimeout(async () => {
+        managedPc.restartTimer = null;
+        if (pc.iceConnectionState === "connected" || pc.iceConnectionState === "completed" || pc.signalingState !== "stable") return;
+        if (managedPc.restartAttempts >= 3) {
+          setRemoteStates(current => ({ ...current, [peerId]: "Connexion impossible · vérifie le réseau" }));
+          return;
+        }
+        managedPc.restartAttempts += 1;
+        try {
+          pc.restartIce();
+          const offer = await pc.createOffer({ iceRestart: true });
+          if (pc.signalingState !== "stable") return;
+          await pc.setLocalDescription(offer);
+          const localDescription = pc.localDescription as RTCSessionDescription | null;
+          if (localDescription) {
+            await sendSignal({
+              from: userIdRef.current,
+              to: peerId,
+              type: "description",
+              description: { type: localDescription.type, sdp: localDescription.sdp }
+            });
+          }
+        } catch (recoveryError) {
+          setRemoteStates(current => ({ ...current, [peerId]: "Reconnexion impossible" }));
+          setError(recoveryError instanceof Error ? recoveryError.message : "Impossible de relancer la connexion média.");
+        }
+      }, iceState === "failed" ? 500 : 2500);
+    };
+
+    pc.oniceconnectionstatechange = scheduleIceRecovery;
+    pc.onconnectionstatechange = () => {
+      const state = pc.connectionState;
+      if (state === "connected") setStatus("Appel connecté");
+      if (state === "failed") scheduleIceRecovery();
+      setRemoteStates(current => ({
+        ...current,
+        [peerId]: state === "connected" ? "Média connecté"
+          : state === "connecting" ? "Connexion média en cours…"
+          : state === "disconnected" ? "Reconnexion média…"
+          : state === "failed" ? "Relance de la connexion…"
+          : "Synchronisation du média…"
+      }));
     };
     peersRef.current.set(peerId, pc);
     return pc;
@@ -304,12 +384,10 @@ export default function MeetingCallRoom({
   }, [closePeer, ensurePeer, remoteNames, sendSignal]);
 
   const createOffer = useCallback(async (peerId: string, peerName: string) => {
-    // Deterministic initial offerer; lock before awaiting so duplicate
-    // presence sync/join events cannot create concurrent local offers.
-    if (userIdRef.current.localeCompare(peerId) >= 0) return;
+    // Both peers may initiate. Perfect Negotiation arbitrates offer glare.
     const pc = ensurePeer(peerId, peerName);
     const managedPc = pc as ManagedPeerConnection;
-    if (managedPc.initialOfferStarted || pc.localDescription || pc.signalingState !== "stable") return;
+    if (managedPc.initialOfferStarted || managedPc.makingOffer || pc.localDescription || pc.signalingState !== "stable") return;
 
     managedPc.initialOfferStarted = true;
     managedPc.makingOffer = true;
@@ -554,7 +632,13 @@ export default function MeetingCallRoom({
     localStreamRef.current = null;
     setRemoteStreams({});
     setRemoteNames({});
+    setRemoteStates({});
     setMicrophoneReady(false);
+    setRelayAvailable(false);
+    iceServersRef.current = [
+      { urls: "stun:stun.l.google.com:19302" },
+      { urls: "stun:stun.cloudflare.com:3478" }
+    ];
     setLiveTranscriptSegments([]);
     if (onLeave) onLeave();
   }, [onLeave]);
@@ -576,6 +660,24 @@ export default function MeetingCallRoom({
     try {
       const { data: { user }, error: userError } = await supabase.auth.getUser();
       if (userError || !user) throw new Error("Connecte-toi pour rejoindre cet appel.");
+
+      // TURN configuration is delivered server-side only to accepted meeting
+      // participants. When no relay is configured, the call still tries STUN.
+      try {
+        const iceResponse = await fetch("/api/meeting/ice-config?meetingId=" + encodeURIComponent(meetingId), { cache: "no-store" });
+        if (iceResponse.ok) {
+          const iceConfig = await iceResponse.json() as { iceServers?: RTCIceServer[]; relayAvailable?: boolean };
+          if (Array.isArray(iceConfig.iceServers) && iceConfig.iceServers.length) {
+            iceServersRef.current = iceConfig.iceServers;
+          }
+          setRelayAvailable(iceConfig.relayAvailable === true);
+        } else {
+          setRelayAvailable(false);
+        }
+      } catch {
+        setRelayAvailable(false);
+      }
+
       setUserId(user.id);
       userIdRef.current = user.id;
       setMuted(false);
@@ -647,14 +749,19 @@ export default function MeetingCallRoom({
           if (peerId === user.id) return;
           const name = entries[0]?.displayName || "Participant";
           setRemoteNames(current => ({ ...current, [peerId]: name }));
-          if (user.id.localeCompare(peerId) < 0) void createOffer(peerId, name);
+          setRemoteStates(current => ({ ...current, [peerId]: current[peerId] || "Synchronisation du média…" }));
+          void createOffer(peerId, name);
         });
       });
       channel.on("presence", { event: "join" }, ({ key, newPresences }: { key: string; newPresences: Array<{ displayName?: string }> }) => {
         if (key === user.id) return;
         const name = newPresences[0]?.displayName || "Participant";
         setRemoteNames(current => ({ ...current, [key]: name }));
-        if (user.id.localeCompare(key) < 0) void createOffer(key, name);
+        setRemoteStates(current => ({ ...current, [key]: "Synchronisation du média…" }));
+        void createOffer(key, name);
+      });
+      channel.on("presence", { event: "leave" }, ({ key }: { key: string }) => {
+        if (key !== user.id) closePeer(key);
       });
       // The initial Presence sync can fire as soon as SUBSCRIBED resolves.
       // Make the channel sendable before that event can trigger createOffer().
@@ -678,7 +785,8 @@ export default function MeetingCallRoom({
         if (peerId === user.id) return;
         const name = entries[0]?.displayName || "Participant";
         setRemoteNames(current => ({ ...current, [peerId]: name }));
-        if (user.id.localeCompare(peerId) < 0) void createOffer(peerId, name);
+        setRemoteStates(current => ({ ...current, [peerId]: current[peerId] || "Synchronisation du média…" }));
+        void createOffer(peerId, name);
       });
 
       if (liveTranscriptionConsent && liveTranscriptionSupported) {
@@ -730,7 +838,8 @@ export default function MeetingCallRoom({
   }, []);
 
   const localStream = screenStreamRef.current ?? localStreamRef.current;
-  const remoteEntries = Object.entries(remoteStreams);
+  const remotePeerIds = [...new Set([...Object.keys(remoteNames), ...Object.keys(remoteStreams)])]
+    .filter(peerId => peerId !== userId);
 
   return (
     <section className="meeting-call-room">
@@ -784,8 +893,15 @@ export default function MeetingCallRoom({
         <>
           <div className="call-video-grid">
             {localStream && <VideoTile stream={localStream} label="Toi" muted />}
-            {remoteEntries.map(([id, stream]) => <VideoTile key={id} stream={stream} label={remoteNames[id] || "Participant"} />)}
-            {!remoteEntries.length && <div className="call-waiting-tile"><span>◉</span><strong>{Object.keys(remoteNames).length ? "Participant(s) connecté(s) · réception des flux audio/vidéo…" : "En attente des autres participants…"}</strong></div>}
+            {remotePeerIds.map(peerId => remoteStreams[peerId]
+              ? <VideoTile key={peerId} stream={remoteStreams[peerId]} label={remoteNames[peerId] || "Participant"} />
+              : <div className="call-waiting-tile call-peer-placeholder" key={peerId}>
+                  <span>◉</span>
+                  <strong>{remoteNames[peerId] || "Participant"}</strong>
+                  <small>{remoteStates[peerId] || "Connexion média en cours…"}</small>
+                </div>
+            )}
+            {!remotePeerIds.length && <div className="call-waiting-tile"><span>◉</span><strong>En attente des autres participants…</strong></div>}
           </div>
           <div className="call-controls">
             <button className={muted ? "call-control active" : "call-control"} onClick={() => {
@@ -836,6 +952,7 @@ export default function MeetingCallRoom({
               ) : <p className="call-live-transcript-empty">Les premières phrases reconnues apparaîtront ici. Chaque participant doit accepter la transcription sur son propre appareil.</p>}
             </section>
           )}
+          {!relayAvailable && <p className="call-network-note">Le relais TURN n’est pas encore configuré. Les connexions directes peuvent échouer entre certains réseaux ou derrière certains pare-feu ; pour fiabiliser les appels à plusieurs, configure les variables serveur TURN de JEC-conNEcT.</p>}
           {!screenShareSupported && <p className="call-screen-share-note">Le partage d’écran n’est pas proposé par ce navigateur mobile. Tu peux participer à l’appel audio / vidéo normalement ; pour partager ton écran, utilise JEC-conNEcT depuis un ordinateur.</p>}
         </>
       )}

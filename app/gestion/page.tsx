@@ -19,6 +19,10 @@ export default function AdminPage(){
   const [accounts,setAccounts]=useState<AccountRow[]>([]);
   const [directoryDrafts,setDirectoryDrafts]=useState<DirectoryDraft[]>([]);
   const [audioDrafts,setAudioDrafts]=useState<AudioDraft[]>([]);
+  const [workspaceOptions,setWorkspaceOptions]=useState<Array<{id:string;name:string;slug:string}>>([]);
+  const [workspaceMemberships,setWorkspaceMemberships]=useState<Array<{workspace_id:string;user_id:string;membership_status:string}>>([]);
+  const [workspaceByAccount,setWorkspaceByAccount]=useState<Record<string,string>>({});
+  const [invitingUser,setInvitingUser]=useState<string|null>(null);
   const [publishingAudioId,setPublishingAudioId]=useState<string|null>(null);
   const [error,setError]=useState("");
   const [message,setMessage]=useState("");
@@ -43,7 +47,19 @@ export default function AdminPage(){
     setMembers((pendingRows??[]) as PendingMember[]);
     const {data:accountRows,error:accountsError}=await supabase.rpc("jec_admin_list_accounts");
     if(accountsError)setError(accountsError.message);
-    setAccounts((accountRows??[]) as AccountRow[]);
+    const registeredAccounts=(accountRows??[]) as AccountRow[];
+    setAccounts(registeredAccounts);
+    const registeredIds=registeredAccounts.map(account=>account.user_id);
+    const [{data:workspacesData,error:workspacesError},{data:workspaceRows,error:workspaceMembersError}]=await Promise.all([
+      supabase.from("jec_workspaces").select("id,name,slug").order("name"),
+      registeredIds.length
+        ? supabase.from("jec_workspace_members").select("workspace_id,user_id,membership_status").in("user_id",registeredIds)
+        : Promise.resolve({data:[],error:null})
+    ]);
+    if(workspacesError)setError(workspacesError.message);
+    if(workspaceMembersError)setError(workspaceMembersError.message);
+    setWorkspaceOptions((workspacesData??[]) as Array<{id:string;name:string;slug:string}>);
+    setWorkspaceMemberships((workspaceRows??[]) as Array<{workspace_id:string;user_id:string;membership_status:string}>);
     const {data:drafts,error:draftsError}=await supabase.from("jec_directory_entries").select("id,full_name,role_title,category,structure_name,visibility").eq("is_published",false).order("created_at",{ascending:false});
     if(draftsError)setError(draftsError.message);
     setDirectoryDrafts((drafts??[]) as DirectoryDraft[]);
@@ -55,17 +71,39 @@ export default function AdminPage(){
 
   useEffect(()=>{void load();},[]);
 
+  async function inviteAccountToWorkspace(account:AccountRow){
+    if(!account.email||account.membership_status!=="verified")return;
+    const selectedWorkspace=workspaceByAccount[account.user_id];
+    if(!selectedWorkspace){setError(en?"Choose a workspace first.":"Choisis d'abord un espace de travail.");return;}
+    const existing=workspaceMemberships.find(row=>row.workspace_id===selectedWorkspace&&row.user_id===account.user_id);
+    if(existing?.membership_status==="active"){setMessage(en?"This account is already an active member of this workspace.":"Ce compte est déjà membre actif de cet espace.");return;}
+    if(existing?.membership_status==="invited"){setMessage(en?"An invitation is already pending for this workspace.":"Une invitation est déjà en attente pour cet espace.");return;}
+
+    const supabase=getSupabaseBrowserClient();if(!supabase)return;
+    setInvitingUser(account.user_id);setError("");setMessage("");
+    const {error:inviteError}=await supabase.rpc("jec_workspace_invite_by_email",{
+      target_workspace_id:selectedWorkspace,
+      target_email:account.email,
+      target_role:"member"
+    });
+    if(inviteError){
+      setError(inviteError.message);
+    }else{
+      setMessage(en?"Workspace invitation created. The person must sign in and accept it.":"Invitation à l'espace créée. La personne devra se connecter et l'accepter.");
+      await load();
+    }
+    setInvitingUser(null);
+  }
+
   async function validateMember(userId:string,status:"verified"|"rejected"){
     const supabase=getSupabaseBrowserClient();
     if(!supabase)return;
     setError("");setMessage("");
-    const {data:{user}}=await supabase.auth.getUser();
-    const {error:updateError}=await supabase.from("jec_memberships").update({
-      membership_status:status,
-      verified_at:new Date().toISOString(),
-      verified_by:user?.id??null,
-      updated_at:new Date().toISOString()
-    }).eq("user_id",userId);
+    const {error:updateError}=await supabase.rpc("jec_admin_set_membership",{
+      target_user_id:userId,
+      new_status:status,
+      new_structure_name:null
+    });
     if(updateError)setError(updateError.message);
     else {setMessage(en?"Membership status updated.":"Statut d'adhésion mis à jour.");await load();}
   }
@@ -170,7 +208,7 @@ export default function AdminPage(){
       {loading?<p className="muted">{en?"Checking permissions…":"Vérification des permissions…"}</p>:!isAdmin?<section className="admin-locked"><h2>{en?"Administrator access required":"Accès administrateur requis"}</h2><p>{en?"Your account is connected, but it has not been granted JEC-conNEcT administrator privileges. Membership verification and administrator authorization are separate decisions.":"Ton compte est connecté, mais il ne dispose pas des droits d'administration de JEC-conNEcT. La validation de l'adhésion et l'autorisation d'administration sont deux décisions distinctes."}</p><p>{en?"The first administrator must be explicitly added by a project owner in the Supabase SQL Editor after checking the person's account email.":"Le premier administrateur doit être ajouté explicitement par le propriétaire du projet dans l'éditeur SQL Supabase, après vérification de l'adresse e-mail du compte."}</p></section>:<>
         <section className="admin-section">
           <div className="directory-section-heading"><div><p className="eyebrow">{en?"ACCOUNT MANAGEMENT":"GESTION DES COMPTES"}</p><h2>{en?"All registered accounts":"Tous les comptes enregistrés"}</h2></div><span>{accounts.length} {en?"accounts":"comptes"}</span></div>
-          <p className="admin-help">{en?"Approve JEC membership separately from platform administrator access. New accounts remain pending until reviewed.":"La validation de l'appartenance à la JEC est distincte du rôle administrateur de la plateforme. Les nouveaux comptes restent en attente jusqu'à leur examen."}</p>
+          <p className="admin-help">{en?"JEC membership approval, administrator rights and workspace access are three separate decisions. After verification, invite each person to the workspace(s) they need.":"La validation de l'adhésion JEC, les droits administrateur et l'accès aux espaces sont trois décisions distinctes. Après validation, invite chaque personne dans le ou les espaces nécessaires."}</p>
           {accounts.length?accounts.map(account=><article className="admin-account-row" key={account.user_id}>
             <div className="admin-account-main"><strong>{account.display_name||[account.first_name,account.last_name].filter(Boolean).join(" ")||account.email||account.user_id}</strong><small>{account.email??account.user_id}</small><div className="admin-account-badges"><span className={"membership-pill "+account.membership_status}>{account.membership_status==="verified"?(en?"JEC member":"Membre JEC"):account.membership_status==="rejected"?(en?"Rejected":"Refusé"):(en?"Pending":"En attente")}</span>{account.is_admin&&<span className="admin-pill">{en?"Administrator":"Administrateur"}</span>}</div><small>{en?"Registered":"Inscrit"} · {new Date(account.created_at).toLocaleDateString(en?"en-GB":"fr-FR")}</small></div>
             <div className="admin-account-actions">
@@ -179,6 +217,15 @@ export default function AdminPage(){
               {account.membership_status!=="pending"&&<button className="quiet-button" onClick={()=>setMembership(account.user_id,"pending")}>{en?"Set pending":"Remettre en attente"}</button>}
               <button className={account.is_admin?"danger-outline-button":"secondary-outline-button"} onClick={()=>setAdministrator(account.user_id,!account.is_admin)}>{account.is_admin?(en?"Revoke admin":"Retirer admin"):(en?"Make administrator":"Nommer administrateur")}</button>
             </div>
+            {account.membership_status==="verified"&&account.email&&workspaceOptions.length>0&&<div className="admin-workspace-invite">
+              <label>{en?"Add to a workspace":"Ajouter à un espace de travail"}
+                <select value={workspaceByAccount[account.user_id]??""} onChange={event=>setWorkspaceByAccount(current=>({...current,[account.user_id]:event.target.value}))}>
+                  <option value="">{en?"Choose a workspace":"Choisir un espace"}</option>
+                  {workspaceOptions.map(workspace=><option key={workspace.id} value={workspace.id}>{workspace.name}</option>)}
+                </select>
+              </label>
+              {(()=>{const existing=workspaceMemberships.find(row=>row.user_id===account.user_id&&row.workspace_id===workspaceByAccount[account.user_id]);return existing?.membership_status==="active"?<span className="workspace-member-state active">{en?"Already a member":"Déjà membre"}</span>:existing?.membership_status==="invited"?<span className="workspace-member-state invited">{en?"Invitation pending":"Invitation en attente"}</span>:<button className="secondary-outline-button" disabled={!workspaceByAccount[account.user_id]||invitingUser===account.user_id} onClick={()=>void inviteAccountToWorkspace(account)}>{invitingUser===account.user_id?(en?"Inviting…":"Invitation…"):(en?"Invite to workspace":"Inviter dans l'espace")}</button>;})()}
+            </div>}
           </article>):<div className="directory-empty compact"><p>{en?"No registered accounts yet.":"Aucun compte enregistré."}</p></div>}
         </section>
 

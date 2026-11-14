@@ -106,6 +106,9 @@ export default function Home() {
     const supabase=getSupabaseBrowserClient();
     if(!supabase) return;
     let mounted=true;
+    let currentUser:{id:string;email?:string;user_metadata?:Record<string,unknown>}|null=null;
+    let membershipChannel:ReturnType<typeof supabase.channel>|null=null;
+
     const loadIdentity=async(user:{id:string;email?:string;user_metadata?:Record<string,unknown>})=>{
       const [profileResult,membershipResult,adminResult]=await Promise.all([
         supabase.from("jec_profiles").select("first_name,last_name,display_name,avatar_url").eq("user_id",user.id).maybeSingle(),
@@ -126,16 +129,53 @@ export default function Home() {
         isAdmin:adminResult.data===true
       });
     };
+
+    const watchMembership=(user:{id:string;email?:string;user_metadata?:Record<string,unknown>})=>{
+      if(membershipChannel) void supabase.removeChannel(membershipChannel);
+      membershipChannel=supabase.channel("jec-membership-status:"+user.id)
+        .on("postgres_changes",{event:"*",schema:"public",table:"jec_memberships",filter:"user_id=eq."+user.id},()=>{
+          void loadIdentity(user);
+        })
+        .subscribe();
+    };
+
+    const refreshOnReturn=()=>{
+      if(!document.hidden&&currentUser) void loadIdentity(currentUser);
+    };
+
     void supabase.auth.getUser().then(({data}:{data:{user:{id:string;email?:string;user_metadata?:Record<string,unknown>}|null}})=>{
-      if(data.user) void loadIdentity(data.user);
-      else if(mounted) setIdentity(null);
+      if(data.user){
+        currentUser=data.user;
+        void loadIdentity(data.user);
+        watchMembership(data.user);
+      }else if(mounted){
+        currentUser=null;
+        setIdentity(null);
+      }
     });
+
     const {data:{subscription}}=supabase.auth.onAuthStateChange((_event:string,session:{user:{id:string;email?:string;user_metadata?:Record<string,unknown>}}|null)=>{
-      if(!session?.user){setIdentity(null);return;}
+      if(!session?.user){
+        currentUser=null;
+        setIdentity(null);
+        if(membershipChannel){void supabase.removeChannel(membershipChannel);membershipChannel=null;}
+        return;
+      }
       const user=session.user;
+      currentUser=user;
       Promise.resolve().then(()=>loadIdentity(user));
+      watchMembership(user);
     });
-    return ()=>{mounted=false;subscription.unsubscribe();};
+
+    window.addEventListener("focus",refreshOnReturn);
+    document.addEventListener("visibilitychange",refreshOnReturn);
+    return ()=>{
+      mounted=false;
+      subscription.unsubscribe();
+      window.removeEventListener("focus",refreshOnReturn);
+      document.removeEventListener("visibilitychange",refreshOnReturn);
+      if(membershipChannel) void supabase.removeChannel(membershipChannel);
+    };
   },[]);
 
   async function signOut(){
@@ -227,6 +267,8 @@ export default function Home() {
     <main className="main-area">
       <header className="topbar"><div className="breadcrumb">JEC France <span>/</span> <strong>{en?(nav.find(item=>item[0]===active)?.[1]??active):active}</strong></div><div className="top-actions"><label className="search-box"><span>⌕</span><input value={search} onChange={e=>setSearch(e.target.value)} placeholder={t("Rechercher dans les sources publiques","Search public sources")}/><kbd>⌘ K</kbd></label><PWAInstallButton/><LanguageSwitcher/>{identity?.isAdmin&&<Link className="admin-top-link" href="/gestion">{t("Administration","Administration")}</Link>}<Link className="top-login" href={identity?"/compte":"/login"}>{identity?t("Mon compte","My account"):t("Connexion","Sign in")}</Link></div></header>
       <div className="page-content">
+        {identity?.membershipStatus==="pending"&&<p className="auth-config-note">Ton compte est connecté, mais ton adhésion JEC attend encore une validation. Une fois vérifié, l'administrateur devra aussi t'inviter dans les espaces de travail concernés.</p>}
+        {identity?.membershipStatus==="rejected"&&<p className="alert error">Ton adhésion JEC n'a pas été validée. Contacte l'équipe responsable pour obtenir des précisions.</p>}
         {active==="Vue d'ensemble"?<>
           <section className="welcome-banner"><div className="welcome-copy"><p className="eyebrow light">{t("UN MOUVEMENT DE JEUNES, PAR LES JEUNES ET POUR LES JEUNES","A MOVEMENT OF YOUNG PEOPLE, BY YOUNG PEOPLE, FOR YOUNG PEOPLE")}</p><h1>{identity?(identity.displayName.includes("@")?t("Bienvenue dans ton espace JEC-conNEcT.","Welcome to your JEC-conNEcT space."):(en?"Welcome, "+identity.displayName.split(" ")[0]+".":"Bienvenue, "+identity.displayName.split(" ")[0]+".")):t("La JEC, son histoire et son actualité.","JEC: its story and its news.")}</h1><p>{t("Un espace pour découvrir le mouvement, retrouver les informations publiques et préparer une communauté mieux connectée.","Discover the movement, explore verified public information and build a more connected community.")}</p><div className="welcome-actions"><button className="white-button" onClick={()=>setActive("Découvrir la JEC")}>{t("Découvrir la JEC","Discover JEC")}</button><button className="outline-light" onClick={()=>setActive("Actualités JEC")}>{t("Voir les actualités →","Explore news →")}</button></div></div><div className="banner-art"><img className="home-community-image" src="/images/jec-community-illustration.svg" alt={t("Des jeunes échangent, apprennent et font de la musique ensemble","Young people learn, share ideas and make music together")}/><div className="orbit orbit-one"/><div className="orbit orbit-two"/><div className="orbit-core">JEC<br/><span>✝</span></div><div className="orbit-dot dot-one"/><div className="orbit-dot dot-two"/><div className="orbit-dot dot-three"/></div></section>
           <div className="content-grid"><section className="feed-column"><div className="section-heading"><div><p className="eyebrow">{t("PUBLICATIONS OFFICIELLES","OFFICIAL PUBLICATIONS")}</p><h2>{t("Les dernières actualités repérées","Latest verified news")}</h2></div><button className="text-button" onClick={()=>setActive("Actualités JEC")}>{t("Toutes les actualités ↗","All news ↗")}</button></div>{filteredNews.slice(0,3).map(item=><NewsCard key={item.url ?? item.detailPath ?? item.title} item={item}/>)}</section>

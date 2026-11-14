@@ -25,6 +25,8 @@ export default function LoginPage() {
     if(code==="oauth_config_or_code_missing") setError(en?"OAuth setup is incomplete. Check the Supabase URL, public key and callback URL.":"La configuration OAuth est incomplète. Vérifie l’URL Supabase, la clé publique et l’URL de retour.");
     if(code==="oauth_exchange_failed") setError(en?"Google sign-in could not be completed. Check that the Google provider is enabled in Supabase and that redirect URLs match.":"La connexion Google n’a pas abouti. Vérifie que le fournisseur Google est activé dans Supabase et que les URL de redirection correspondent.");
     if(code==="access_denied") setError(en?"Sign-in was cancelled or denied.":"La connexion a été annulée ou refusée.");
+    if(code==="oauth_session_missing") setError(en?"Google confirmed the sign-in, but JEC-conNEcT could not establish the application session. Please try again or use the same browser tab.":"Google a confirmé la connexion, mais JEC-conNEcT n'a pas pu établir la session de l'application. Réessaie depuis le même navigateur.");
+    if(code==="membership_pending") setMessage(en?"Your account is connected. Your JEC membership is still awaiting review; access to private workspaces will be available once approved and invited.":"Ton compte est connecté. Ton adhésion JEC est encore en cours de validation ; l'accès aux espaces privés sera disponible après validation et invitation.");
   },[en]);
 
   function authErrorText(value:string) {
@@ -58,9 +60,20 @@ export default function LoginPage() {
         email,password,
         options:{emailRedirectTo:`${window.location.origin}/auth/callback`}
       });
-      if(authError)setError(authErrorText(authError.message));
-      else if(data.session)router.push("/");
-      else setMessage(en?"Check your inbox to confirm your email address.":"Consulte ta boîte mail pour confirmer ton adresse.");
+      if(authError){
+        setError(authErrorText(authError.message));
+      }else if(data.session){
+        router.push("/");
+      }else if(data.user && Array.isArray(data.user.identities) && data.user.identities.length===0){
+        setError(en
+          ?"An account already exists for this address. Use the same sign-in method as before (for this account, Google). Repeating sign-up does not create a password or send a new confirmation email."
+          :"Un compte existe déjà pour cette adresse. Utilise la même méthode de connexion qu'auparavant (pour ce compte, Google). Refaire une inscription ne crée pas de mot de passe et ne déclenche pas un nouvel e-mail de confirmation.");
+        setMode("login");
+      }else{
+        setMessage(en
+          ?"The sign-up request was accepted. Email delivery is not guaranteed yet: JEC-conNEcT still needs a production SMTP sender. If no message arrives, do not create the account again; contact the platform administrator."
+          :"La demande d'inscription a été enregistrée. L'envoi du mail n'est pas encore garanti : JEC-conNEcT doit encore disposer d'un serveur SMTP de production. Si aucun message n'arrive, ne recrée pas le compte ; contacte l'administrateur de la plateforme.");
+      }
     } else {
       const {error:authError}=await supabase.auth.signInWithPassword({email,password});
       if(authError)setError(authErrorText(authError.message));
@@ -105,6 +118,7 @@ export default function LoginPage() {
             <span className="google-g">G</span> {en?"Continue with Google":"Continuer avec Google"}
           </button>
           {!configured && <p className="auth-config-note">{en?"Google and email sign-in are waiting for the public Supabase key and provider setup.":"La connexion Google et e-mail attendent la clé publique Supabase et la configuration du fournisseur."}</p>}
+          {mode==="signup"&&<p className="auth-config-note">{en?"Email confirmation is currently not production-ready. A custom SMTP sender must be configured before public email sign-up can reliably deliver confirmation messages.":"La confirmation par e-mail n'est pas encore prête pour la production. Un serveur SMTP personnalisé doit être configuré pour garantir l'envoi des messages de confirmation."}</p>}
           <div className="or-divider"><span/>{en?"or use your email address":"ou avec ton adresse e-mail"}<span/></div>
           <form onSubmit={submit} className="auth-form">
             <label>{en?"Email address":"Adresse e-mail"}<input type="email" autoComplete="email" required value={email} onChange={e=>setEmail(e.target.value)} placeholder="prenom@exemple.fr"/></label>

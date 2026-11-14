@@ -26,8 +26,10 @@ export default function AccountPage() {
 
   useEffect(()=>{
     let active=true;
+    const supabaseClient=getSupabaseBrowserClient();
+    let membershipChannel:ReturnType<NonNullable<typeof supabaseClient>["channel"]>|null=null;
     async function load(){
-      const supabase=getSupabaseBrowserClient();
+      const supabase=supabaseClient;
       if(!supabase){setError(en?"Supabase is not configured.":"Supabase n'est pas configuré.");setLoading(false);return;}
       const {data:{user},error:userError}=await supabase.auth.getUser();
       if(userError||!user){window.location.href="/login";return;}
@@ -37,6 +39,11 @@ export default function AccountPage() {
         supabase.rpc("is_jec_admin")
       ]);
       if(!active)return;
+      if(!membershipChannel){
+        membershipChannel=supabase.channel("jec-account-membership:"+user.id)
+          .on("postgres_changes",{event:"*",schema:"public",table:"jec_memberships",filter:"user_id=eq."+user.id},()=>{void load();})
+          .subscribe();
+      }
       const meta=user.user_metadata??{};
       const profile=profileResult.data;
       setUserId(user.id);
@@ -51,8 +58,16 @@ export default function AccountPage() {
       if(profileResult.error)setError(profileResult.error.message);
       setLoading(false);
     }
+    const refreshOnReturn=()=>{if(!document.hidden)void load();};
     void load();
-    return ()=>{active=false;};
+    window.addEventListener("focus",refreshOnReturn);
+    document.addEventListener("visibilitychange",refreshOnReturn);
+    return ()=>{
+      active=false;
+      window.removeEventListener("focus",refreshOnReturn);
+      document.removeEventListener("visibilitychange",refreshOnReturn);
+      if(membershipChannel&&supabaseClient)void supabaseClient.removeChannel(membershipChannel);
+    };
   },[en]);
 
   async function save(event:FormEvent<HTMLFormElement>){
