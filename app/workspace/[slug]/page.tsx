@@ -83,6 +83,14 @@ export default function WorkspaceDetailPage(){
 
   const manager= isAdmin||myRole==="owner"||myRole==="manager";
   const profileById=useMemo(()=>new Map(profiles.map(profile=>[profile.user_id,profile])),[profiles]);
+  const feedMeetings=useMemo(()=>{
+    const now=Date.now();
+    const upcoming=meetings.filter(m=>m.meeting_status==="scheduled"&&new Date(m.starts_at).getTime()>=now)
+      .sort((a,b)=>new Date(a.starts_at).getTime()-new Date(b.starts_at).getTime());
+    const recent=meetings.filter(m=>!upcoming.some(u=>u.id===m.id))
+      .sort((a,b)=>new Date(b.starts_at).getTime()-new Date(a.starts_at).getTime());
+    return [...upcoming,...recent].slice(0,3);
+  },[meetings]);
   const canCollaborate=Boolean(workspace)&&(isAdmin||myRole!==null);
 
   const load=useCallback(async()=>{
@@ -308,6 +316,17 @@ export default function WorkspaceDetailPage(){
           {activeTab==="feed"&&<section className="workspace-panel">
             <div className="collab-section-heading"><div><p className="eyebrow">{en?"TEAM DISCUSSION":"ÉCHANGES DE L'ÉQUIPE"}</p><h2>{en?"Workspace feed":"Fil d'échanges"}</h2></div><span>{posts.length} {en?"posts":"publications"}</span></div>
             <form className="collab-form compact" onSubmit={createPost}><label>{en?"Share an update with this workspace":"Partager une information avec cet espace"}<textarea rows={3} value={postBody} onChange={e=>setPostBody(e.target.value)} required maxLength={12000} placeholder={en?"News, questions, progress…":"Actualité, question, avancement…"} /></label><button className="primary-button" disabled={busy||!postBody.trim()}>{en?"Publish":"Publier"}</button></form>
+             {feedMeetings.length>0&&<section className="workspace-feed-meetings">
+               <div className="collab-section-heading"><div><p className="eyebrow">{en?"MEETINGS IN THIS WORKSPACE":"RENDEZ-VOUS DE L'ESPACE"}</p><h3>{en?"Upcoming and recent meetings":"Réunions à venir et récentes"}</h3></div><button className="quiet-button" onClick={()=>setActiveTab("meetings")}>{en?"All meetings →":"Toutes les réunions →"}</button></div>
+               {feedMeetings.map(meeting=>{
+                 const participation=meetingParticipants.find(item=>item.meeting_id===meeting.id&&item.user_id===userId);
+                 return <article className="workspace-meeting-row" key={meeting.id}>
+                   <div className="meeting-date-block"><strong>{new Date(meeting.starts_at).toLocaleDateString(en?"en-GB":"fr-FR",{day:"2-digit"})}</strong><span>{new Date(meeting.starts_at).toLocaleDateString(en?"en-GB":"fr-FR",{month:"short"})}</span></div>
+                   <div className="workspace-meeting-main"><strong>{meeting.title}</strong><small>{formatDate(meeting.starts_at,en,true)}{meeting.location?" · "+meeting.location:""}</small><Link href={"/reunions/"+meeting.id} className="project-open-link">{en?"Open meeting →":"Ouvrir la réunion →"}</Link>{participation?.attendance_status==="invited"&&<div className="meeting-participation"><span>{en?"Invitation awaiting your response":"Invitation en attente de ta réponse"}</span><button className="primary-button" onClick={()=>void respondToMeeting(meeting.id,"accepted")}>{en?"Attend":"Participer"}</button><button className="quiet-button" onClick={()=>void respondToMeeting(meeting.id,"declined")}>{en?"Decline":"Décliner"}</button></div>}</div>
+                   <span className={"project-status "+meeting.meeting_status}>{meeting.meeting_status}</span>
+                 </article>;
+               })}
+             </section>}
             {posts.length?posts.map(post=><article className="workspace-post" key={post.id}><div className="workspace-post-avatar">{initials(personName(post.author_id))}</div><div className="workspace-post-content"><div className="workspace-post-meta"><strong>{post.author_id===userId?(en?"You":"Toi"):personName(post.author_id)}</strong><time>{formatDate(post.created_at,en,true)}</time></div><p>{post.body}</p>{post.is_pinned&&<span className="post-tag violet">{en?"Pinned":"Épinglé"}</span>}</div></article>):<div className="collab-empty compact"><p>{en?"No message yet. Start the conversation.":"Aucun message pour le moment. Lance la discussion."}</p></div>}
           </section>}
 
