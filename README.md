@@ -52,3 +52,17 @@ L'icône navigateur dédiée à JEC-conNEcT est définie par app/icon.svg. Les i
 
 ## Audio : état de la persistance
 Le prototype enregistre déjà les fichiers audio dans IndexedDB sur l'appareil. Une intégration facultative au stockage privé Supabase est préparée dans le code et la migration `supabase/migrations/202611120001_create_jec_audio_library.sql`. La migration et la configuration Supabase ne sont pas encore activées ; la synchronisation entre appareils ne doit donc pas être considérée comme disponible.
+
+
+## Assistant documentaire JEC IA
+
+Le module **JEC IA** est disponible dans le portail via `/jec-ai`. Il repose sur une base documentaire avec provenance et validation éditoriale, une recherche plein texte Supabase filtrée par RLS et une génération serveur via l'API OpenAI Responses lorsqu'un moteur est configuré.
+
+- Sources initiales : chronologie JEC France / JECI-IYCS, démarche Voir-Juger-Agir, cinq piliers, orientations, programme publié de Garoua 2026, quatre versions de chants et trois actualités JEC France.
+- Gouvernance : les sources sont approuvées par un administrateur avant d'être utilisées.
+- Gestion éditoriale : `/gestion/jec-ai`.
+- Configuration du moteur : variables Vercel `OPENAI_API_KEY` et `JEC_AI_MODEL`, documentées dans [docs/JEC_AI_SETUP.md](docs/JEC_AI_SETUP.md).
+- Les messages, transcriptions de réunion et comptes rendus ne sont pas indexés automatiquement.
+- Les sources privées respectent les politiques RLS et ne sont pas publiques par défaut.
+
+Tant que les variables API ne sont pas renseignées, l'interface peut afficher les sources pertinentes, mais la génération conversationnelle reste désactivée.
