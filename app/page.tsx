@@ -173,10 +173,10 @@ export default function Home() {
     </section>;
 
     if(active==="Actualités JEC") return <section>
-      <div className="section-heading"><div><p className="eyebrow">{t("PUBLICATIONS SOURCÉES","SOURCED PUBLICATIONS")}</p><h2>{t("Actualités publiées par la JEC France","News published by JEC France")}</h2></div><span className="source-count">{filteredNews.length} {t("articles","articles")}</span></div>
-      <p className="section-intro">{t("Ces contenus proviennent du site public de la JEC France. Chaque carte conserve sa date de publication et son lien d'origine.","These items come from JEC France’s public website. Each card keeps its publication date and original source link.")}</p>
+      <div className="section-heading"><div><p className="eyebrow">{t("PUBLICATIONS SOURCÉES","SOURCED PUBLICATIONS")}</p><h2>{t("Actualités du mouvement JEC","News from the JEC movement")}</h2></div><span className="source-count">{filteredNews.length} {t("articles","articles")}</span></div>
+      <p className="section-intro">{t("Cette rubrique rassemble des publications publiques de structures JEC et des documents transmis par les mouvements locaux et nationaux. Chaque contenu précise sa source et sa date ou période.","This section brings together public publications from JEC organisations and documents shared by local and national movements. Each item identifies its source and its publication date or event period.")}</p>
       {filteredNews.map(item=><NewsCard key={item.url ?? item.detailPath ?? item.title} item={item}/>)}
-      <p className="source-note">{t("Vérification initiale : 11 novembre 2026. L'agrégation automatique des flux n'est pas encore activée.","Initial verification: 11 November 2026. Automatic feed aggregation is not yet enabled.")}</p>
+      <p className="source-note">{t("Les contenus sont ajoutés après vérification de leur provenance. L'agrégation automatique des flux n'est pas encore activée.","Content is added after its provenance has been checked. Automatic feed aggregation is not yet enabled.")}</p>
     </section>;
 
     if(active==="Découvrir la JEC") return <section className="discover-preview">
