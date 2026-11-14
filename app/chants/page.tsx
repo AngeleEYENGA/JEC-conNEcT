@@ -104,7 +104,7 @@ export default function ChantsPage() {
   const [saved,setSaved]=useState(false);
   const audioInput=useRef<HTMLInputElement>(null);
 
-  const storageKey = `jec-connect-song-${selected}-${lyricsLang}-v4`;
+  const storageKey = `jec-connect-song-${selected}-${lyricsLang}-v5`;
   const audioStorageKey = `jec-connect-audio-${selected}-${lyricsLang}`;
 
   useEffect(()=>{
