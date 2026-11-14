@@ -12,6 +12,7 @@ type Opportunity={id:string;title:string;opportunity_type:string;opportunity_sta
 type Contact={id:string;full_name:string;role_title:string|null;email:string|null;phone:string|null;is_primary:boolean;consent_status:string};
 type DocumentRow={id:string;title:string;document_type:string;storage_path:string;document_status:string;valid_from:string|null;valid_until:string|null};
 type Activity={id:string;event_type:string;summary_fr:string;summary_en:string;created_at:string};
+type PartnerNote={id:string;note_type:string;content:string;created_by:string;created_at:string};
 
 const relationship:Record<string,{fr:string;en:string}>={
  prospect:{fr:"Piste à étudier",en:"Prospect"},active:{fr:"Partenariat actif",en:"Active partnership"},
@@ -38,6 +39,7 @@ export default function PartnerDetailPage(){
  const [contacts,setContacts]=useState<Contact[]>([]);
  const [documents,setDocuments]=useState<DocumentRow[]>([]);
  const [activity,setActivity]=useState<Activity[]>([]);
+ const [notes,setNotes]=useState<PartnerNote[]>([]);
  const [canManage,setCanManage]=useState(false);
  const [canViewPrivate,setCanViewPrivate]=useState(false);
  const [loading,setLoading]=useState(true);
@@ -72,18 +74,19 @@ export default function PartnerDetailPage(){
   setCanViewPrivate(privateAccess);setCanManage(admin||["manager","editor"].includes(role??""));
   setPartner(partnerResult.data as Partner);
   if(privateAccess){
-   const [e,o,c,d,a]=await Promise.all([
+   const [e,o,c,d,a,n]=await Promise.all([
     supabase.from("jec_partner_engagements").select("id,title,engagement_type,engagement_status,summary,starts_on,ends_on,support_kind").eq("partner_id",partnerId).order("starts_on",{ascending:false}),
     supabase.from("jec_partner_opportunities").select("id,title,opportunity_type,opportunity_status,description,source_url,deadline").eq("partner_id",partnerId).order("deadline",{ascending:true}),
     supabase.from("jec_partner_contacts").select("id,full_name,role_title,email,phone,is_primary,consent_status").eq("partner_id",partnerId).order("is_primary",{ascending:false}),
     supabase.from("jec_partner_documents").select("id,title,document_type,storage_path,document_status,valid_from,valid_until").eq("partner_id",partnerId).order("created_at",{ascending:false}),
-    supabase.from("jec_partner_activity").select("id,event_type,summary_fr,summary_en,created_at").eq("partner_id",partnerId).order("created_at",{ascending:false}).limit(30)
+    supabase.from("jec_partner_activity").select("id,event_type,summary_fr,summary_en,created_at").eq("partner_id",partnerId).order("created_at",{ascending:false}).limit(30),
+    supabase.from("jec_partner_notes").select("id,note_type,content,created_by,created_at").eq("partner_id",partnerId).order("created_at",{ascending:false}).limit(30)
    ]);
-   if(e.error||o.error||c.error||d.error||a.error)setError((e.error||o.error||c.error||d.error||a.error)?.message??"");
+   if(e.error||o.error||c.error||d.error||a.error||n.error)setError((e.error||o.error||c.error||d.error||a.error||n.error)?.message??"");
    setEngagements((e.data??[]) as Engagement[]);setOpportunities((o.data??[]) as Opportunity[]);
-   setContacts((c.data??[]) as Contact[]);setDocuments((d.data??[]) as DocumentRow[]);setActivity((a.data??[]) as Activity[]);
+   setContacts((c.data??[]) as Contact[]);setDocuments((d.data??[]) as DocumentRow[]);setActivity((a.data??[]) as Activity[]);setNotes((n.data??[]) as PartnerNote[]);
   }else{
-   setEngagements([]);setOpportunities([]);setContacts([]);setDocuments([]);setActivity([]);
+   setEngagements([]);setOpportunities([]);setContacts([]);setDocuments([]);setActivity([]);setNotes([]);
   }
   setLoading(false);
  },[partnerId,en]);
@@ -155,6 +158,7 @@ export default function PartnerDetailPage(){
      </section>
     </div>
     {canManage&&<form className="collab-card partner-note-form" onSubmit={createNote}><h2>{en?"Relationship follow-up":"Suivi de la relation"}</h2><label>{en?"Internal note":"Note interne"}<textarea rows={3} value={note} onChange={e=>setNote(e.target.value)} required placeholder={en?"Next step, meeting notes, reminder…":"Prochaine étape, échange, rappel…"} /></label><button className="primary-button" disabled={busy}>{en?"Save note":"Enregistrer la note"}</button></form>}
+    {notes.length>0&&<section className="collab-card"><div className="collab-card-heading"><div><p className="eyebrow">{en?"INTERNAL NOTES":"NOTES INTERNES"}</p><h2>{en?"Source and follow-up notes":"Sources et notes de suivi"}</h2></div><span className="collab-count">{notes.length}</span></div>{notes.map(item=><article className="partner-private-row" key={item.id}><p>{item.content}</p><time>{new Date(item.created_at).toLocaleString(en?"en-GB":"fr-FR")}</time></article>)}</section>}
     <section className="collab-card"><div className="collab-card-heading"><div><p className="eyebrow">{en?"CHANGE HISTORY":"HISTORIQUE"}</p><h2>{en?"Recent activity":"Activité récente"}</h2></div></div>{activity.map(item=><article className="partner-private-row" key={item.id}><p>{en?item.summary_en:item.summary_fr}</p><time>{new Date(item.created_at).toLocaleString(en?"en-GB":"fr-FR")}</time></article>)}</section>
    </>}
   </div>
