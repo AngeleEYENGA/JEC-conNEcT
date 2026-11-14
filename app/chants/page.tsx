@@ -346,7 +346,7 @@ export default function ChantsPage() {
   return (
     <main className="songs-page">
       <header className="songs-header">
-        <Link href="/" className="brand-lockup"><span className="brand-mark"><span>JEC</span><i>✳</i></span><span>conNEcT</span></Link>
+        <Link href="/" className="brand-lockup"><span className="brand-mark"><span>JEC</span><i aria-hidden="true">✝</i></span><span>conNEcT</span></Link>
         <div className="songs-header-actions"><PWAInstallButton/><LanguageSwitcher/><Link href="/" className="back-link-inline">← {tr("home",lang)}</Link></div>
       </header>
 
@@ -416,6 +416,49 @@ export default function ChantsPage() {
               <small className="audio-privacy">{audioIsPublic?tr("audioPublished",lang):audioCloudSaved?tr("audioCloudPrivate",lang):tr("addAudioHint",lang)+" "+tr("localStorageLimit",lang)}{isAdmin&&audioCloudSaved&&!audioIsPublic?<span className="audio-privacy-admin"> {tr("publishPending",lang)}</span>:null}</small>
             </aside>
           </div>
+        </section>
+
+        <section className="jec-spiritual-heritage">
+          <div className="songs-intro-row"><div><p className="eyebrow">{lang==="fr"?"TRANSMISSION ET IDENTITÉ":"TRANSMISSION AND IDENTITY"}</p><h2>{lang==="fr"?"Repères du jéciste":"YCS identity and prayer"}</h2></div><p>{lang==="fr"?"Des repères spirituels et communautaires repris dans le livret du Camp national universitaire Garoua 2026.":"Spiritual and community references included in the Garoua 2026 National University Camp booklet."}</p></div>
+          <div className="jec-heritage-grid">
+            <article className="collab-card jec-heritage-card">
+              <p className="eyebrow">{lang==="fr"?"LA LOI DU JÉCISTE":"THE YCS LAW"}</p>
+              <h3>{lang==="fr"?"Le jéciste…":"The YCS member…"}</h3>
+              <ul>
+                {(lang==="fr"?[
+                  "A le sens de l’Église.",
+                  "Combat pour la pureté.",
+                  "A le sens de ses responsabilités.",
+                  "Croit en l’amitié vraie.",
+                  "Est au service de ses frères.",
+                  "Vit en état de grâce.",
+                  "Comprend la joie du travail.",
+                  "Ne s’appartient pas, mais appartient au Christ.",
+                  "Respecte la hiérarchie du mouvement et de l’Église.",
+                  "Est fier, joyeux, pur et conséquent."
+                ]:[
+                  "Has a sense of the Church.",
+                  "Strives for purity.",
+                  "Takes responsibility seriously.",
+                  "Believes in true friendship.",
+                  "Serves brothers and sisters.",
+                  "Seeks to live in a state of grace.",
+                  "Understands the joy of work.",
+                  "Does not belong to oneself, but to Christ.",
+                  "Respects the hierarchy of the movement and the Church.",
+                  "Is proud, joyful, pure and consistent."
+                ]).map((item,i)=><li key={i}>{item}</li>)}
+              </ul>
+            </article>
+            <article className="collab-card jec-heritage-card">
+              <p className="eyebrow">{lang==="fr"?"PRIÈRE DU JÉCISTE":"YCS PRAYER"}</p>
+              <h3>{lang==="fr"?"Prière commune":"A prayer for the movement"}</h3>
+              <p>{lang==="fr"
+                ?"Notre Père qui es aux cieux, nous te confions notre jeunesse, afin de préparer dès maintenant la fidélité sans défaillance de toute notre vie. Donne-nous la grâce de conserver vaillamment la pureté de nos âmes. Affermis en nos cœurs le désir de vivre selon ta volonté, d’être toujours et partout porteurs de ta parole pour la faire rayonner dans le monde. Donne-nous le courage d’imiter le Christ et d’être prêts aux sacrifices que tu nous demandes. Rends-nous dignes d’annoncer à nos camarades ta lumière, ta charité et ta vérité. Fais de nous une âme fraternelle qui aime tous ceux qui, dans toutes les classes de la société et toutes les nations du monde, recherchent la justice. Donne-nous la foi conquérante de tes apôtres afin d’être les messagers de ta parole dans notre milieu. Amen."
+                :"Our Father in heaven, we entrust our youth to you and ask you to prepare us now for lifelong faithfulness. Give us the grace to preserve the purity of our souls. Strengthen in our hearts the desire to live according to your will and to carry your word everywhere. Give us the courage to imitate Christ and to accept the sacrifices you ask of us. Make us worthy to share your light, charity and truth with our friends. Give us a fraternal heart that loves all people who seek justice in every part of society and every nation. Give us the conquering faith of your apostles, so that we may be messengers of your word in our own environment. Amen."}</p>
+            </article>
+          </div>
+          <p className="songs-disclaimer">{lang==="fr"?"Transcription du livret reçu. Les variantes locales éventuelles restent à documenter avec les responsables nationaux.":"Transcribed from the supplied booklet. Any local variants should be documented with the national leaders."}</p>
         </section>
 
         <section className="songs-memory-banner">
