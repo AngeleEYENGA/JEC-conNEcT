@@ -16,6 +16,7 @@ export default function LoginPage() {
   const [loading,setLoading]=useState(false);
   const [error,setError]=useState("");
   const [message,setMessage]=useState("");
+  const [signupEmailBlocked,setSignupEmailBlocked]=useState(false);
   const [configured,setConfigured]=useState(false);
 
   useEffect(()=>{
@@ -58,7 +59,7 @@ export default function LoginPage() {
   }
 
   async function submit(event:FormEvent<HTMLFormElement>) {
-    event.preventDefault();setError("");setMessage("");
+    event.preventDefault();setError("");setMessage("");setSignupEmailBlocked(false);
     const supabase=getSupabaseBrowserClient();
     if(!supabase){setError(en?"Supabase is not configured on this deployment yet.":"Supabase n’est pas encore configuré sur ce déploiement.");return;}
     setLoading(true);
@@ -77,6 +78,7 @@ export default function LoginPage() {
           :"Un compte existe déjà pour cette adresse. Utilise la même méthode de connexion qu'auparavant (pour ce compte, Google). Refaire une inscription ne crée pas de mot de passe et ne déclenche pas un nouvel e-mail de confirmation.");
         setMode("login");
       }else{
+        setSignupEmailBlocked(true);
         setMessage(en
           ?"Your account record was created, but it is not active until the email is confirmed. The current Supabase test mailer only delivers to the project organisation's team addresses, so new JEC members outside that team will not receive this email. Do not sign up again. The platform administrator must configure custom SMTP, then resend the confirmation."
           :"Le compte a bien été créé dans Supabase, mais il reste inactif tant que l’adresse e-mail n’est pas confirmée. Le serveur de test Supabase n’envoie qu’aux adresses de l’équipe de l’organisation du projet : les nouveaux jécistes extérieurs à cette équipe ne recevront donc pas ce mail. Ne recommence pas l’inscription. L’administrateur doit configurer un SMTP personnalisé, puis renvoyer la confirmation.");
@@ -134,8 +136,8 @@ export default function LoginPage() {
           </form>
           {mode==="login" && <button className="forgot-password" onClick={resetPassword} disabled={loading}>{en?"Forgot your password?":"Mot de passe oublié ?"}</button>}
           {error && <p className="alert error">{error}</p>}
-          {message && <p className="alert success">{message}</p>}
-          <p className="switch-auth">{mode==="login"?(en?"New to JEC-conNEcT?":"Pas encore de compte ?"):(en?"Already have an account?":"Tu as déjà un compte ?")} <button onClick={()=>{setMode(mode==="login"?"signup":"login");setError("");setMessage("");}}>{mode==="login"?(en?"Create an account":"Créer un compte"):(en?"Sign in":"Se connecter")}</button></p>
+          {message && <p className={signupEmailBlocked?"alert error":"alert success"}>{message}</p>}
+          <p className="switch-auth">{mode==="login"?(en?"New to JEC-conNEcT?":"Pas encore de compte ?"):(en?"Already have an account?":"Tu as déjà un compte ?")} <button onClick={()=>{setMode(mode==="login"?"signup":"login");setError("");setMessage("");setSignupEmailBlocked(false);}}>{mode==="login"?(en?"Create an account":"Créer un compte"):(en?"Sign in":"Se connecter")}</button></p>
           <p className="auth-note">{en?"By continuing, you agree to the platform's terms of use and privacy policy.":"En continuant, tu acceptes les règles d’utilisation et la politique de confidentialité de la plateforme."}</p>
         </div>
       </section>
