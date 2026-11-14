@@ -1050,3 +1050,14 @@
  .message-member-candidates{grid-template-columns:1fr}
  .message-member-row{max-width:100%}
 }
+
+
+/* Workspace invitations from the account administrator panel */
+.admin-workspace-invite{display:flex;align-items:flex-end;gap:9px;flex-wrap:wrap;width:100%;padding:10px 0 2px;border-top:1px solid #ede8f1}
+.admin-workspace-invite label{display:grid;gap:5px;min-width:220px;flex:1;color:#655a72;font-size:9px;font-weight:800}
+.admin-workspace-invite select{min-height:36px;border:1px solid #e5deeb;border-radius:8px;background:#fff;color:#40364e;padding:7px 9px;font:inherit}
+.admin-workspace-invite .secondary-outline-button{font-size:9px;padding:9px 12px}
+.workspace-member-state{display:inline-flex;align-items:center;border-radius:999px;padding:7px 10px;font-size:9px;font-weight:800}
+.workspace-member-state.active{background:#e8f5ed;color:#26754b}
+.workspace-member-state.invited{background:#fbf2e3;color:#94652b}
+@media(max-width:600px){.admin-workspace-invite{align-items:stretch;flex-direction:column}.admin-workspace-invite label{min-width:0}.admin-workspace-invite button{align-self:flex-start}}
