@@ -97,7 +97,7 @@ export default function MeetingDetailPage(){
     .order("joined_at",{ascending:true});
    if(callRowsError)setError(callRowsError.message);
    const sessionById=new Map(callSessions.map(session=>[session.id,session]));
-   actualCallAttendance=(callRows??[]).flatMap(row=>{
+   actualCallAttendance=(callRows??[]).flatMap((row:{session_id:string;user_id:string;joined_at:string;left_at:string|null})=>{
     const session=sessionById.get(row.session_id);
     return session?[{
      session_id:row.session_id,user_id:row.user_id,joined_at:row.joined_at,left_at:row.left_at,
