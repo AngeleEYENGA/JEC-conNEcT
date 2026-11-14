@@ -1061,3 +1061,14 @@
 .workspace-member-state.active{background:#e8f5ed;color:#26754b}
 .workspace-member-state.invited{background:#fbf2e3;color:#94652b}
 @media(max-width:600px){.admin-workspace-invite{align-items:stretch;flex-direction:column}.admin-workspace-invite label{min-width:0}.admin-workspace-invite button{align-self:flex-start}}
+
+
+/* Multi-party WebRTC roster and ICE relay status */
+.call-peer-placeholder{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;min-height:190px;border:1px dashed #cfc5dc;background:linear-gradient(145deg,#302d49,#24243a);color:#fff;text-align:center;padding:18px}
+.call-peer-placeholder>span{font-size:28px;color:#c7b6ff}
+.call-peer-placeholder>strong{font-size:13px;font-weight:800}
+.call-peer-placeholder>small{font-size:10px;color:#d2cbe0;line-height:1.5}
+.call-network-note{margin:10px auto 0;max-width:720px;padding:10px 13px;border:1px solid #eadfcd;border-radius:10px;background:#fffaf1;color:#886c43;font-size:10px;line-height:1.55;text-align:center}
+.call-video-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:12px}
+.call-video-grid>.call-video-tile,.call-video-grid>.call-peer-placeholder{min-width:0;min-height:190px}
+@media(max-width:600px){.call-video-grid{grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr));gap:8px}.call-video-grid>.call-video-tile,.call-video-grid>.call-peer-placeholder{min-height:170px}}
