@@ -26,17 +26,17 @@
  <path d="M20 190 Q20 75 108 70 Q198 75 205 190 L222 340 H-5Z" fill="#F1BD43"/>
  <path d="M46 95 Q40 10 110 0 Q184 8 180 100 L168 140 H55Z" fill="#21192B"/>
  <path d="M53 91 Q36 140 54 188 M78 81 Q53 158 73 208 M146 85 Q182 150 157 208" stroke="#21192B" stroke-width="12" fill="none" stroke-linecap="round"/>
- <ellipse cx="110" cy="104" rx="55" ry="68" fill="#6C3E2D"/>
+ <ellipse cx="110" cy="104" rx="55" ry="68" fill="#E6BE9D"/>
  <path d="M60 93 Q53 27 109 21 Q166 22 164 88 Q134 53 60 93Z" fill="#1D1828"/>
  <path d="M80 124 Q110 142 140 124" stroke="#fff" stroke-width="6" fill="none" stroke-linecap="round"/>
  <circle cx="91" cy="103" r="5" fill="#17121A"/><circle cx="130" cy="103" r="5" fill="#17121A"/>
  <path d="M54 200 Q105 180 157 205 L182 315 H27Z" fill="#F0C33E"/>
- <path d="M175 230 Q225 258 262 233" stroke="#6C3E2D" stroke-width="22" stroke-linecap="round"/>
+ <path d="M175 230 Q225 258 262 233" stroke="#E6BE9D" stroke-width="22" stroke-linecap="round"/>
 </g>
 <!-- young man with guitar -->
 <g transform="translate(310 170)">
  <path d="M18 220 Q18 100 105 98 Q190 100 205 220 L220 350 H0Z" fill="#2D83BA"/>
- <ellipse cx="112" cy="96" rx="58" ry="66" fill="#8A523A"/>
+ <ellipse cx="112" cy="96" rx="58" ry="66" fill="#966244"/>
  <path d="M54 89 Q44 24 114 20 Q177 26 169 84 Q136 47 54 89Z" fill="#241923"/>
  <path d="M73 116 Q112 131 149 112" stroke="#F5D6C3" stroke-width="5" fill="none" stroke-linecap="round"/>
  <circle cx="91" cy="91" r="5" fill="#18131D"/><circle cx="132" cy="91" r="5" fill="#18131D"/>
@@ -50,22 +50,22 @@
 <!-- middle young woman with headwrap -->
 <g transform="translate(505 100)">
  <path d="M4 265 Q8 142 104 144 Q200 140 205 265 L222 404 H-8Z" fill="#F6F3EF"/>
- <ellipse cx="105" cy="131" rx="58" ry="68" fill="#7D4B34"/>
+ <ellipse cx="105" cy="131" rx="58" ry="68" fill="#D49A72"/>
  <path d="M48 105 Q16 71 50 24 Q106 -10 166 29 Q198 63 160 108 Q143 72 105 72 Q72 71 48 105Z" fill="#E56B87"/>
  <path d="M40 64 Q105 22 177 69 M45 83 Q107 45 168 87" stroke="#F5C74C" stroke-width="10" fill="none" stroke-linecap="round"/>
  <circle cx="85" cy="127" r="5" fill="#19141A"/><circle cx="130" cy="127" r="5" fill="#19141A"/>
  <path d="M80 156 Q107 174 137 154" stroke="#fff" stroke-width="6" fill="none" stroke-linecap="round"/>
- <path d="M57 227 Q112 251 163 225" stroke="#7D4B34" stroke-width="17" stroke-linecap="round"/>
+ <path d="M57 227 Q112 251 163 225" stroke="#D49A72" stroke-width="17" stroke-linecap="round"/>
 </g>
 <!-- right young man with glasses -->
 <g transform="translate(850 175)">
  <path d="M0 224 Q8 110 104 110 Q194 110 208 224 L224 350 H-12Z" fill="#147F68"/>
- <ellipse cx="105" cy="109" rx="58" ry="68" fill="#B77A57"/>
+ <ellipse cx="105" cy="109" rx="58" ry="68" fill="#68412F"/>
  <path d="M48 87 Q45 27 112 24 Q177 29 169 92 Q134 65 48 87Z" fill="#2B2024"/>
  <rect x="58" y="96" width="42" height="30" rx="10" fill="none" stroke="#27202A" stroke-width="6"/><rect x="111" y="96" width="42" height="30" rx="10" fill="none" stroke="#27202A" stroke-width="6"/><path d="M100 108H111" stroke="#27202A" stroke-width="5"/>
  <circle cx="80" cy="110" r="4" fill="#1D1720"/><circle cx="132" cy="110" r="4" fill="#1D1720"/>
  <path d="M82 151 Q110 169 140 149" stroke="#5A3027" stroke-width="6" fill="none" stroke-linecap="round"/>
- <path d="M46 230 Q95 270 156 228" stroke="#B77A57" stroke-width="18" stroke-linecap="round"/>
+ <path d="M46 230 Q95 270 156 228" stroke="#68412F" stroke-width="18" stroke-linecap="round"/>
 </g>
 <!-- foreground hands, coffee and small plant -->
 <g transform="translate(670 415)"><path d="M0 30 q-14 -31 14 -36 q24 -3 25 26 v39 h-40Z" fill="#9B634B"/><path d="M17 19 q20 -34 38 -18 q15 15 -7 39" fill="none" stroke="#9B634B" stroke-width="14" stroke-linecap="round"/></g>
