@@ -1311,3 +1311,9 @@
  .admin-title-actions{align-items:flex-start;flex-direction:column;gap:0}
  .admin-ai-link{margin:0 0 16px}
 }
+
+
+/* Utility for form labels that remain accessible to screen readers */
+.sr-only{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}
+.ai-card-link{display:inline-flex;align-items:center;gap:8px;border:0;border-radius:7px;padding:9px 11px;background:#fff;color:#53348b;font-size:9px;font-weight:800;text-decoration:none}
+.ai-card-link:hover{background:#f5f0fc;transform:translateY(-1px)}
