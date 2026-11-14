@@ -457,6 +457,45 @@ export default function ChantsPage() {
                 ?"Notre Père qui es aux cieux, nous te confions notre jeunesse, afin de préparer dès maintenant la fidélité sans défaillance de toute notre vie. Donne-nous la grâce de conserver vaillamment la pureté de nos âmes. Affermis en nos cœurs le désir de vivre selon ta volonté, d’être toujours et partout porteurs de ta parole pour la faire rayonner dans le monde. Donne-nous le courage d’imiter le Christ et d’être prêts aux sacrifices que tu nous demandes. Rends-nous dignes d’annoncer à nos camarades ta lumière, ta charité et ta vérité. Fais de nous une âme fraternelle qui aime tous ceux qui, dans toutes les classes de la société et toutes les nations du monde, recherchent la justice. Donne-nous la foi conquérante de tes apôtres afin d’être les messagers de ta parole dans notre milieu. Amen."
                 :"Our Father in heaven, we entrust our youth to you and ask you to prepare us now for lifelong faithfulness. Give us the grace to preserve the purity of our souls. Strengthen in our hearts the desire to live according to your will and to carry your word everywhere. Give us the courage to imitate Christ and to accept the sacrifices you ask of us. Make us worthy to share your light, charity and truth with our friends. Give us a fraternal heart that loves all people who seek justice in every part of society and every nation. Give us the conquering faith of your apostles, so that we may be messengers of your word in our own environment. Amen."}</p>
             </article>
+            <article className="collab-card jec-heritage-card">
+              <p className="eyebrow">{lang==="fr"?"QUALITÉS D’UN BON JÉCISTE":"QUALITIES OF A GOOD YCS MEMBER"}</p>
+              <h3>{lang==="fr"?"Un engagement au quotidien":"A daily commitment"}</h3>
+              <ul>
+                {(lang==="fr"?[
+                  "Prier chaque jour, matin et soir.",
+                  "Faire sa révision de vie journalière, hebdomadaire, mensuelle et annuelle.",
+                  "Faire une bonne action chaque jour.",
+                  "Lire régulièrement la Bible pour mieux prier.",
+                  "Avoir un accompagnateur ou guide spirituel.",
+                  "Se confesser régulièrement.",
+                  "Participer activement aux activités de son groupe, de sa section, de son secteur, de sa région et du Bureau national.",
+                  "Faire au moins une récollection ou retraite spirituelle par an.",
+                  "Avoir sa carte de militant et payer régulièrement sa cotisation.",
+                  "Être serviable et attentif aux besoins des autres.",
+                  "Rendre visite aux malades et aider les personnes dans le besoin.",
+                  "Participer à la messe chaque dimanche et aux activités de sa paroisse.",
+                  "Pardonner et demander pardon autant que possible.",
+                  "Être studieux et persévérant dans ses études et dans la vie.",
+                  "Aimer Dieu et aimer son prochain."
+                ]:[
+                  "Pray every day, in the morning and in the evening.",
+                  "Review one’s life daily, weekly, monthly and yearly.",
+                  "Do one good deed every day.",
+                  "Read the Bible regularly in order to pray better.",
+                  "Have a spiritual guide or companion.",
+                  "Go to confession regularly.",
+                  "Take an active part in the basic group, section, sector, region and National Office.",
+                  "Take part in at least one spiritual retreat each year.",
+                  "Hold a member card and pay the regular group contribution.",
+                  "Be helpful and attentive to others’ needs.",
+                  "Visit the sick and help people in need.",
+                  "Attend Sunday Mass and take part in parish life.",
+                  "Forgive and ask forgiveness as often as possible.",
+                  "Work diligently at school and in life.",
+                  "Love God and love one’s neighbour."
+                ]).map((item,i)=><li key={i}>{item}</li>)}
+              </ul>
+            </article>
           </div>
           <p className="songs-disclaimer">{lang==="fr"?"Transcription du livret reçu. Les variantes locales éventuelles restent à documenter avec les responsables nationaux.":"Transcribed from the supplied booklet. Any local variants should be documented with the national leaders."}</p>
         </section>
