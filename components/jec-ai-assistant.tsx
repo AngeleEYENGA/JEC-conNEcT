@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useLanguage } from "@/components/language-provider";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
+import type { Session } from "@supabase/supabase-js";
 
 type ChatRole = "user" | "assistant";
 type SourceReference = {
@@ -51,13 +52,13 @@ export default function JecAiAssistant() {
       return;
     }
     let active = true;
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: string, session: Session | null) => {
       if (active) setAuthState(session?.user ? "signed-in" : "signed-out");
     });
-    void supabase.auth.getSession().then(({ data, error: sessionError }) => {
+    void supabase.auth.getSession().then((result: { data: { session: Session | null }; error: { message: string } | null }) => {
       if (!active) return;
-      if (sessionError) setAuthState("signed-out");
-      else setAuthState(data.session?.user ? "signed-in" : "signed-out");
+      if (result.error) setAuthState("signed-out");
+      else setAuthState(result.data.session?.user ? "signed-in" : "signed-out");
     });
     return () => {
       active = false;
@@ -107,7 +108,8 @@ export default function JecAiAssistant() {
       }
 
       const sources = Array.isArray(data.sources) ? data.sources as SourceReference[] : [];
-      setMessages((current) => [...current, { role: "assistant", content: data.reply, sources }].slice(-9));
+      const assistantMessage: ChatMessage = { role: "assistant", content: data.reply as string, sources };
+      setMessages((current) => [...current, assistantMessage].slice(-9));
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : (en ? "Unexpected error. Please try again." : "Une erreur inattendue est survenue. Réessaie."));
     } finally {
