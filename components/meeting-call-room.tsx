@@ -232,13 +232,16 @@ export default function MeetingCallRoom({
         return;
       }
       await pc.setLocalDescription(offer);
-      const description = pc.localDescription;
-      if (description) {
+      const localDescription = pc.localDescription as RTCSessionDescription | null;
+      if (localDescription) {
         await sendSignal({
           from: userIdRef.current,
           to: peerId,
           type: "description",
-          description: description.toJSON()
+          description: {
+            type: localDescription.type,
+            sdp: localDescription.sdp
+          }
         });
       }
     } catch (e) {
