@@ -27,7 +27,7 @@ export default function AccountPage() {
   useEffect(()=>{
     let active=true;
     const supabaseClient=getSupabaseBrowserClient();
-    let membershipChannel:ReturnType<typeof supabaseClient.channel>|null=null;
+    let membershipChannel:ReturnType<NonNullable<typeof supabaseClient>["channel"]>|null=null;
     async function load(){
       const supabase=supabaseClient;
       if(!supabase){setError(en?"Supabase is not configured.":"Supabase n'est pas configuré.");setLoading(false);return;}
