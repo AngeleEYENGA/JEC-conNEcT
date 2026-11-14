@@ -54,6 +54,14 @@ export default function GarouaCampPage(){
      {["Père Alain Tega, scj","Tchopwe Damou Ezechiel Arnaud","Abbé Jules Badawe Komo","Abbé Didier Gueneyora","Ndiba Ahmadou Patrick","Nodem Paul Valdès","Doudou Françoise","Dr Vandou Richard","Association VISANTE"].map(x=><span key={x}>{x}</span>)}
     </div>
    </section>
+   <section className="collab-card garoua-camp-prayer">
+    <p className="eyebrow">{en?"CAMPIST'S PRAYER":"PRIÈRE DU CAMPISTE"}</p>
+    <h2>{en?"A prayer for the journey":"Prière pour vivre le camp"}</h2>
+    <p>{en
+      ?"Lord Jesus Christ, despite my weakness, you chose me to be among my brothers and sisters in the YCS. At this moment of prayer, grant me the grace to be a child of God and to fulfil my mission as a YCS member. Let every word I speak help our camp to grow, and let me be an example for the YCS in my sector. Help me show my brothers and sisters your divine traces in the nature you have created, teach them what I must teach, and lead them towards the light of eternal life. O God, in this camp of rest and joy, help us live in love and faith in you, Jesus. Give us health and wisdom to stay well with our brothers, sisters and friends. Guide us towards you, where you have pitched your tent and ours for eternity. Amen."
+      :"Seigneur Jésus-Christ, malgré ma faiblesse, tu as choisi que je sois parmi mes frères et sœurs jécistes. En ce moment de prière, accorde-moi la grâce d’être enfant de Dieu et d’accomplir pleinement ma mission en tant que jéciste. Fais que toute parole de ma bouche contribue à l’avancement de notre camp et que je sois un exemple pour la JEC de mon secteur. Que je sache montrer à mes frères et sœurs tes traces divines dans la nature que tu as créée, leur enseigner ce que je dois et les conduire vers la lumière de la vie éternelle. Ô Dieu, dans ce camp de repos et de joie, fais-nous vivre l’amour et la foi en toi, Jésus. Donne-nous la santé et la sagesse pour demeurer auprès de nos frères, de nos sœurs et de nos amis. Guide-nous jusqu’à toi, là où tu as dressé ta tente et la nôtre pour l’éternité. Amen."}</p>
+    <small>{en?"Transcribed from the 2026 Garoua camper booklet.":"Transcription du livret du campiste de Garoua 2026."}</small>
+   </section>
    <section className="collab-card garoua-caveat">
     <strong>{en?"Institutional note":"Précision institutionnelle"}</strong>
     <p>{en?"The booklet identifies the National Office of YCS Cameroon, the Centre Jeunesse Lumière de Ngalbidjie and a “host sector”. It does not provide the official name, address or contact persons of the Garoua local structure. The Garoua partner record is therefore awaiting confirmation.":"Le livret identifie le Bureau national de la JEC du Cameroun, le Centre Jeunesse Lumière de Ngalbidjie et un « secteur hôte ». Il ne fournit pas le nom officiel, l’adresse ni les responsables de la structure locale de Garoua. La fiche partenaire de Garoua est donc en attente de confirmation."}</p>
