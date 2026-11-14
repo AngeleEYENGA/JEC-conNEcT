@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
+import type { FormEvent } from "react";
 import { LanguageSwitcher, useLanguage } from "@/components/language-provider";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
@@ -18,6 +19,7 @@ type Source = {
   workspace_id: string | null;
   source_status: string;
   created_at: string;
+  evidence_checked_at: string | null;
 };
 type Workspace = { id: string; name: string };
 
@@ -53,7 +55,7 @@ export default function JecAiKnowledgeAdminPage() {
     }
     setAuthorized(true);
     const [{ data: sourceRows, error: sourceError }, { data: workspaceRows }] = await Promise.all([
-      supabase.from("jec_ai_sources").select("id,title,publisher,source_type,language,source_url,evidence_label,content_text,visibility_scope,workspace_id,source_status,created_at").order("created_at", { ascending: false }),
+      supabase.from("jec_ai_sources").select("id,title,publisher,source_type,language,source_url,evidence_label,content_text,visibility_scope,workspace_id,source_status,created_at,evidence_checked_at").order("created_at", { ascending: false }),
       supabase.from("jec_workspaces").select("id,name").eq("is_active", true).order("name")
     ]);
     if (sourceError) setError(sourceError.message);
