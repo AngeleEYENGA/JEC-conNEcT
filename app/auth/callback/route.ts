@@ -26,6 +26,12 @@ export async function GET(request: NextRequest) {
   }
 
   const cookieStore = await cookies();
+  const authCookies: Array<{
+    name: string;
+    value: string;
+    options?: Parameters<typeof cookieStore.set>[2];
+  }> = [];
+
   const supabase = createServerClient(supabaseUrl, supabaseKey, {
     cookies: {
       getAll() {
@@ -35,16 +41,47 @@ export async function GET(request: NextRequest) {
         cookiesToSet.forEach(({ name, value, options }) => {
           cookieStore.set(name, value, options);
         });
+        authCookies.push(...cookiesToSet);
       }
     }
   });
 
-  const { error } = await supabase.auth.exchangeCodeForSession(code);
-  if (error) {
-    const destination = new URL("/login", origin);
-    destination.searchParams.set("error", "oauth_exchange_failed");
-    return NextResponse.redirect(destination);
+  const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+  if (exchangeError) {
+    console.error("[jec-auth-callback] Code exchange failed:", exchangeError.message);
+    const response = NextResponse.redirect(new URL("/login?error=oauth_exchange_failed", origin));
+    authCookies.forEach(({ name, value, options }) => response.cookies.set(name, value, options));
+    return response;
   }
 
-  return NextResponse.redirect(new URL(next, origin));
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  if (userError || !user) {
+    console.error("[jec-auth-callback] Session verification failed:", userError?.message ?? "No user returned");
+    const response = NextResponse.redirect(new URL("/login?error=oauth_session_missing", origin));
+    authCookies.forEach(({ name, value, options }) => response.cookies.set(name, value, options));
+    return response;
+  }
+
+  const { data: membership, error: membershipError } = await supabase
+    .from("jec_memberships")
+    .select("membership_status")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (membershipError) {
+    console.error("[jec-auth-callback] Membership lookup failed:", membershipError.message);
+  }
+
+  const destination = new URL(next, origin);
+  if (membership?.membership_status === "pending" || !membership?.membership_status) {
+    destination.searchParams.set("membership", "pending");
+  } else if (membership.membership_status === "rejected") {
+    destination.searchParams.set("membership", "rejected");
+  }
+
+  // Copy the refreshed Supabase auth cookies onto the redirect response as well
+  // as the Next.js cookie store, so the browser receives the session on Vercel.
+  const response = NextResponse.redirect(destination);
+  authCookies.forEach(({ name, value, options }) => response.cookies.set(name, value, options));
+  return response;
 }
