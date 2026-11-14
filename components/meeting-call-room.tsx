@@ -109,6 +109,7 @@ export default function MeetingCallRoom({
   const [liveTranscriptionError, setLiveTranscriptionError] = useState("");
   const [liveTranscriptSegments, setLiveTranscriptSegments] = useState<LiveTranscriptSegment[]>([]);
   const [microphoneReady, setMicrophoneReady] = useState(false);
+  const [relayAvailable, setRelayAvailable] = useState(false);
   const [status, setStatus] = useState("Préparation de la salle");
   const [error, setError] = useState("");
   const [remoteStreams, setRemoteStreams] = useState<Record<string, MediaStream>>({});
@@ -120,6 +121,10 @@ export default function MeetingCallRoom({
   const peersRef = useRef<Map<string, RTCPeerConnection>>(new Map());
   const pendingCandidatesRef = useRef<Map<string, RTCIceCandidateInit[]>>(new Map());
   const remoteStreamRefs = useRef<Map<string, MediaStream>>(new Map());
+  const iceServersRef = useRef<RTCIceServer[]>([
+    { urls: "stun:stun.l.google.com:19302" },
+    { urls: "stun:stun.cloudflare.com:3478" }
+  ]);
   const liveRecognitionRef = useRef<SpeechRecognitionLike | null>(null);
   const liveTranscribingRef = useRef(false);
   const transcriptionRestartTimerRef = useRef<number | null>(null);
@@ -174,10 +179,7 @@ export default function MeetingCallRoom({
     const existing = peersRef.current.get(peerId);
     if (existing) return existing;
     const pc = new RTCPeerConnection({
-      iceServers: [
-        { urls: "stun:stun.l.google.com:19302" },
-        { urls: "stun:stun.cloudflare.com:3478" }
-      ],
+      iceServers: iceServersRef.current,
       bundlePolicy: "max-bundle",
       rtcpMuxPolicy: "require"
     });
@@ -632,6 +634,11 @@ export default function MeetingCallRoom({
     setRemoteNames({});
     setRemoteStates({});
     setMicrophoneReady(false);
+    setRelayAvailable(false);
+    iceServersRef.current = [
+      { urls: "stun:stun.l.google.com:19302" },
+      { urls: "stun:stun.cloudflare.com:3478" }
+    ];
     setLiveTranscriptSegments([]);
     if (onLeave) onLeave();
   }, [onLeave]);
@@ -653,6 +660,24 @@ export default function MeetingCallRoom({
     try {
       const { data: { user }, error: userError } = await supabase.auth.getUser();
       if (userError || !user) throw new Error("Connecte-toi pour rejoindre cet appel.");
+
+      // TURN configuration is delivered server-side only to accepted meeting
+      // participants. When no relay is configured, the call still tries STUN.
+      try {
+        const iceResponse = await fetch("/api/meeting/ice-config?meetingId=" + encodeURIComponent(meetingId), { cache: "no-store" });
+        if (iceResponse.ok) {
+          const iceConfig = await iceResponse.json() as { iceServers?: RTCIceServer[]; relayAvailable?: boolean };
+          if (Array.isArray(iceConfig.iceServers) && iceConfig.iceServers.length) {
+            iceServersRef.current = iceConfig.iceServers;
+          }
+          setRelayAvailable(iceConfig.relayAvailable === true);
+        } else {
+          setRelayAvailable(false);
+        }
+      } catch {
+        setRelayAvailable(false);
+      }
+
       setUserId(user.id);
       userIdRef.current = user.id;
       setMuted(false);
@@ -927,6 +952,7 @@ export default function MeetingCallRoom({
               ) : <p className="call-live-transcript-empty">Les premières phrases reconnues apparaîtront ici. Chaque participant doit accepter la transcription sur son propre appareil.</p>}
             </section>
           )}
+          {!relayAvailable && <p className="call-network-note">Le relais TURN n’est pas encore configuré. Les connexions directes peuvent échouer entre certains réseaux ou derrière certains pare-feu ; pour fiabiliser les appels à plusieurs, configure les variables serveur TURN de JEC-conNEcT.</p>}
           {!screenShareSupported && <p className="call-screen-share-note">Le partage d’écran n’est pas proposé par ce navigateur mobile. Tu peux participer à l’appel audio / vidéo normalement ; pour partager ton écran, utilise JEC-conNEcT depuis un ordinateur.</p>}
         </>
       )}
