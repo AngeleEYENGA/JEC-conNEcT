@@ -17,6 +17,7 @@ export default function LoginPage() {
   const [error,setError]=useState("");
   const [message,setMessage]=useState("");
   const [configured,setConfigured]=useState(false);
+  const [confirmationPending,setConfirmationPending]=useState(false);
 
   useEffect(()=>{
     setConfigured(Boolean(getSupabaseBrowserClient()));
@@ -28,9 +29,32 @@ export default function LoginPage() {
   },[en]);
 
   function authErrorText(value:string) {
-    if(value.toLowerCase().includes("provider is not enabled")) return en?"Google sign-in is not enabled in Supabase yet.":"La connexion Google n’est pas encore activée dans Supabase.";
-    if(value.toLowerCase().includes("redirect")) return en?"The callback URL is not allowed in Supabase. Add this app's /auth/callback URL to the redirect allow list.":"L’URL de retour n’est pas autorisée dans Supabase. Ajoute l’URL /auth/callback de cette application à la liste des redirections.";
+    const normalized=value.toLowerCase();
+    if(normalized.includes("email_address_not_authorized") || normalized.includes("email address not authorized"))
+      return en?"Supabase's built-in mailer only sends to addresses on the Supabase organization team. Configure custom SMTP before inviting testers.":"Le service e-mail intégré de Supabase n’envoie qu’aux adresses de l’équipe de l’organisation Supabase. Configure un SMTP personnalisé avant d’inviter tes testeurs.";
+    if(normalized.includes("over_email_send_rate_limit") || normalized.includes("email rate limit exceeded"))
+      return en?"The Supabase email sending limit has been reached. Try again later or configure custom SMTP.":"La limite d’envoi d’e-mails Supabase est atteinte. Réessaie plus tard ou configure un SMTP personnalisé.";
+    if(normalized.includes("user already registered"))
+      return en?"An account may already exist for this address. Try signing in or use password recovery.":"Un compte existe peut-être déjà pour cette adresse. Essaie de te connecter ou utilise « Mot de passe oublié ».";
+    if(normalized.includes("provider is not enabled")) return en?"Google sign-in is not enabled in Supabase yet.":"La connexion Google n’est pas encore activée dans Supabase.";
+    if(normalized.includes("redirect")) return en?"The callback URL is not allowed in Supabase. Add this app's /auth/callback URL to the redirect allow list.":"L’URL de retour n’est pas autorisée dans Supabase. Ajoute l’URL /auth/callback de cette application à la liste des redirections.";
     return value;
+  }
+
+  async function resendConfirmation() {
+    setError("");setMessage("");
+    if(!email.trim()) { setError(en?"Enter your email address first.":"Saisis d’abord ton adresse e-mail."); return; }
+    const supabase=getSupabaseBrowserClient();
+    if(!supabase) { setError(en?"Supabase is not configured.":"Supabase n’est pas configuré."); return; }
+    setLoading(true);
+    const {error:authError}=await supabase.auth.resend({
+      type:"signup",
+      email:email.trim(),
+      options:{emailRedirectTo:`${window.location.origin}/auth/callback`}
+    });
+    if(authError)setError(authErrorText(authError.message));
+    else setMessage(en?"If this address is awaiting confirmation, a new email has been requested.":"Si cette adresse attend une confirmation, un nouvel e-mail vient d’être demandé.");
+    setLoading(false);
   }
 
   async function signInWithGoogle() {
@@ -60,7 +84,10 @@ export default function LoginPage() {
       });
       if(authError)setError(authErrorText(authError.message));
       else if(data.session)router.push("/");
-      else setMessage(en?"Check your inbox to confirm your email address.":"Consulte ta boîte mail pour confirmer ton adresse.");
+      else {
+        setConfirmationPending(true);
+        setMessage(en?"Your account request was received. Check your inbox and spam folder for the confirmation email.":"Ta demande de création de compte a été reçue. Vérifie ta boîte de réception et tes courriers indésirables pour trouver l’e-mail de confirmation.");
+      }
     } else {
       const {error:authError}=await supabase.auth.signInWithPassword({email,password});
       if(authError)setError(authErrorText(authError.message));
@@ -86,7 +113,7 @@ export default function LoginPage() {
   return (
     <main className="auth-shell">
       <div className="auth-decoration">
-        <div className="brand-lockup"><div className="brand-mark"><span>JEC</span><i>✳</i></div><span>conNEcT</span></div>
+        <div className="brand-lockup"><div className="brand-mark"><span>JEC</span><i aria-hidden="true">✝</i></div><span>conNEcT</span></div>
         <div className="auth-pitch">
           <p className="eyebrow light">{en?"ONE MOVEMENT · ONE COMMUNITY":"UN MOUVEMENT · UNE COMMUNAUTÉ"}</p>
           <h1>{en?"The link that brings us together.":"Le lien qui nous rassemble."}<br/><em>{en?"The action that unites us.":"L’action qui nous unit."}</em></h1>
@@ -114,7 +141,8 @@ export default function LoginPage() {
           {mode==="login" && <button className="forgot-password" onClick={resetPassword} disabled={loading}>{en?"Forgot your password?":"Mot de passe oublié ?"}</button>}
           {error && <p className="alert error">{error}</p>}
           {message && <p className="alert success">{message}</p>}
-          <p className="switch-auth">{mode==="login"?(en?"New to JEC-conNEcT?":"Pas encore de compte ?"):(en?"Already have an account?":"Tu as déjà un compte ?")} <button onClick={()=>{setMode(mode==="login"?"signup":"login");setError("");setMessage("");}}>{mode==="login"?(en?"Create an account":"Créer un compte"):(en?"Sign in":"Se connecter")}</button></p>
+          {confirmationPending && mode==="signup" && <button className="forgot-password" type="button" onClick={resendConfirmation} disabled={loading}>{en?"Resend confirmation email":"Renvoyer l’e-mail de confirmation"}</button>}
+          <p className="switch-auth">{mode==="login"?(en?"New to JEC-conNEcT?":"Pas encore de compte ?"):(en?"Already have an account?":"Tu as déjà un compte ?")} <button onClick={()=>{setMode(mode==="login"?"signup":"login");setError("");setMessage("");setConfirmationPending(false);}}>{mode==="login"?(en?"Create an account":"Créer un compte"):(en?"Sign in":"Se connecter")}</button></p>
           <p className="auth-note">{en?"By continuing, you agree to the platform's terms of use and privacy policy.":"En continuant, tu acceptes les règles d’utilisation et la politique de confidentialité de la plateforme."}</p>
         </div>
       </section>
