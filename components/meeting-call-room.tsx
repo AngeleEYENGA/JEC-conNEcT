@@ -19,14 +19,62 @@ type ManagedPeerConnection = RTCPeerConnection & {
   initialOfferStarted: boolean;
 };
 
+type SpeechResultEvent = Event & {
+  resultIndex: number;
+  results: ArrayLike<{ isFinal: boolean; [index: number]: { transcript: string } }>;
+};
+type SpeechErrorEvent = Event & { error?: string };
+type SpeechRecognitionLike = {
+  lang: string;
+  continuous: boolean;
+  interimResults: boolean;
+  maxAlternatives?: number;
+  onresult: ((event: SpeechResultEvent) => void) | null;
+  onerror: ((event: SpeechErrorEvent) => void) | null;
+  onend: (() => void) | null;
+  start: () => void;
+  stop: () => void;
+};
+type SpeechWindow = Window & {
+  SpeechRecognition?: new () => SpeechRecognitionLike;
+  webkitSpeechRecognition?: new () => SpeechRecognitionLike;
+};
+type LiveTranscriptSegment = {
+  id: string;
+  speaker: string;
+  text: string;
+  createdAt: string;
+  sessionId: string;
+};
+
 function VideoTile({ stream, label, muted = false }: { stream: MediaStream; label: string; muted?: boolean }) {
   const ref = useRef<HTMLVideoElement>(null);
+  const [playBlocked, setPlayBlocked] = useState(false);
+
+  const tryPlay = useCallback(async () => {
+    const video = ref.current;
+    if (!video) return;
+    try {
+      video.volume = 1;
+      await video.play();
+      setPlayBlocked(false);
+    } catch {
+      setPlayBlocked(!muted);
+    }
+  }, [muted]);
+
   useEffect(() => {
-    if (ref.current) ref.current.srcObject = stream;
-  }, [stream]);
+    if (!ref.current) return;
+    ref.current.srcObject = stream;
+    void tryPlay();
+  }, [stream, tryPlay]);
+
   return (
     <div className="call-video-tile">
-      <video ref={ref} autoPlay playsInline muted={muted} />
+      <video ref={ref} autoPlay playsInline muted={muted} onLoadedMetadata={() => void tryPlay()} />
+      {!muted && playBlocked && (
+        <button className="call-play-audio" onClick={() => void tryPlay()}>Activer le son</button>
+      )}
       <span>{label}</span>
     </div>
   );
@@ -52,6 +100,13 @@ export default function MeetingCallRoom({
   const [cameraOff, setCameraOff] = useState(false);
   const [sharingScreen, setSharingScreen] = useState(false);
   const [screenShareSupported, setScreenShareSupported] = useState(false);
+  const [liveTranscriptionSupported, setLiveTranscriptionSupported] = useState(false);
+  const [liveTranscriptionConsent, setLiveTranscriptionConsent] = useState(false);
+  const [liveTranscriptionLanguage, setLiveTranscriptionLanguage] = useState("fr-FR");
+  const [liveTranscribing, setLiveTranscribing] = useState(false);
+  const [liveTranscriptionError, setLiveTranscriptionError] = useState("");
+  const [liveTranscriptSegments, setLiveTranscriptSegments] = useState<LiveTranscriptSegment[]>([]);
+  const [microphoneReady, setMicrophoneReady] = useState(false);
   const [status, setStatus] = useState("Préparation de la salle");
   const [error, setError] = useState("");
   const [remoteStreams, setRemoteStreams] = useState<Record<string, MediaStream>>({});
@@ -61,6 +116,13 @@ export default function MeetingCallRoom({
   const channelRef = useRef<any>(null);
   const peersRef = useRef<Map<string, RTCPeerConnection>>(new Map());
   const pendingCandidatesRef = useRef<Map<string, RTCIceCandidateInit[]>>(new Map());
+  const remoteStreamRefs = useRef<Map<string, MediaStream>>(new Map());
+  const liveRecognitionRef = useRef<SpeechRecognitionLike | null>(null);
+  const liveTranscribingRef = useRef(false);
+  const transcriptionRestartTimerRef = useRef<number | null>(null);
+  const transcriptionLanguageRef = useRef("fr-FR");
+  const transcriptionRetriesRef = useRef(0);
+  const workspaceIdRef = useRef("");
   const joinedRef = useRef(false);
   const sessionIdRef = useRef("");
   const userIdRef = useRef("");
@@ -79,6 +141,7 @@ export default function MeetingCallRoom({
 
   const closePeer = useCallback((peerId: string) => {
     const pc = peersRef.current.get(peerId);
+    remoteStreamRefs.current.delete(peerId);
     if (pc) {
       pc.ontrack = null;
       pc.onicecandidate = null;
@@ -135,8 +198,33 @@ export default function MeetingCallRoom({
       }
     };
     pc.ontrack = event => {
-      const stream = event.streams[0] ?? new MediaStream([event.track]);
-      setRemoteStreams(current => ({ ...current, [peerId]: stream }));
+      // Keep a single stream for the peer. Transceiver tracks can be
+      // streamless, so audio and video must be merged explicitly.
+      let remoteStream = remoteStreamRefs.current.get(peerId);
+      if (!remoteStream) {
+        remoteStream = new MediaStream(event.streams[0]?.getTracks() ?? []);
+        remoteStreamRefs.current.set(peerId, remoteStream);
+      }
+      const hasTrack = remoteStream.getTracks().some(track => track.id === event.track.id);
+      if (!hasTrack) remoteStream.addTrack(event.track);
+
+      event.track.onended = () => {
+        const currentStream = remoteStreamRefs.current.get(peerId);
+        if (!currentStream) return;
+        currentStream.removeTrack(event.track);
+        if (currentStream.getTracks().length === 0) {
+          remoteStreamRefs.current.delete(peerId);
+          setRemoteStreams(current => {
+            const next = { ...current };
+            delete next[peerId];
+            return next;
+          });
+        } else {
+          setRemoteStreams(current => ({ ...current, [peerId]: currentStream }));
+        }
+      };
+
+      setRemoteStreams(current => ({ ...current, [peerId]: remoteStream! }));
       setRemoteNames(current => ({ ...current, [peerId]: peerName }));
     };
     pc.onconnectionstatechange = () => {
@@ -252,6 +340,146 @@ export default function MeetingCallRoom({
     }
   }, [ensurePeer, sendSignal]);
 
+  async function saveLiveTranscriptSegment(rawText: string) {
+    const text = rawText.trim();
+    const supabase = getSupabaseBrowserClient();
+    const currentUserId = userIdRef.current;
+    const currentSessionId = sessionIdRef.current;
+    const workspaceId = workspaceIdRef.current;
+    if (!text || !supabase || !currentUserId || !workspaceId || !currentSessionId) return;
+
+    const timestamp = new Date();
+    const { data, error: insertError } = await supabase
+      .from("jec_meeting_transcripts")
+      .insert({
+        workspace_id: workspaceId,
+        meeting_id: meetingId,
+        transcript_text: `${displayName}: ${text}`,
+        language: transcriptionLanguageRef.current,
+        source_type: "browser_speech_api",
+        transcript_status: "draft",
+        consent_confirmed: true,
+        created_by: currentUserId,
+        started_at: timestamp.toISOString(),
+        ended_at: timestamp.toISOString()
+      })
+      .select("id,created_at")
+      .single();
+
+    if (insertError || !data) {
+      setLiveTranscriptionError(insertError?.message || "Impossible d'enregistrer cette phrase.");
+      return;
+    }
+
+    const segment: LiveTranscriptSegment = {
+      id: data.id,
+      speaker: displayName,
+      text,
+      createdAt: data.created_at,
+      sessionId: currentSessionId
+    };
+    setLiveTranscriptSegments(current => [...current, segment].slice(-12));
+    const channel = channelRef.current;
+    if (channel) {
+      await channel.send({ type: "broadcast", event: "transcript", payload: segment });
+    }
+  }
+
+  function stopLiveTranscription() {
+    liveTranscribingRef.current = false;
+    if (transcriptionRestartTimerRef.current !== null) {
+      window.clearTimeout(transcriptionRestartTimerRef.current);
+      transcriptionRestartTimerRef.current = null;
+    }
+    const recognition = liveRecognitionRef.current;
+    liveRecognitionRef.current = null;
+    if (recognition) {
+      recognition.onend = null;
+      try { recognition.stop(); } catch { /* Already stopped by the browser. */ }
+    }
+    setLiveTranscribing(false);
+  }
+
+  function startLiveTranscription() {
+    if (!liveTranscriptionConsent) return;
+    const w = window as SpeechWindow;
+    const Recognition = w.SpeechRecognition || w.webkitSpeechRecognition;
+    if (!Recognition) {
+      setLiveTranscriptionError("La reconnaissance vocale n'est pas disponible dans ce navigateur.");
+      return;
+    }
+    if (liveTranscribingRef.current) return;
+
+    liveTranscribingRef.current = true;
+    transcriptionRetriesRef.current = 0;
+    transcriptionLanguageRef.current = liveTranscriptionLanguage;
+    setLiveTranscriptionError("");
+    setLiveTranscribing(true);
+
+    const launchRecognition = () => {
+      if (!liveTranscribingRef.current || !joinedRef.current) return;
+      const recognition = new Recognition();
+      recognition.lang = transcriptionLanguageRef.current;
+      recognition.continuous = true;
+      recognition.interimResults = false;
+      recognition.maxAlternatives = 1;
+
+      recognition.onresult = event => {
+        transcriptionRetriesRef.current = 0;
+        for (let index = event.resultIndex; index < event.results.length; index++) {
+          const result = event.results[index];
+          if (result.isFinal) {
+            const recognizedText = result[0]?.transcript?.trim();
+            if (recognizedText) void saveLiveTranscriptSegment(recognizedText);
+          }
+        }
+      };
+
+      recognition.onerror = event => {
+        const code = event.error || "";
+        if (code === "not-allowed" || code === "service-not-allowed" || code === "audio-capture") {
+          liveTranscribingRef.current = false;
+          setLiveTranscribing(false);
+          setLiveTranscriptionError(
+            code === "audio-capture"
+              ? "Le service de transcription n'arrive pas à accéder au microphone. Vérifie les autorisations audio."
+              : "La reconnaissance vocale a été refusée par le navigateur. Vérifie son autorisation."
+          );
+        } else if (code && code !== "no-speech" && code !== "aborted") {
+          setLiveTranscriptionError("La reconnaissance vocale rencontre un problème (" + code + ").");
+        }
+      };
+
+      recognition.onend = () => {
+        if (liveRecognitionRef.current === recognition) liveRecognitionRef.current = null;
+        if (!liveTranscribingRef.current || !joinedRef.current) {
+          setLiveTranscribing(false);
+          return;
+        }
+        transcriptionRetriesRef.current += 1;
+        if (transcriptionRetriesRef.current > 8) {
+          liveTranscribingRef.current = false;
+          setLiveTranscribing(false);
+          setLiveTranscriptionError("La reconnaissance vocale s'est interrompue à plusieurs reprises. Relance-la depuis les commandes de la réunion.");
+          return;
+        }
+        transcriptionRestartTimerRef.current = window.setTimeout(launchRecognition, 700);
+      };
+
+      liveRecognitionRef.current = recognition;
+      try {
+        recognition.start();
+      } catch (error) {
+        liveRecognitionRef.current = null;
+        liveTranscribingRef.current = false;
+        setLiveTranscribing(false);
+        setLiveTranscriptionError(error instanceof Error ? error.message : "Impossible de démarrer la reconnaissance vocale.");
+      }
+    };
+
+    launchRecognition();
+  }
+
   async function stopScreenShare() {
     const screenStream = screenStreamRef.current;
     if (!screenStream) return;
@@ -310,6 +538,7 @@ export default function MeetingCallRoom({
     } else if (sessionIdRef.current && supabase) {
       await supabase.rpc("jec_leave_meeting_call", { target_session_id: sessionIdRef.current });
     }
+    stopLiveTranscription();
     joinedRef.current = false;
     setJoined(false);
     sessionIdRef.current = "";
@@ -319,6 +548,7 @@ export default function MeetingCallRoom({
     peersRef.current.forEach(pc => pc.close());
     peersRef.current.clear();
     pendingCandidatesRef.current.clear();
+    remoteStreamRefs.current.clear();
     screenStreamRef.current?.getTracks().forEach(track => track.stop());
     screenStreamRef.current = null;
     setSharingScreen(false);
@@ -326,6 +556,8 @@ export default function MeetingCallRoom({
     localStreamRef.current = null;
     setRemoteStreams({});
     setRemoteNames({});
+    setMicrophoneReady(false);
+    setLiveTranscriptSegments([]);
     if (onLeave) onLeave();
   }, [onLeave]);
 
@@ -364,15 +596,31 @@ export default function MeetingCallRoom({
       setHostId(sessionRow.host_id);
       hostIdRef.current = sessionRow.host_id;
 
+      const { data: meetingRow, error: meetingError } = await supabase
+        .from("jec_meetings")
+        .select("workspace_id")
+        .eq("id", meetingId)
+        .single();
+      if (meetingError || !meetingRow) throw new Error(meetingError?.message || "Impossible de charger l'espace de la réunion.");
+      workspaceIdRef.current = meetingRow.workspace_id;
+
+      const audioConstraints: MediaTrackConstraints = {
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: true
+      };
       let stream: MediaStream;
       try {
-        stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
+        stream = await navigator.mediaDevices.getUserMedia({ audio: audioConstraints, video: true });
       } catch {
-        stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+        stream = await navigator.mediaDevices.getUserMedia({ audio: audioConstraints, video: false });
         setCameraOff(true);
         setStatus("Micro activé · caméra indisponible");
       }
       localStreamRef.current = stream;
+      const hasMicrophone = stream.getAudioTracks().some(track => track.readyState === "live");
+      setMicrophoneReady(hasMicrophone);
+      if (!hasMicrophone) throw new Error("Aucun microphone actif n'a été détecté.");
       await supabase.realtime.setAuth();
       const channel = supabase.channel("jec-call:" + meetingId, {
         config: { private: true, presence: { key: user.id }, broadcast: { ack: true, self: false } }
@@ -384,6 +632,13 @@ export default function MeetingCallRoom({
         } else {
           void processSignal(payload);
         }
+      });
+      channel.on("broadcast", { event: "transcript" }, ({ payload }: { payload: LiveTranscriptSegment }) => {
+        if (!payload || payload.sessionId !== sessionIdRef.current) return;
+        setLiveTranscriptSegments(current => {
+          if (current.some(segment => segment.id === payload.id)) return current;
+          return [...current, payload].slice(-12);
+        });
       });
       channel.on("presence", { event: "sync" }, () => {
         const state = channel.presenceState() as Record<string, Array<{ userId?: string; displayName?: string }>>;
@@ -400,17 +655,34 @@ export default function MeetingCallRoom({
         setRemoteNames(current => ({ ...current, [key]: name }));
         if (user.id.localeCompare(key) < 0) void createOffer(key, name);
       });
+      // The initial Presence sync can fire as soon as SUBSCRIBED resolves.
+      // Make the channel sendable before that event can trigger createOffer().
+      channelRef.current = channel;
       const subscribeResult = await new Promise<string>((resolve, reject) => {
         channel.subscribe(async (state: string) => {
           if (state === "SUBSCRIBED") resolve(state);
           if (state === "CHANNEL_ERROR" || state === "TIMED_OUT" || state === "CLOSED") reject(new Error("Impossible de rejoindre la salle privée (" + state + ")."));
         });
       });
-      channelRef.current = channel;
       await channel.track({ userId: user.id, displayName, joinedAt: new Date().toISOString() });
       joinedRef.current = true;
       setJoined(true);
-      setStatus(subscribeResult === "SUBSCRIBED" ? "Salle connectée · en attente des participants" : "Connexion à la salle…");
+      setStatus("Salle connectée · microphone actif");
+
+      // Reconcile the roster again after our own Presence track.
+      const currentPresence = channel.presenceState() as Record<string, Array<{ userId?: string; displayName?: string }>>;
+      Object.entries(currentPresence).forEach(([peerId, entries]) => {
+        if (peerId === user.id) return;
+        const name = entries[0]?.displayName || "Participant";
+        setRemoteNames(current => ({ ...current, [peerId]: name }));
+        if (user.id.localeCompare(peerId) < 0) void createOffer(peerId, name);
+      });
+
+      if (liveTranscriptionConsent && liveTranscriptionSupported) {
+        startLiveTranscription();
+      } else if (liveTranscriptionConsent && !liveTranscriptionSupported) {
+        setLiveTranscriptionError("La reconnaissance vocale n'est pas prise en charge par ce navigateur. L'appel reste disponible sans transcription automatique.");
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Impossible de rejoindre l'appel.");
       if (sessionIdRef.current) {
@@ -420,6 +692,7 @@ export default function MeetingCallRoom({
           await supabase.rpc("jec_leave_meeting_call", { target_session_id: sessionIdRef.current });
         }
       }
+      stopLiveTranscription();
       if (channelRef.current) {
         await supabase.removeChannel(channelRef.current);
         channelRef.current = null;
@@ -437,10 +710,16 @@ export default function MeetingCallRoom({
 
   useEffect(() => {
     setScreenShareSupported(Boolean(navigator.mediaDevices?.getDisplayMedia));
+    const speechWindow = window as SpeechWindow;
+    setLiveTranscriptionSupported(Boolean(speechWindow.SpeechRecognition || speechWindow.webkitSpeechRecognition));
     return () => {
+      liveTranscribingRef.current = false;
+      if (transcriptionRestartTimerRef.current !== null) window.clearTimeout(transcriptionRestartTimerRef.current);
+      liveRecognitionRef.current?.stop();
       const supabase = getSupabaseBrowserClient();
       if (channelRef.current && supabase) void supabase.removeChannel(channelRef.current);
       peersRef.current.forEach(pc => pc.close());
+      remoteStreamRefs.current.clear();
       screenStreamRef.current?.getTracks().forEach(track => track.stop());
       localStreamRef.current?.getTracks().forEach(track => track.stop());
     };
@@ -471,6 +750,28 @@ export default function MeetingCallRoom({
             <input type="checkbox" checked={consent} onChange={e => setConsent(e.target.checked)} />
             <span>Je confirme que les participants ont été informés de l'appel et consentent à l'activation de leur microphone et, le cas échéant, de leur caméra. Je comprends que les participants peuvent réaliser leurs propres captures ou enregistrements indépendamment de JEC-conNEcT.</span>
           </label>
+          {liveTranscriptionSupported ? (
+            <div className="call-transcription-optin">
+              <label className="call-consent">
+                <input type="checkbox" checked={liveTranscriptionConsent} onChange={e => setLiveTranscriptionConsent(e.target.checked)} />
+                <span>J'accepte que ma voix soit transcrite automatiquement pendant la réunion. Les phrases seront enregistrées avec mon nom dans la transcription de la réunion.</span>
+              </label>
+              <label className="call-language-select">Langue parlée
+                <select value={liveTranscriptionLanguage} onChange={e => {
+                  setLiveTranscriptionLanguage(e.target.value);
+                  transcriptionLanguageRef.current = e.target.value;
+                }}>
+                  <option value="fr-FR">Français</option>
+                  <option value="en-GB">English</option>
+                  <option value="de-DE">Deutsch</option>
+                  <option value="es-ES">Español</option>
+                </select>
+              </label>
+              <p className="call-transcription-privacy">La reconnaissance vocale peut transmettre l'audio au service du navigateur. Seul le texte reconnu est conservé dans JEC-conNEcT ; aucun son brut n'est enregistré.</p>
+            </div>
+          ) : (
+            <p className="call-transcription-privacy">La transcription automatique n'est pas prise en charge par ce navigateur. Tu peux rejoindre l'appel normalement.</p>
+          )}
           <button className="primary-button" onClick={() => void startCall()} disabled={!consent}>Autoriser le micro et rejoindre</button>
           <p className="call-network-note">La connexion directe peut échouer derrière certains réseaux ou pare-feu. Un serveur TURN devra être configuré pour améliorer la fiabilité des appels multi-réseaux.</p>
         </div>
@@ -479,7 +780,7 @@ export default function MeetingCallRoom({
           <div className="call-video-grid">
             {localStream && <VideoTile stream={localStream} label="Toi" muted />}
             {remoteEntries.map(([id, stream]) => <VideoTile key={id} stream={stream} label={remoteNames[id] || "Participant"} />)}
-            {!remoteEntries.length && <div className="call-waiting-tile"><span>◉</span><strong>En attente des autres participants…</strong></div>}
+            {!remoteEntries.length && <div className="call-waiting-tile"><span>◉</span><strong>{Object.keys(remoteNames).length ? "Participant(s) connecté(s) · réception des flux audio/vidéo…" : "En attente des autres participants…"}</strong></div>}
           </div>
           <div className="call-controls">
             <button className={muted ? "call-control active" : "call-control"} onClick={() => {
@@ -498,10 +799,34 @@ export default function MeetingCallRoom({
             >
               {sharingScreen ? "Arrêter le partage" : screenShareSupported ? "Partager l’écran" : "Partage écran (ordinateur)"}
             </button>
+            {liveTranscriptionConsent && liveTranscriptionSupported && (
+              <button
+                className={liveTranscribing ? "call-control active" : "call-control"}
+                onClick={() => liveTranscribing ? stopLiveTranscription() : startLiveTranscription()}
+              >
+                {liveTranscribing ? "Arrêter la transcription" : "Relancer la transcription"}
+              </button>
+            )}
             {hostId === userId
               ? <button className="call-hangup" onClick={() => void leaveCall(true)}>Terminer pour tous</button>
               : <button className="call-hangup" onClick={() => void leaveCall(false)}>Quitter l'appel</button>}
           </div>
+          {liveTranscriptionConsent && (
+            <section className="call-live-transcript">
+              <div className="call-live-transcript-heading">
+                <strong>Transcription en direct</strong>
+                <span className={liveTranscribing ? "call-live-status active" : "call-live-status"}>{liveTranscribing ? "En cours" : "En pause"}</span>
+              </div>
+              {liveTranscriptionError && <p className="call-transcription-error">{liveTranscriptionError}</p>}
+              {liveTranscriptSegments.length ? (
+                <div className="call-live-transcript-lines">
+                  {liveTranscriptSegments.slice(-8).map(segment => (
+                    <p key={segment.id}><strong>{segment.speaker}</strong><span>{segment.text}</span></p>
+                  ))}
+                </div>
+              ) : <p className="call-live-transcript-empty">Les premières phrases reconnues apparaîtront ici. Chaque participant doit accepter la transcription sur son propre appareil.</p>}
+            </section>
+          )}
           {!screenShareSupported && <p className="call-screen-share-note">Le partage d’écran n’est pas proposé par ce navigateur mobile. Tu peux participer à l’appel audio / vidéo normalement ; pour partager ton écran, utilise JEC-conNEcT depuis un ordinateur.</p>}
         </>
       )}
