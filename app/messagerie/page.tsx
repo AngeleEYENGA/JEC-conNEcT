@@ -90,6 +90,11 @@ export default function MessagesPage(){
   },[en]);
 
   useEffect(()=>{void loadList();},[loadList]);
+  useEffect(()=>{
+    setShowMemberManager(false);
+    setSelectedWorkspaceMemberIds([]);
+    setGroupInviteEmails("");
+  },[selectedId]);
 
   useEffect(()=>{
     if(!selectedId||membershipByConversation.get(selectedId)!=="active") {
@@ -221,7 +226,7 @@ export default function MessagesPage(){
         target_member_ids:selectedWorkspaceMemberIds
       });
     }else if(selected.conversation_type==="group"){
-      const emails=groupInviteEmails.split(/[;,\\n]/).map(value=>value.trim()).filter(Boolean);
+      const emails=groupInviteEmails.split(/[,;]/).flatMap(value=>value.split(String.fromCharCode(10))).map(value=>value.trim()).filter(Boolean);
       if(!emails.length){setAddingMembers(false);return;}
       result=await supabase.rpc("jec_add_conversation_members_by_email",{
         target_conversation_id:selectedId,
