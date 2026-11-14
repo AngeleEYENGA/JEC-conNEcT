@@ -1161,3 +1161,72 @@
     justify-self:start;
   }
 }
+
+
+/* JEC IA — authenticated, source-grounded assistant */
+.jec-ai-page{max-width:1050px;margin:0 auto;color:#302b4f}
+.jec-ai-heading{display:flex;align-items:center;justify-content:space-between;gap:14px;margin:5px 0 17px}
+.jec-ai-brand{display:flex;align-items:center;gap:12px}
+.jec-ai-brand .eyebrow{margin:0 0 4px}
+.jec-ai-brand h2{font:800 24px Manrope,sans-serif;letter-spacing:-.6px;margin:0;color:#302b59}
+.jec-ai-mark,.jec-ai-welcome-icon{width:45px;height:45px;display:grid;place-items:center;border-radius:14px;background:linear-gradient(145deg,#f4d43e,#e87f33);color:#46336e;font-size:25px;box-shadow:0 6px 18px #302b5919}
+.jec-ai-status{display:inline-flex;align-items:center;gap:7px;border:1px solid #dceee3;background:#f2faf4;border-radius:20px;padding:7px 11px;color:#267448;font-size:9px;font-weight:800}
+.jec-ai-status i,.jec-ai-live-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#269a5b}
+.jec-ai-intro{padding:21px 23px;border-radius:15px;background:linear-gradient(112deg,#302b59,#67439c);color:#fff;margin-bottom:16px}
+.jec-ai-intro h3{font:800 17px/1.35 Manrope,sans-serif;letter-spacing:-.3px;margin:0 0 7px}
+.jec-ai-intro p{max-width:760px;font-size:11px;line-height:1.7;color:#e4dff0;margin:0}
+.jec-ai-auth-note,.jec-ai-login-card{border:1px solid #e8e1f0;border-radius:12px;background:#fff;padding:18px;color:#655a76;font-size:11px}
+.jec-ai-login-card strong{display:block;color:#352d50;font:800 14px Manrope}
+.jec-ai-login-card p{font-size:10px;color:#777287;margin:7px 0 13px}
+.jec-ai-chat-card{background:#fff;border:1px solid #e8e4ee;border-radius:15px;overflow:hidden;box-shadow:0 8px 24px #29264d0a}
+.jec-ai-chat-toolbar{height:49px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;border-bottom:1px solid #eeebf2;color:#514568;font-size:10px;font-weight:800}
+.jec-ai-chat-toolbar>div{display:flex;align-items:center;gap:8px}
+.jec-ai-chat-toolbar button{border:0;background:none;color:#806d9c;font-size:9px;font-weight:700}
+.jec-ai-chat-toolbar button:disabled{opacity:.4;cursor:not-allowed}
+.jec-ai-messages{padding:17px;min-height:285px;max-height:530px;overflow:auto;background:linear-gradient(180deg,#fdfcff,#faf9fc)}
+.jec-ai-welcome{max-width:650px;margin:10px auto 18px;text-align:center}
+.jec-ai-welcome-icon{margin:0 auto 11px;width:40px;height:40px}
+.jec-ai-welcome h3{font:800 16px Manrope;color:#362e51;margin:0 0 7px}
+.jec-ai-welcome>p{font-size:10px;line-height:1.7;color:#777286;margin:0 auto;max-width:490px}
+.jec-ai-suggestions{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-top:17px}
+.jec-ai-suggestions button{border:1px solid #e4dced;background:#fff;border-radius:18px;color:#655083;padding:8px 11px;font-size:9px;line-height:1.4;cursor:pointer}
+.jec-ai-suggestions button:hover{border-color:#aa8dd0;background:#f8f4fc}
+.jec-ai-message{display:flex;gap:9px;align-items:flex-start;margin:13px 0}
+.jec-ai-message.is-user{flex-direction:row-reverse}
+.jec-ai-message-avatar{width:27px;height:27px;flex:none;display:grid;place-items:center;border-radius:9px;background:#eee8f7;color:#624394;font-size:8px;font-weight:900}
+.jec-ai-message.is-user .jec-ai-message-avatar{background:#e8f3fa;color:#28769c}
+.jec-ai-message-content{max-width:min(82%,720px);min-width:0}
+.jec-ai-bubble{border:1px solid #ebe7f0;border-radius:4px 13px 13px 13px;background:#fff;padding:11px 13px;color:#4f4a60}
+.jec-ai-message.is-user .jec-ai-bubble{background:#f0ebf8;border-color:#e2d8ef;border-radius:13px 4px 13px 13px}
+.jec-ai-bubble p{white-space:pre-wrap;overflow-wrap:anywhere;font-size:10px;line-height:1.75;margin:0}
+.jec-ai-source-list{margin-top:8px;padding:10px 11px;border:1px solid #e9e3f0;border-radius:10px;background:#fff}
+.jec-ai-source-list>strong{font-size:9px;color:#5e477e}
+.jec-ai-source-item{display:flex;gap:8px;border-top:1px solid #f0edf4;padding:8px 0 2px;margin-top:6px}
+.jec-ai-source-item>span{display:grid;place-items:center;flex:none;width:22px;height:22px;border-radius:7px;background:#f0eafb;color:#6946a0;font-size:8px;font-weight:900}
+.jec-ai-source-item>div{display:grid;gap:3px;min-width:0}
+.jec-ai-source-item b{font-size:9px;color:#464052}
+.jec-ai-source-item small{font-size:8px;color:#898295;line-height:1.4}
+.jec-ai-source-item a{font-size:8px;color:#7048a5;font-weight:800}
+.jec-ai-typing{display:flex;align-items:center;gap:5px;margin:12px 0 5px 36px;color:#867b96;font-size:9px}
+.jec-ai-typing span{width:5px;height:5px;border-radius:50%;background:#a38bc2;animation:jec-ai-pulse 1s ease-in-out infinite}
+.jec-ai-typing span:nth-child(2){animation-delay:.15s}.jec-ai-typing span:nth-child(3){animation-delay:.3s}
+@keyframes jec-ai-pulse{0%,80%,100%{opacity:.35;transform:translateY(0)}40%{opacity:1;transform:translateY(-3px)}}
+.jec-ai-error{margin:10px 16px 0;padding:9px 11px;border-radius:8px;background:#fff0ef;color:#a43c39;font-size:9px;line-height:1.5}
+.jec-ai-composer{padding:12px 15px;border-top:1px solid #eeebf2;background:#fff}
+.jec-ai-composer textarea{width:100%;resize:vertical;border:1px solid #e5dfea;border-radius:10px;padding:11px 12px;min-height:76px;outline-color:#9675bd;color:#353047;font-size:10px;line-height:1.6}
+.jec-ai-composer textarea:disabled{background:#faf9fc}
+.jec-ai-composer-footer{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:8px}
+.jec-ai-composer-footer small{font-size:8px;color:#9992a2;line-height:1.4}
+.jec-ai-composer-footer .primary-button{min-width:92px}
+.jec-ai-privacy{max-width:900px;margin:10px 3px 0;color:#8a8494;font-size:8px;line-height:1.6}
+@media(max-width:760px){
+ .jec-ai-heading{align-items:flex-start;flex-direction:column}
+ .jec-ai-intro{padding:17px}
+ .jec-ai-messages{padding:12px;max-height:60vh}
+ .jec-ai-message-content{max-width:88%}
+ .jec-ai-chat-toolbar{padding:0 11px}
+ .jec-ai-composer{padding:10px}
+ .jec-ai-composer-footer{align-items:flex-end}
+ .jec-ai-composer-footer small{max-width:65%}
+ .jec-ai-source-item b{line-height:1.4}
+}
