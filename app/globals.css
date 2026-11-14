@@ -988,3 +988,6 @@
  .workspace-feed-meetings .collab-section-heading{align-items:flex-start;gap:8px}
  .workspace-feed-meetings .meeting-participation{gap:6px}
 }
+
+.call-screen-share-note{margin:10px auto 0;max-width:720px;color:#756b83;font-size:12px;line-height:1.55;text-align:center;background:#f6f2fa;border:1px solid #e6ddef;border-radius:12px;padding:10px 14px}
+.call-control:disabled{opacity:.55;cursor:not-allowed;background:#f4f1f6;color:#8d8497;border-color:#e7e1eb}

@@ -6,9 +6,17 @@ import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 type Signal = {
   from: string;
   to: string;
+  sessionId?: string;
   type: "description" | "candidate" | "ended";
   description?: RTCSessionDescriptionInit;
   candidate?: RTCIceCandidateInit;
+};
+
+type ManagedPeerConnection = RTCPeerConnection & {
+  makingOffer: boolean;
+  ignoreOffer: boolean;
+  isSettingRemoteAnswerPending: boolean;
+  initialOfferStarted: boolean;
 };
 
 function VideoTile({ stream, label, muted = false }: { stream: MediaStream; label: string; muted?: boolean }) {
@@ -43,6 +51,7 @@ export default function MeetingCallRoom({
   const [muted, setMuted] = useState(false);
   const [cameraOff, setCameraOff] = useState(false);
   const [sharingScreen, setSharingScreen] = useState(false);
+  const [screenShareSupported, setScreenShareSupported] = useState(false);
   const [status, setStatus] = useState("Préparation de la salle");
   const [error, setError] = useState("");
   const [remoteStreams, setRemoteStreams] = useState<Record<string, MediaStream>>({});
@@ -61,7 +70,11 @@ export default function MeetingCallRoom({
   const sendSignal = useCallback(async (signal: Signal) => {
     const channel = channelRef.current;
     if (!channel) return;
-    await channel.send({ type: "broadcast", event: "signal", payload: signal });
+    await channel.send({
+      type: "broadcast",
+      event: "signal",
+      payload: { ...signal, sessionId: sessionIdRef.current }
+    });
   }, []);
 
   const closePeer = useCallback((peerId: string) => {
@@ -91,11 +104,26 @@ export default function MeetingCallRoom({
       iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
     });
     const cameraStream = localStreamRef.current;
-    if (cameraStream) cameraStream.getAudioTracks().forEach(track => pc.addTrack(track, cameraStream));
+    const audioTrack = cameraStream?.getAudioTracks()[0] ?? null;
     const activeVideoStream = screenStreamRef.current ?? cameraStream;
-    const activeVideoTrack = activeVideoStream?.getVideoTracks()[0];
-    if (activeVideoTrack && activeVideoStream) pc.addTrack(activeVideoTrack, activeVideoStream);
-    else pc.addTransceiver("video", { direction: "sendrecv" });
+    const activeVideoTrack = activeVideoStream?.getVideoTracks()[0] ?? null;
+
+    // Reserve the same two media sections, in the same order, on every peer.
+    // This prevents m-line reordering when a participant joins without camera.
+    pc.addTransceiver(audioTrack ?? "audio", {
+      direction: "sendrecv",
+      streams: audioTrack && cameraStream ? [cameraStream] : []
+    });
+    pc.addTransceiver(activeVideoTrack ?? "video", {
+      direction: "sendrecv",
+      streams: activeVideoTrack && activeVideoStream ? [activeVideoStream] : []
+    });
+
+    const managedPc = pc as ManagedPeerConnection;
+    managedPc.makingOffer = false;
+    managedPc.ignoreOffer = false;
+    managedPc.isSettingRemoteAnswerPending = false;
+    managedPc.initialOfferStarted = false;
     pc.onicecandidate = event => {
       if (event.candidate && userIdRef.current) {
         void sendSignal({
@@ -128,24 +156,51 @@ export default function MeetingCallRoom({
       closePeer(peerId);
       return;
     }
+    if (signal.sessionId !== sessionIdRef.current) return;
     const pc = ensurePeer(peerId, remoteNames[peerId] || "Participant");
+    const managedPc = pc as ManagedPeerConnection;
     try {
       if (signal.type === "description" && signal.description) {
-        await pc.setRemoteDescription(new RTCSessionDescription(signal.description));
-        const pending = pendingCandidatesRef.current.get(peerId) ?? [];
-        for (const candidate of pending) await pc.addIceCandidate(new RTCIceCandidate(candidate));
-        pendingCandidatesRef.current.delete(peerId);
-        if (signal.description.type === "offer") {
-          const answer = await pc.createAnswer();
-          await pc.setLocalDescription(answer);
-          await sendSignal({
-            from: userIdRef.current,
-            to: peerId,
-            type: "description",
-            description: answer
-          });
+        const description = signal.description;
+        const polite = userIdRef.current.localeCompare(peerId) > 0;
+        const offerCollision = description.type === "offer" && (
+          managedPc.makingOffer ||
+          (pc.signalingState !== "stable" && !managedPc.isSettingRemoteAnswerPending)
+        );
+
+        // Perfect Negotiation: the polite peer accepts a colliding offer;
+        // the impolite peer ignores it and its associated ICE candidates.
+        managedPc.ignoreOffer = !polite && offerCollision;
+        if (managedPc.ignoreOffer) {
+          pendingCandidatesRef.current.delete(peerId);
+          return;
         }
+
+        managedPc.isSettingRemoteAnswerPending = description.type === "answer";
+        await pc.setRemoteDescription(new RTCSessionDescription(description));
+        managedPc.isSettingRemoteAnswerPending = false;
+
+        const pending = pendingCandidatesRef.current.get(peerId) ?? [];
+        for (const candidate of pending) {
+          await pc.addIceCandidate(new RTCIceCandidate(candidate));
+        }
+        pendingCandidatesRef.current.delete(peerId);
+
+        if (description.type === "offer") {
+          await pc.setLocalDescription();
+          const answer = pc.localDescription;
+          if (answer) {
+            await sendSignal({
+              from: userIdRef.current,
+              to: peerId,
+              type: "description",
+              description: answer.toJSON()
+            });
+          }
+        }
+        setError("");
       } else if (signal.type === "candidate" && signal.candidate) {
+        if (managedPc.ignoreOffer) return;
         if (pc.remoteDescription) {
           await pc.addIceCandidate(new RTCIceCandidate(signal.candidate));
         } else {
@@ -155,25 +210,45 @@ export default function MeetingCallRoom({
         }
       }
     } catch (e) {
+      managedPc.isSettingRemoteAnswerPending = false;
       setError(e instanceof Error ? e.message : "Erreur de signalisation WebRTC.");
     }
   }, [closePeer, ensurePeer, remoteNames, sendSignal]);
 
   const createOffer = useCallback(async (peerId: string, peerName: string) => {
+    // Deterministic initial offerer; lock before awaiting so duplicate
+    // presence sync/join events cannot create concurrent local offers.
     if (userIdRef.current.localeCompare(peerId) >= 0) return;
     const pc = ensurePeer(peerId, peerName);
-    if (pc.localDescription) return;
+    const managedPc = pc as ManagedPeerConnection;
+    if (managedPc.initialOfferStarted || pc.localDescription || pc.signalingState !== "stable") return;
+
+    managedPc.initialOfferStarted = true;
+    managedPc.makingOffer = true;
     try {
       const offer = await pc.createOffer();
+      if (pc.signalingState !== "stable") {
+        managedPc.initialOfferStarted = false;
+        return;
+      }
       await pc.setLocalDescription(offer);
-      await sendSignal({
-        from: userIdRef.current,
-        to: peerId,
-        type: "description",
-        description: offer
-      });
+      const localDescription = pc.localDescription as RTCSessionDescription | null;
+      if (localDescription) {
+        await sendSignal({
+          from: userIdRef.current,
+          to: peerId,
+          type: "description",
+          description: {
+            type: localDescription.type,
+            sdp: localDescription.sdp
+          }
+        });
+      }
     } catch (e) {
+      managedPc.initialOfferStarted = false;
       setError(e instanceof Error ? e.message : "Impossible de démarrer la connexion.");
+    } finally {
+      managedPc.makingOffer = false;
     }
   }, [ensurePeer, sendSignal]);
 
@@ -197,7 +272,7 @@ export default function MeetingCallRoom({
   async function startScreenShare() {
     if (!joinedRef.current) return;
     if (!navigator.mediaDevices?.getDisplayMedia) {
-      setError("Le partage d'écran n'est pas pris en charge par ce navigateur.");
+      setError("Le partage d'écran n'est pas disponible sur ce navigateur mobile. Rejoins l'appel depuis un ordinateur pour partager ton écran.");
       return;
     }
     try {
@@ -229,7 +304,7 @@ export default function MeetingCallRoom({
         await channelRef.current.send({
           type: "broadcast",
           event: "signal",
-          payload: { from: userIdRef.current, to: "*", type: "ended" }
+          payload: { from: userIdRef.current, to: "*", type: "ended", sessionId: sessionIdRef.current }
         });
       }
     } else if (sessionIdRef.current && supabase) {
@@ -237,6 +312,8 @@ export default function MeetingCallRoom({
     }
     joinedRef.current = false;
     setJoined(false);
+    sessionIdRef.current = "";
+    setSessionId("");
     if (channelRef.current && supabase) void supabase.removeChannel(channelRef.current);
     channelRef.current = null;
     peersRef.current.forEach(pc => pc.close());
@@ -301,7 +378,8 @@ export default function MeetingCallRoom({
         config: { private: true, presence: { key: user.id }, broadcast: { ack: true, self: false } }
       });
       channel.on("broadcast", { event: "signal" }, ({ payload }: { payload: Signal }) => {
-        if (payload?.type === "ended" && payload.to === "*") {
+        if (!payload || payload.sessionId !== sessionIdRef.current) return;
+        if (payload.type === "ended" && payload.to === "*") {
           void leaveCall(false);
         } else {
           void processSignal(payload);
@@ -358,6 +436,7 @@ export default function MeetingCallRoom({
   }
 
   useEffect(() => {
+    setScreenShareSupported(Boolean(navigator.mediaDevices?.getDisplayMedia));
     return () => {
       const supabase = getSupabaseBrowserClient();
       if (channelRef.current && supabase) void supabase.removeChannel(channelRef.current);
@@ -411,13 +490,19 @@ export default function MeetingCallRoom({
               localStreamRef.current?.getVideoTracks().forEach(track => { track.enabled = cameraOff; });
               setCameraOff(!cameraOff);
             }}>{cameraOff ? "Activer la caméra" : "Couper la caméra"}</button>
-            <button className={sharingScreen ? "call-control active" : "call-control"} onClick={() => void (sharingScreen ? stopScreenShare() : startScreenShare())}>
-              {sharingScreen ? "Arrêter le partage" : "Partager l’écran"}
+            <button
+              className={sharingScreen ? "call-control active" : "call-control"}
+              onClick={() => void (sharingScreen ? stopScreenShare() : startScreenShare())}
+              disabled={!screenShareSupported && !sharingScreen}
+              title={!screenShareSupported ? "Partage d'écran indisponible sur ce navigateur mobile" : undefined}
+            >
+              {sharingScreen ? "Arrêter le partage" : screenShareSupported ? "Partager l’écran" : "Partage écran (ordinateur)"}
             </button>
             {hostId === userId
               ? <button className="call-hangup" onClick={() => void leaveCall(true)}>Terminer pour tous</button>
               : <button className="call-hangup" onClick={() => void leaveCall(false)}>Quitter l'appel</button>}
           </div>
+          {!screenShareSupported && <p className="call-screen-share-note">Le partage d’écran n’est pas proposé par ce navigateur mobile. Tu peux participer à l’appel audio / vidéo normalement ; pour partager ton écran, utilise JEC-conNEcT depuis un ordinateur.</p>}
         </>
       )}
     </section>
