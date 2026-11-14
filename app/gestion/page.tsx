@@ -99,13 +99,11 @@ export default function AdminPage(){
     const supabase=getSupabaseBrowserClient();
     if(!supabase)return;
     setError("");setMessage("");
-    const {data:{user}}=await supabase.auth.getUser();
-    const {error:updateError}=await supabase.from("jec_memberships").update({
-      membership_status:status,
-      verified_at:new Date().toISOString(),
-      verified_by:user?.id??null,
-      updated_at:new Date().toISOString()
-    }).eq("user_id",userId);
+    const {error:updateError}=await supabase.rpc("jec_admin_set_membership",{
+      target_user_id:userId,
+      new_status:status,
+      new_structure_name:null
+    });
     if(updateError)setError(updateError.message);
     else {setMessage(en?"Membership status updated.":"Statut d'adhésion mis à jour.");await load();}
   }
