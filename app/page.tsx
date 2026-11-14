@@ -16,7 +16,8 @@ const news = [
     titleEn: "Three videos for well-being and living better together",
     summary: "La JEC France présente trois vidéos consacrées à la santé mentale et aux compétences psychosociales, issues d'un travail mené au sein du mouvement.",
     summaryEn: "JEC France presents three videos about mental health and psychosocial skills, produced as part of the movement’s work.",
-    url: "https://jecfrance.org/3-videos-pour-un-mieux-etre-et-un-mieux-vivre-ensemble/"
+    url: "https://jecfrance.org/3-videos-pour-un-mieux-etre-et-un-mieux-vivre-ensemble/",
+    publisher: "JEC France", sourceKind: "article", sourceLabel: "Publication officielle JEC France", detailPath: null
   },
   {
     date: "7 avril 2026",
@@ -27,7 +28,8 @@ const news = [
     titleEn: "A game to discover psychosocial skills",
     summary: "Un outil conçu dans le cadre d'un partenariat avec la JEC du Liban, pour sensibiliser les jeunes aux différentes situations de crise.",
     summaryEn: "A tool developed with JEC Lebanon to help young people understand and respond to different crisis situations.",
-    url: "https://jecfrance.org/un-jeu-pour-decouvrir-lutilisation-des-competences-psycho-sociales/"
+    url: "https://jecfrance.org/un-jeu-pour-decouvrir-lutilisation-des-competences-psycho-sociales/",
+    publisher: "JEC France", sourceKind: "article", sourceLabel: "Publication officielle JEC France", detailPath: null
   },
   {
     date: "7 avril 2026",
@@ -38,7 +40,23 @@ const news = [
     titleEn: "JEC leaders meet and learn together",
     summary: "La JEC France revient sur une rencontre de responsables d'équipes organisée le 21 février à Chevilly-Larue, autour de sujets liés à leur engagement et à leur rôle.",
     summaryEn: "JEC France reports on a team leaders’ gathering held on 21 February in Chevilly-Larue, focusing on their commitment and responsibilities.",
-    url: "https://jecfrance.org/les-responsables-se-rencontrent-et-se-forment/"
+    url: "https://jecfrance.org/les-responsables-se-rencontrent-et-se-forment/",
+    publisher: "JEC France", sourceKind: "article", sourceLabel: "Publication officielle JEC France", detailPath: null
+  },
+  {
+    date: "26 juillet – 2 août 2026",
+    image: "/images/jec-community-illustration.svg",
+    category: "Vie du mouvement · Cameroun",
+    categoryEn: "Movement life · Cameroon",
+    title: "Camp National Universitaire de Garoua 2026 : spiritualité active et citoyenneté responsable",
+    titleEn: "Garoua 2026 National University Camp: active spirituality and responsible citizenship",
+    summary: "Le livret du camp présente huit journées de formation, de prière, de débats, de compétitions et d’activités culturelles au Centre Jeunesse Lumière de Ngalbidjie. Le thème reliait spiritualité active, citoyenneté responsable, numérique et développement durable au Cameroun.",
+    summaryEn: "The camp booklet documents eight days of formation, prayer, discussions, competitions and cultural activities at the Centre Jeunesse Lumière de Ngalbidjie. Its theme connected active spirituality, responsible citizenship, digital technology and sustainable development in Cameroon.",
+    url: null,
+    publisher: "JEC Cameroun — Bureau national",
+    sourceKind: "booklet",
+    sourceLabel: "Source : livret du campiste transmis par la JEC du Cameroun",
+    detailPath: "/actualites/camp-garoua-2026"
   }
 ];
 
@@ -138,13 +156,13 @@ export default function Home() {
     return <article className="post-card verified-news-card">
       <div className="post-header">
         <div className="avatar violet">JEC</div>
-        <div className="post-author"><strong>JEC France</strong><small>{t("Publication publique vérifiée","Verified public publication")} · {item.date}</small></div>
+        <div className="post-author"><strong>{item.publisher}</strong><small>{item.sourceKind==="booklet"?(en?"Source document · event dates":"Document source · dates de l’événement"):t("Publication publique vérifiée","Verified public publication")} · {item.date}</small></div>
         <span className="verified-pill">{t("Source","Source")}</span>
       </div>
       <span className="post-tag violet">{en?item.categoryEn:item.category}</span>
       <h3 className="verified-news-title">{en?item.titleEn:item.title}</h3>
       <p className="post-text">{en?item.summaryEn:item.summary}</p>
-      <div className="source-footer"><span>{t("Publié sur le site officiel","Published on the official website")}</span><SourceLink href={item.url}>{t("Lire l'article","Read article")}</SourceLink></div>
+      <div className="source-footer"><span>{item.sourceLabel}</span>{item.url?<SourceLink href={item.url}>{t("Lire l'article","Read article")}</SourceLink>:null}{item.detailPath?<Link className="source-link" href={item.detailPath}>{t("Consulter le dossier","Read the feature")} →</Link>:null}</div>
     </article>;
   }
 
@@ -157,7 +175,7 @@ export default function Home() {
     if(active==="Actualités JEC") return <section>
       <div className="section-heading"><div><p className="eyebrow">{t("PUBLICATIONS SOURCÉES","SOURCED PUBLICATIONS")}</p><h2>{t("Actualités publiées par la JEC France","News published by JEC France")}</h2></div><span className="source-count">{filteredNews.length} {t("articles","articles")}</span></div>
       <p className="section-intro">{t("Ces contenus proviennent du site public de la JEC France. Chaque carte conserve sa date de publication et son lien d'origine.","These items come from JEC France’s public website. Each card keeps its publication date and original source link.")}</p>
-      {filteredNews.map(item=><NewsCard key={item.url} item={item}/>)}
+      {filteredNews.map(item=><NewsCard key={item.url ?? item.detailPath ?? item.title} item={item}/>)}
       <p className="source-note">{t("Vérification initiale : 11 novembre 2026. L'agrégation automatique des flux n'est pas encore activée.","Initial verification: 11 November 2026. Automatic feed aggregation is not yet enabled.")}</p>
     </section>;
 
@@ -190,7 +208,8 @@ export default function Home() {
     </section>;
 
     if(active==="Agenda public") return <section>
-      <div className="section-heading"><div><p className="eyebrow">{t("RENDEZ-VOUS PUBLICS","PUBLIC EVENTS")}</p><h2>{t("Agenda et événements à suivre","Upcoming events and dates")}</h2></div></div>
+      <div className="section-heading"><div><p className="eyebrow">{t("RENDEZ-VOUS PUBLICS","PUBLIC EVENTS")}</p><h2>{t("Agenda et mémoire des événements JEC","JEC calendar and event memory")}</h2></div></div>
+      <article className="event-feature"><div className="event-feature-date"><span>26 JUL.</span><b>—</b><span>02 AUG.</span><small>2026</small></div><div className="event-feature-body"><span className="post-tag violet">{t("ÉVÉNEMENT PASSÉ · RÉTROSPECTIVE","PAST EVENT · RECAP")}</span><h3>{t("Camp National Universitaire de Garoua 2026","Garoua 2026 National University Camp")}</h3><p>{t("Huit journées de formation, spiritualité, citoyenneté, vie culturelle et engagement au Centre Jeunesse Lumière de Ngalbidjie. Le livret du camp est désormais conservé dans la mémoire publique de JEC-conNEcT.","Eight days of formation, spirituality, citizenship, cultural life and commitment at the Centre Jeunesse Lumière de Ngalbidjie. The camp booklet is now preserved in JEC-conNEcT’s public memory.")}</p><Link className="source-link" href="/actualites/camp-garoua-2026">{t("Voir le programme et les temps forts","View the programme and highlights")} →</Link></div></article>
       <article className="event-feature"><div className="event-feature-date"><span>29 JUL.</span><b>—</b><span>08 AUG.</span><small>2027</small></div><div className="event-feature-body"><span className="post-tag blue">{t("ÉVÉNEMENT INTERNATIONAL · SOURCE EXTERNE","INTERNATIONAL EVENT · EXTERNAL SOURCE")}</span><h3>{t("Journées Mondiales de la Jeunesse — Séoul 2027","World Youth Day — Seoul 2027")}</h3><p>{t("Le site JMJ 2027 en France annonce le rendez-vous du 29 juillet au 8 août 2027 à Séoul, en Corée du Sud. Aucune participation de la JEC France n'est présumée.","The French WYD 2027 website lists the event from 29 July to 8 August 2027 in Seoul, South Korea. No participation by JEC France is implied.")}</p><SourceLink href="https://www.jmj2027.fr/">{t("Site officiel JMJ 2027 France","Official WYD 2027 France website")}</SourceLink></div></article>
     </section>;
 
@@ -210,7 +229,7 @@ export default function Home() {
       <div className="page-content">
         {active==="Vue d'ensemble"?<>
           <section className="welcome-banner"><div className="welcome-copy"><p className="eyebrow light">{t("UN MOUVEMENT DE JEUNES, PAR LES JEUNES ET POUR LES JEUNES","A MOVEMENT OF YOUNG PEOPLE, BY YOUNG PEOPLE, FOR YOUNG PEOPLE")}</p><h1>{identity?(identity.displayName.includes("@")?t("Bienvenue dans ton espace JEC-conNEcT.","Welcome to your JEC-conNEcT space."):(en?"Welcome, "+identity.displayName.split(" ")[0]+".":"Bienvenue, "+identity.displayName.split(" ")[0]+".")):t("La JEC, son histoire et son actualité.","JEC: its story and its news.")}</h1><p>{t("Un espace pour découvrir le mouvement, retrouver les informations publiques et préparer une communauté mieux connectée.","Discover the movement, explore verified public information and build a more connected community.")}</p><div className="welcome-actions"><button className="white-button" onClick={()=>setActive("Découvrir la JEC")}>{t("Découvrir la JEC","Discover JEC")}</button><button className="outline-light" onClick={()=>setActive("Actualités JEC")}>{t("Voir les actualités →","Explore news →")}</button></div></div><div className="banner-art"><img className="home-community-image" src="/images/jec-community-illustration.svg" alt={t("Des jeunes échangent, apprennent et font de la musique ensemble","Young people learn, share ideas and make music together")}/><div className="orbit orbit-one"/><div className="orbit orbit-two"/><div className="orbit-core">JEC<br/><span>✝</span></div><div className="orbit-dot dot-one"/><div className="orbit-dot dot-two"/><div className="orbit-dot dot-three"/></div></section>
-          <div className="content-grid"><section className="feed-column"><div className="section-heading"><div><p className="eyebrow">{t("PUBLICATIONS OFFICIELLES","OFFICIAL PUBLICATIONS")}</p><h2>{t("Les dernières actualités repérées","Latest verified news")}</h2></div><button className="text-button" onClick={()=>setActive("Actualités JEC")}>{t("Toutes les actualités ↗","All news ↗")}</button></div>{filteredNews.slice(0,3).map(item=><NewsCard key={item.url} item={item}/>)}</section>
+          <div className="content-grid"><section className="feed-column"><div className="section-heading"><div><p className="eyebrow">{t("PUBLICATIONS OFFICIELLES","OFFICIAL PUBLICATIONS")}</p><h2>{t("Les dernières actualités repérées","Latest verified news")}</h2></div><button className="text-button" onClick={()=>setActive("Actualités JEC")}>{t("Toutes les actualités ↗","All news ↗")}</button></div>{filteredNews.slice(0,3).map(item=><NewsCard key={item.url ?? item.detailPath ?? item.title} item={item}/>)}</section>
           <aside className="right-column"><section className="widget-card"><div className="widget-heading"><h3>{t("Repères historiques","Historical milestones")}</h3><button onClick={()=>setActive("Découvrir la JEC")}>{t("Explorer","Explore")}</button></div><div className="fact-item"><b>1929</b><div><strong>{t("Origines de la JEC en France","Origins of JEC in France")}</strong><small>{t("Premiers groupes autour de Louis Chaudron et Paul Vignaux.","First groups around Louis Chaudron and Paul Vignaux.")}</small></div></div><div className="fact-item"><b>1946</b><div><strong>{t("Coordination internationale","International coordination")}</strong><small>{t("Fondation de la JECI / IYCS.","Foundation of JECI / IYCS.")}</small></div></div><Link className="widget-link" href="/decouvrir#frise-chronologique">{t("Voir la frise chronologique →","Explore the timeline →")}</Link></section>
           <section className="widget-card"><div className="widget-heading"><h3>{t("Événement à suivre","Event to follow")}</h3><button onClick={()=>setActive("Agenda public")}>{t("Agenda","Calendar")}</button></div><div className="event-item"><div className="event-date"><b>2027</b><span>JUL–AUG</span></div><div><strong>{t("JMJ Séoul 2027","WYD Seoul 2027")}</strong><small>29 juillet – 8 août · Corée du Sud</small><SourceLink href="https://www.jmj2027.fr/">{t("Site officiel","Official website")}</SourceLink></div></div></section>
           <section className="ai-card"><div className="ai-spark">✧</div><p className="eyebrow">JEC CONNECT</p><h3>{t("Un espace à construire ensemble","A space to build together")}</h3><p>{t("JEC-conNEcT relie les espaces de travail, projets, tâches, réunions et échanges de ses membres. Les archives avancées et l’assistant IA viendront dans une prochaine phase.","JEC-conNEcT connects members’ workspaces, projects, tasks, meetings and conversations. Advanced archives and the AI assistant are planned for a later phase.")}</p><button onClick={()=>setActive("Workspace")}>{t("Découvrir les modules →","Explore modules →")}</button></section><p className="prototype-note">{t("Prototype de présentation · Contenus publics sourcés","Presentation prototype · Public sourced content")}<br/>{t("Les espaces privés sont accessibles aux membres autorisés selon les droits de chaque équipe.","Private workspaces are available to authorized members according to each team’s permissions.")}</p></aside></div>
