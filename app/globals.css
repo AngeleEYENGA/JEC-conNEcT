@@ -937,3 +937,39 @@
  .partner-form-grid{grid-template-columns:1fr}
  .partner-page-heading .primary-button{width:100%}
 }
+
+
+/* Garoua 2026 event retrospective */
+.garoua-feature{max-width:1080px}
+.garoua-feature>h1{font:800 clamp(28px,5vw,48px)/1.12 Manrope;color:#29264d;letter-spacing:-1.4px;margin:8px 0 12px}
+.garoua-meta{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0 22px}
+.garoua-meta span{background:#f2eff8;color:#59417e;padding:8px 11px;border-radius:22px;font-size:10px;font-weight:700}
+.garoua-source-card{margin:14px 0}
+.garoua-source-card p:not(.eyebrow),.garoua-caveat p{font-size:11px;line-height:1.7;color:#625e72}
+.garoua-source-card small{font-size:9px;color:#8b8498}
+.garoua-highlight-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:14px 0 20px}
+.garoua-feature .collab-card h2{font:800 19px/1.3 Manrope;color:#302b58;margin:0 0 10px}
+.garoua-feature .collab-card p:not(.eyebrow){font-size:11px;line-height:1.7;color:#6a6678}
+.garoua-days{margin:24px 0}
+.garoua-days .section-heading{margin-bottom:14px}
+.garoua-day{margin:10px 0}
+.garoua-day-heading{display:flex;align-items:center;gap:12px}
+.garoua-day-heading>span{display:grid;place-items:center;width:38px;height:38px;flex:none;border-radius:12px;background:#ede9f7;color:#6543a1;font:800 13px Manrope}
+.garoua-day-heading small{font-size:9px;color:#8d869b}
+.garoua-day-heading h3{font:800 14px Manrope;color:#302b58;margin:3px 0 0}
+.garoua-day ul,.jec-heritage-card ul{padding-left:18px;margin:12px 0 0;display:grid;gap:8px}
+.garoua-day li,.jec-heritage-card li{font-size:10px;line-height:1.6;color:#696478}
+.garoua-speaker-list{display:flex;flex-wrap:wrap;gap:7px;margin-top:8px}
+.garoua-speaker-list span{font-size:10px;font-weight:700;color:#60477f;background:#f4f0f9;border-radius:20px;padding:7px 10px}
+.garoua-caveat{margin:14px 0;border-left:3px solid #d4a749}
+.garoua-caveat strong{font-size:11px;color:#6f5425}
+.jec-spiritual-heritage{margin:24px 0}
+.jec-heritage-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}
+.jec-heritage-card h3{font:800 15px Manrope;color:#312b59;margin:0 0 10px}
+.jec-heritage-card p:not(.eyebrow){font-size:10px;line-height:1.75;color:#625e72}
+.jec-heritage-card ul{padding-left:18px}
+@media(max-width:700px){
+ .garoua-highlight-grid{grid-template-columns:1fr 1fr}
+ .garoua-highlight-grid .partner-kpi:last-child{grid-column:1/-1}
+ .jec-heritage-grid{grid-template-columns:1fr}
+}
