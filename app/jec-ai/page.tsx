@@ -12,7 +12,6 @@ export default function JecAiPage() {
         </Link>
         <div>
           <LanguageSwitcher />
-          <Link href="/" className="back-link-inline">Retour au portail</Link>
         </div>
       </header>
       <JecAiAssistant />
