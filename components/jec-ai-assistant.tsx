@@ -85,30 +85,85 @@ export default function JecAiAssistant() {
     setLoading(true);
 
     try {
-      const { data, error: invokeError } = await supabase.functions.invoke("jec-ai", {
-        body: { messages: history.map(({ role, content: text }) => ({ role, content: text })), language: lang }
+      const { data: submitted, error: submitError } = await supabase.functions.invoke("jec-ai-local", {
+        body: {
+          action: "submit",
+          messages: history.map(({ role, content: text }) => ({ role, content: text })),
+          language: lang
+        }
       });
 
-      if (invokeError) {
-        let message = invokeError.message || (en ? "The assistant is temporarily unavailable." : "L’assistant est momentanément indisponible.");
+      if (submitError) {
+        let message = submitError.message || (en ? "The local assistant is temporarily unavailable." : "L’assistant local est momentanément indisponible.");
         try {
-          const context = await (invokeError as { context?: Response }).context;
+          const context = (submitError as { context?: Response }).context;
           if (context) {
             const payload = await context.clone().json() as { error?: string };
             if (payload.error) message = payload.error;
           }
         } catch {
-          // Keep the safe generic error when the response body is not JSON.
+          // Keep the generic error if the response body is not JSON.
         }
         throw new Error(message);
       }
 
-      if (!data || typeof data.reply !== "string" || !data.reply.trim()) {
-        throw new Error(en ? "The assistant returned an empty response. Please try again." : "L’assistant n’a pas retourné de réponse. Réessaie.");
+      const jobId = submitted && typeof submitted.job_id === "string" ? submitted.job_id : "";
+      if (!jobId) {
+        throw new Error(en ? "The local queue did not return a task identifier." : "La file locale n’a pas retourné d’identifiant de tâche.");
       }
 
-      const sources = Array.isArray(data.sources) ? data.sources as SourceReference[] : [];
-      const assistantMessage: ChatMessage = { role: "assistant", content: data.reply as string, sources };
+      const deadline = Date.now() + 5 * 60 * 1000;
+      let completed: {
+        status?: string;
+        reply?: string | null;
+        sources?: SourceReference[];
+        error?: string | null;
+      } | null = null;
+
+      while (Date.now() < deadline) {
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+        const { data: current, error: statusError } = await supabase.functions.invoke("jec-ai-local", {
+          body: { action: "status", job_id: jobId }
+        });
+
+        if (statusError) {
+          let message = statusError.message || (en ? "Unable to check the task status." : "Impossible de vérifier l’état de la tâche.");
+          try {
+            const context = (statusError as { context?: Response }).context;
+            if (context) {
+              const payload = await context.clone().json() as { error?: string };
+              if (payload.error) message = payload.error;
+            }
+          } catch {
+            // Keep the generic error if the response body is not JSON.
+          }
+          throw new Error(message);
+        }
+
+        if (current?.status === "succeeded") {
+          completed = current;
+          break;
+        }
+        if (current?.status === "failed") {
+          throw new Error(current.error || (en ? "The local model could not process this request." : "Le modèle local n’a pas pu traiter cette demande."));
+        }
+        if (!current || !["queued", "processing"].includes(String(current.status))) {
+          throw new Error(en ? "The task returned an unexpected status." : "La tâche a renvoyé un état inattendu.");
+        }
+      }
+
+      if (!completed) {
+        throw new Error(en
+          ? "The local model is taking longer than expected. Check that the JEC AI Worker is still running, then try again."
+          : "Le modèle local met plus de temps que prévu. Vérifie que le JEC AI Worker fonctionne toujours, puis réessaie.");
+      }
+
+      if (typeof completed.reply !== "string" || !completed.reply.trim()) {
+        throw new Error(en ? "The assistant returned an empty response." : "L’assistant n’a pas retourné de réponse.");
+      }
+
+      const sources = Array.isArray(completed.sources) ? completed.sources : [];
+      const assistantMessage: ChatMessage = { role: "assistant", content: completed.reply, sources };
       setMessages((current) => [...current, assistantMessage].slice(-9));
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : (en ? "Unexpected error. Please try again." : "Une erreur inattendue est survenue. Réessaie."));
@@ -134,7 +189,7 @@ export default function JecAiAssistant() {
             <h2>JEC IA</h2>
           </div>
         </div>
-        <span className="jec-ai-status"><i />{en ? "Verified sources · Beta" : "Sources vérifiées · Bêta"}</span>
+        <span className="jec-ai-status"><i />{en ? "Local Ollama · Verified sources" : "Ollama local · Sources vérifiées"}</span>
       </div>
 
       <div className="jec-ai-intro">
@@ -233,8 +288,8 @@ export default function JecAiAssistant() {
           </div>
           <p className="jec-ai-privacy">
             {en
-              ? "Privacy: your messages are sent to OpenAI to generate a reply. This prototype does not save chat history in the JEC database. Do not enter personal, sensitive or confidential information."
-              : "Confidentialité : tes messages sont transmis à OpenAI pour générer une réponse. Cette version ne sauvegarde pas l’historique dans la base JEC. N’y saisis pas d’informations personnelles, sensibles ou confidentielles."}
+              ? "Privacy: messages are placed in the protected Supabase task queue and processed by the Ollama model on the authorised local computer. This route does not call OpenAI. Avoid entering sensitive or confidential information."
+              : "Confidentialité : les messages sont placés dans la file de traitement Supabase protégée, puis traités par le modèle Ollama sur le poste local autorisé. Ce parcours ne fait pas appel à OpenAI. Évite d’y saisir des informations sensibles ou confidentielles."}
           </p>
         </>
       )}
