@@ -427,3 +427,82 @@ Aucun montant de location de serveur n'est fixé ici : il dépend des spécifica
 - Google Gemini API — tarification : https://ai.google.dev/gemini-api/docs/pricing
 - Hugging Face — tarification Inference Providers : https://huggingface.co/docs/inference-providers/pricing
 - Mistral — tarification API : https://mistral.ai/pricing/api/
+
+
+## 34. Automatisation intelligente de JEC-conNEcT
+
+### 34.1 Objectif
+Mettre en place des automatisations assistées par IA pour réduire les tâches répétitives des équipes, améliorer la veille, faciliter la préparation et le suivi des réunions et maintenir les informations institutionnelles à jour. L'automatisation doit assister les responsables, jamais se substituer à leur autorité.
+
+### 34.2 Principes obligatoires
+- Chaque donnée collectée conserve sa source, son URL, sa date de collecte, sa date de publication si connue et son niveau de confiance.
+- Les sources prioritaires sont les sites officiels de la JEC, des partenaires concernés et des institutions compétentes.
+- Respecter les conditions d'utilisation, les droits d'auteur, les règles d'accès, les fichiers robots.txt lorsqu'ils s'appliquent et les limites des API utilisées. Ne pas contourner de connexion, de CAPTCHA ou de restriction technique.
+- Ne jamais inventer une actualité, un partenariat, un contact, une date, une décision ou une statistique.
+- Les contenus collectés sont enregistrés comme propositions ou brouillons. La publication publique automatique est désactivée par défaut.
+- Toute action sensible (publication, invitation, envoi d'e-mail, modification d'un partenaire officiel, création d'une décision ou attribution d'une tâche) exige une validation humaine et un journal d'audit.
+- Les automatisations sont idempotentes : elles évitent les doublons et conservent l'historique des modifications.
+
+### 34.3 Veille et collecte d'actualités
+Prévoir un service de veille configurable par thèmes, pays, organisations et mots-clés :
+1. récupérer les flux RSS, API officielles et pages publiques autorisées ;
+2. détecter les nouvelles publications depuis la dernière collecte ;
+3. extraire titre, auteur/organisme, date, résumé, URL, image et catégorie lorsque disponibles ;
+4. utiliser JEC IA pour proposer une synthèse courte, une traduction FR/EN, des mots-clés et une catégorisation ;
+5. vérifier les doublons et conserver la référence originale ;
+6. créer une fiche « brouillon à vérifier » dans l'espace d'administration ;
+7. notifier l'équipe de communication pour validation, modification ou rejet ;
+8. après approbation, publier sur le site et enregistrer l'auteur de la validation.
+
+La veille doit privilégier RSS et API documentées plutôt que le scraping générique. Une source non vérifiable ou une date absente doit être explicitement signalée. Les images ne sont réutilisées que si leur licence ou autorisation le permet ; sinon, utiliser une vignette neutre et un lien vers la source.
+
+### 34.4 Répertoire des partenaires et organisations
+Prévoir une collecte assistée à partir de sites institutionnels et associatifs publics :
+- identifier les organisations potentiellement pertinentes selon des critères validés par la JEC ;
+- extraire uniquement les informations institutionnelles publiées : nom, mission, pays, site officiel, domaines d'action, programmes publics et coordonnées génériques de contact ;
+- fournir la source, la date de vérification et les champs non confirmés ;
+- détecter les doublons et proposer un rapprochement avec les fiches existantes ;
+- créer une fiche candidate en statut « à vérifier » ;
+- laisser un responsable confirmer l'existence du partenariat, le statut de partenaire et les informations à publier.
+
+Une organisation repérée sur Internet n'est pas automatiquement un partenaire de la JEC. L'IA ne doit jamais transformer une simple piste en partenariat confirmé, ni collecter des coordonnées personnelles non nécessaires.
+
+### 34.5 Automatisation des réunions
+Prévoir une chaîne d'assistance à la réunion :
+- préparation : proposer un ordre du jour à partir des sujets en attente, échéances et décisions précédentes ;
+- convocations : préparer un brouillon d'invitation et joindre les documents autorisés ; l'envoi reste soumis à confirmation ;
+- pendant la réunion : permettre une prise de notes manuelle et, ultérieurement, une transcription si les participants sont informés et si les conditions légales et techniques sont réunies ;
+- après la réunion : générer un brouillon de synthèse, classer les points discutés, extraire les décisions potentielles, actions, responsables et échéances ;
+- validation : le secrétaire ou responsable habilité corrige et approuve le compte rendu ; seules les décisions confirmées sont inscrites au registre ;
+- suivi : proposer la création de tâches et rappels à partir des actions approuvées ; l'assignation et les notifications sont confirmées par un responsable.
+
+Aucun enregistrement ou transcription n'est activé par défaut. Les participants doivent recevoir une information claire sur la finalité, les destinataires, le fournisseur utilisé, les durées de conservation et les possibilités de refus. Les contenus de réunion confidentiels ne sont jamais transmis à un service externe sans autorisation institutionnelle explicite.
+
+### 34.6 Autres automatisations candidates
+- Archives : proposer des métadonnées, dates, catégories, résumés et mots-clés à partir des documents soumis, sans modifier l'original.
+- Communication : préparer des brouillons d'annonces, newsletters, traductions et publications à partir d'informations validées.
+- Projets : détecter les échéances proches, tâches en retard, dépendances et actions sans responsable ; suggérer des rappels.
+- Adhésions : signaler les demandes incomplètes et préparer des messages d'information, sans accepter ou rejeter automatiquement une personne.
+- Rapports : produire des synthèses périodiques à partir des données autorisées et identifiées, avec période, méthode et limites.
+- Maintenance : signaler les liens cassés, les fiches obsolètes et les documents arrivant à échéance.
+
+### 34.7 Architecture technique cible
+- Planification : Supabase Cron/pg_cron pour déclencher des collectes et traitements périodiques lorsque cela est adapté.
+- Orchestration : fonctions backend et une file de tâches persistante avec états (pending, processing, review, approved, rejected, published, failed).
+- Exécution IA : Ollama sur la machine institutionnelle, accessible uniquement par un canal réseau privé et authentifié.
+- Collecte web : connecteurs RSS/API et collecteur web limité aux sources autorisées.
+- Données : Supabase pour les propositions, sources, validations, journaux et états de traitement.
+- Interface : tableau de bord d'administration avec filtres, comparaison avant/après, source, confiance, historique et boutons de validation/rejet.
+- Résilience : reprises contrôlées, limites de débit, délais d'expiration, file d'attente, alertes d'échec et possibilité de désactiver chaque automatisation.
+
+Si le serveur Ollama est derrière un réseau privé et n'est pas joignable depuis Supabase, un agent léger installé sur le serveur peut interroger périodiquement la file de tâches Supabase via une connexion sortante HTTPS, traiter les tâches localement puis renvoyer les résultats. Cette approche évite d'exposer directement l'API Ollama sur Internet.
+
+### 34.8 Déploiement progressif
+- Phase A — Démonstration : Qwen3 4B via Ollama, questions-réponses sur un petit corpus public validé, test manuel depuis le réseau local.
+- Phase B — Veille assistée : collecte RSS de quelques sources officielles, génération de brouillons, validation manuelle.
+- Phase C — Répertoire : fiches candidates d'organisations et partenaires, dédoublonnage et vérification humaine.
+- Phase D — Réunions : ordre du jour suggéré, synthèse de notes manuelles, extraction d'actions, puis transcription uniquement après cadrage juridique et technique.
+- Phase E — Extension : automatisations supplémentaires après mesure de la qualité, de la charge et des coûts.
+
+### 34.9 Indicateurs de qualité
+Mesurer : taux de doublons, taux d'erreurs factuelles, proportion de brouillons acceptés sans correction majeure, délai entre publication source et proposition, temps gagné par les équipes, taux d'échec des tâches, coût d'exploitation et nombre d'actions annulées. Aucun indicateur ne doit être présenté comme résultat réel avant mesure.
