@@ -128,7 +128,7 @@ export default function JecAiAssistant() {
     <section className="jec-ai-page">
       <div className="jec-ai-heading">
         <div className="jec-ai-brand">
-          <div className="jec-ai-mark" aria-hidden="true">✧</div>
+          <div className="jec-ai-mark" aria-hidden="true">✝</div>
           <div>
             <p className="eyebrow">{en ? "KNOWLEDGE ASSISTANT" : "ASSISTANT DOCUMENTAIRE"}</p>
             <h2>JEC IA</h2>
@@ -167,7 +167,7 @@ export default function JecAiAssistant() {
             <div className="jec-ai-messages" aria-live="polite">
               {messages.length === 0 && (
                 <div className="jec-ai-welcome">
-                  <div className="jec-ai-welcome-icon">✧</div>
+                  <div className="jec-ai-welcome-icon" aria-hidden="true">✝</div>
                   <h3>{en ? "Hello! I’m JEC IA." : "Bonjour ! Je suis JEC IA."}</h3>
                   <p>{en
                     ? "I can help you understand documented JEC information, prepare activities and structure your ideas. What would you like to explore?"
