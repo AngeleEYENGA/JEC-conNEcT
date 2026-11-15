@@ -335,3 +335,95 @@ Ce module n'appartient pas au premier périmètre du prototype. Il sera spécifi
 - L'ordre du jour, les décisions, les comptes rendus et les transcriptions doivent appartenir au même espace que la réunion concernée.
 - Les documents rattachés à un projet ou une réunion doivent appartenir au même espace ; ces contrôles sont effectués au niveau de la base, et non seulement dans l'interface.
 - Les nouvelles tables phase 2 disposent de RLS et n'accordent aucun accès au rôle anonyme.
+
+
+## 33. JEC IA — choix technologiques, hébergement et financement
+
+### 33.1 Objectif et principe budgétaire
+JEC IA doit pouvoir être présenté et testé sans avance de frais personnelle par les bénévoles, étudiants ou porteurs du projet. Aucun abonnement, crédit API ou achat d'infrastructure ne doit être engagé au nom d'une personne sans accord explicite. Les dépenses récurrentes et ponctuelles nécessaires à une exploitation institutionnelle relèvent d'un budget validé et financé par la JEC.
+
+Le prototype doit privilégier un modèle open-weight exécuté localement, lorsque le matériel disponible le permet. Les services d'API externes restent des options, activées uniquement après validation du fournisseur, des conditions de confidentialité, des limites d'usage et du budget.
+
+### 33.2 Architecture recommandée pour la démonstration sans dépense
+- Utiliser **Ollama en exécution locale** sur un ordinateur ou serveur déjà disponible et autorisé.
+- Commencer par un modèle compact, par exemple `qwen3:4b`, puis comparer avec `gemma3:4b` et `llama3.2:3b` sur un jeu de questions JEC en français et en anglais.
+- Conserver Next.js/Vercel pour l'interface web et Supabase pour l'authentification et les données autorisées ; le moteur Ollama tourne séparément sur la machine hôte.
+- Pour une démonstration locale, l'interface et Ollama peuvent être exécutés sur le même réseau ou ordinateur. Pour une démonstration distante, prévoir un serveur institutionnel accessible par une API HTTPS sécurisée, authentifiée et filtrée. Ne jamais exposer directement le port Ollama sur Internet.
+- Vercel ne doit pas être considéré comme l'hôte du modèle local : le déploiement web appelle un service d'inférence externe à Vercel, hébergé sur une machine maîtrisée.
+- Si aucun serveur institutionnel n'est disponible, la démo peut fonctionner depuis l'ordinateur du démonstrateur, qui doit rester allumé et connecté. Cette solution n'est pas une disponibilité de production.
+
+Le logiciel Ollama et l'exécution locale des modèles sont annoncés à 0 € de licence/usage logiciel. Ce montant ne signifie pas que l'infrastructure est gratuite : électricité, connexion, matériel, maintenance, sauvegardes, sécurité et temps d'administration doivent être évalués.
+
+### 33.3 Modèles candidats et comparaison indicative
+Les tailles ci-dessous sont les tailles de téléchargement publiées dans la bibliothèque Ollama ; elles ne représentent pas la mémoire vive totale nécessaire à l'exécution. Les besoins réels dépendent de la quantification, du contexte, du nombre d'utilisateurs simultanés et du matériel.
+
+| Solution | Modalité | Coût logiciel/API indicatif | Intérêt pour JEC IA | Limites et précautions |
+|---|---|---:|---|---|
+| Ollama + Qwen3 4B | Local, poids ouverts, licence Apache 2.0 indiquée pour cette variante | 0 € par requête ; modèle env. 2,5 Go à télécharger | Premier candidat pour le dialogue, les explications, la reformulation et le RAG documentaire | Qualité à tester sur les questions historiques et théologiques ; performances dépendantes du matériel |
+| Ollama + Gemma 3 4B | Local, poids ouverts sous conditions de licence Gemma | 0 € par requête ; env. 3,4 Go | Modèle compact, multilingue et multimodal ; utile pour comparer les réponses FR/EN | Vérifier les conditions de licence Google avant redistribution ou usage institutionnel |
+| Ollama + Llama 3.2 3B | Local, poids ouverts sous licence communautaire Meta | 0 € par requête ; env. 2,0 Go | Petit modèle de dialogue multilingue, résumé et recherche assistée | Langues officiellement prises en charge limitées ; vérifier la qualité réelle en français |
+| Gemini API — modèles disposant d'un niveau gratuit | API hébergée | 0 € dans les quotas gratuits applicables ; tarifs payants selon modèle au-delà | Solution de secours sans héberger de modèle ; mise en œuvre rapide | Quotas et modèles éligibles susceptibles de changer ; conditions du niveau gratuit et traitement des données à examiner ; contenu du niveau gratuit susceptible d'être utilisé pour améliorer les produits Google |
+| Hugging Face Inference Providers | API hébergée, plusieurs fournisseurs et modèles | Crédit mensuel gratuit annoncé de 0,10 $US pour un compte Free, sous réserve de changement ; puis paiement à l'usage | Expérimentation comparative de plusieurs modèles sans gérer de GPU | Crédit symbolique, non adapté à une utilisation durable ; facturation et conditions du fournisseur effectif à vérifier |
+| Mistral API — Mistral Small 4 | API hébergée | Tarif affiché : 0,15 $US / million de tokens entrants et 0,60 $US / million de tokens sortants | Option européenne à évaluer pour la production si la JEC vote un budget | Payant à l'usage ; le plan gratuit Mistral Le Chat/Studio ne doit pas être confondu avec une gratuité illimitée de l'API |
+
+Les tarifs et disponibilités sont indicatifs et datés de la rédaction de cette section. Ils doivent être revérifiés sur les pages officielles avant tout engagement. Un quota gratuit n'est ni une garantie de disponibilité ni un budget de production.
+
+### 33.4 Évaluation fonctionnelle avant sélection
+Chaque candidat doit être testé avec le même corpus de référence et les mêmes questions :
+- exactitude des dates, noms, événements et distinctions entre JEC France et JECI/IYCS ;
+- réponses exclusivement fondées sur les documents et sources autorisés, avec références consultables ;
+- capacité à dire « je ne sais pas » lorsque le corpus ne contient pas l'information ;
+- qualité du français et de l'anglais ;
+- qualité des résumés, comptes rendus et reformulations ;
+- temps de réponse sur le matériel cible ;
+- stabilité sous plusieurs requêtes et comportement en cas d'indisponibilité ;
+- absence d'invention de sources, de citations, de décisions ou de faits historiques.
+
+Le choix final doit reposer sur un test comparatif documenté, pas uniquement sur les benchmarks généraux du fournisseur.
+
+### 33.5 Architecture documentaire — RAG
+JEC IA ne doit pas répondre comme une source institutionnelle autonome. Le système doit rechercher d'abord dans un corpus documentaire validé (RAG), puis générer une réponse à partir des extraits récupérés :
+1. inventorier les documents publics ou explicitement autorisés ;
+2. extraire et segmenter les textes en conservant titre, date, provenance, langue, droits et niveau de confidentialité ;
+3. créer des embeddings avec un modèle local compatible, par exemple Nomic Embed Text via Ollama, ou un modèle équivalent évalué ;
+4. rechercher les passages pertinents dans une base vectorielle ;
+5. transmettre au modèle uniquement les extraits autorisés et la question ;
+6. retourner les références utilisées et signaler les lacunes documentaires ;
+7. journaliser les événements techniques nécessaires sans conserver inutilement les conversations.
+
+Les documents internes, procès-verbaux, données personnelles, dossiers de membres et contenus confidentiels sont exclus par défaut. Leur éventuelle inclusion exige une décision de la JEC, une base légale, une politique d'accès, une information des personnes concernées et une évaluation du fournisseur et de l'hébergement.
+
+### 33.6 Sécurité et exploitation
+- L'API d'inférence doit être placée derrière un backend serveur ; aucune clé, adresse privée ou secret ne doit être exposé dans le navigateur.
+- Authentifier les appels, limiter le débit, appliquer des quotas par compte et prévenir les abus.
+- Chiffrer les échanges en transit ; limiter les journaux et définir une durée de conservation.
+- Séparer les corpus publics, membres et confidentiels par droits d'accès, y compris au stade de la recherche vectorielle.
+- Ne pas envoyer de données sensibles vers un service externe sans validation institutionnelle et contractuelle.
+- Prévoir supervision, mises à jour, sauvegardes, procédure d'arrêt et solution de repli lorsque le modèle local est indisponible.
+- Le modèle ne valide jamais une décision, un compte rendu officiel, une position politique, une interprétation statutaire ou un document institutionnel : une personne habilitée reste responsable de la validation.
+
+### 33.7 Scénarios de financement
+| Scénario | Dépense IA récurrente | Dépenses à prévoir | Usage recommandé |
+|---|---:|---|---|
+| Démonstration locale sur matériel existant | 0 € de licence et d'API | Électricité, connexion et temps de préparation ; coût marginal à mesurer | Prototype étudiant et démonstration technique |
+| Pilote hébergé sur serveur déjà détenu par la JEC | 0 € de licence/API avec modèle local | Électricité, maintenance, sauvegardes, sécurité et administration | Pilote limité à un groupe d'utilisateurs |
+| Serveur dédié ou hébergement GPU loué | Selon devis du fournisseur | Location mensuelle, stockage, trafic, sauvegarde, supervision et maintenance | Pilote national ou service accessible en continu |
+| API externe avec quota gratuit | 0 € tant que le quota gratuit suffit | Risque de dépassement, limites de débit et conditions de traitement des données | Essai fonctionnel non critique |
+| API externe payante | Variable selon tokens, modèle et volume | Budget mensuel plafonné, suivi de consommation et taxes éventuelles | Production après décision et financement institutionnels |
+
+Aucun montant de location de serveur n'est fixé ici : il dépend des spécifications matérielles, du niveau de disponibilité, du nombre d'utilisateurs simultanés et des offres réellement disponibles au moment de l'achat. Des devis comparables devront être annexés au budget.
+
+### 33.8 Règle de décision et responsabilité financière
+- **Phase actuelle :** démonstration sans dépense personnelle, avec Ollama et un modèle local sur matériel existant.
+- **Phase pilote :** uniquement après identification d'un hébergement contrôlé et validation par les responsables JEC.
+- **Phase production :** choix du modèle, du fournisseur et du budget par les instances compétentes de la JEC, avec plafond mensuel, responsable budgétaire, suivi des coûts et procédure de résiliation.
+- Toute dépense est soumise à une validation préalable ; aucun porteur bénévole ou étudiant n'a l'obligation d'avancer des fonds personnels.
+- Le dossier de financement doit distinguer coûts initiaux, coûts récurrents, coûts variables à l'usage, maintenance, sécurité, sauvegardes et ressources humaines.
+
+### 33.9 Références fournisseurs à maintenir à jour
+- Ollama — modèles et bibliothèque : https://ollama.com/library
+- Ollama — tarification : https://ollama.com/pricing
+- Ollama — compatibilité API : https://docs.ollama.com/api/openai-compatibility
+- Google Gemini API — tarification : https://ai.google.dev/gemini-api/docs/pricing
+- Hugging Face — tarification Inference Providers : https://huggingface.co/docs/inference-providers/pricing
+- Mistral — tarification API : https://mistral.ai/pricing/api/
