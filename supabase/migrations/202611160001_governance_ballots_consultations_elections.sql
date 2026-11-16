@@ -251,10 +251,15 @@ begin
     on conflict do nothing;
   else
     insert into public.jec_governance_eligible_voters(ballot_id,user_id)
-    select new_ballot_id,m.user_id from public.jec_memberships m
-    where m.membership_status='verified'
-    union
-    select new_ballot_id,a.user_id from private.jec_admins a
+    select eligible.ballot_id,eligible.user_id
+    from (
+      select new_ballot_id as ballot_id,m.user_id
+      from public.jec_memberships m
+      where m.membership_status='verified'
+      union
+      select new_ballot_id as ballot_id,a.user_id
+      from private.jec_admins a
+    ) eligible
     on conflict do nothing;
   end if;
 
