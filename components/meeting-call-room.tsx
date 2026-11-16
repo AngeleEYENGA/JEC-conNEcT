@@ -897,7 +897,7 @@ export default function MeetingCallRoom({
       }
       if (!active) return;
 
-      const roster = (rows ?? []).map((row: { user_id: string; joined_at: string }) => ({
+      const roster: CallRosterItem[] = (rows ?? []).map((row: { user_id: string; joined_at: string }) => ({
         userId: row.user_id,
         displayName: row.user_id === userId
           ? displayName
