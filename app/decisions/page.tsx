@@ -133,10 +133,9 @@ export default function DecisionsPage() {
     for (const [id, value] of resultPairs) if (value) nextResults[id] = value as BallotResult;
     setResults(nextResults);
 
-    const candidateUserIds = [...new Set([
-      ...(optionRows ?? []).map((option: any) => option.candidate_user_id).filter(Boolean),
-      ...workspaceRows.map(workspace => workspace.id).filter(Boolean)
-    ])];
+    const candidateUserIds = [...new Set(
+      (optionRows ?? []).map((option: any) => option.candidate_user_id).filter(Boolean)
+    )];
     if (candidateUserIds.length) {
       const { data: profiles } = await supabase.from("jec_profiles")
         .select("user_id,display_name,first_name,last_name")
@@ -146,15 +145,15 @@ export default function DecisionsPage() {
         nextNames[profile.user_id] = profile.display_name ||
           [profile.first_name, profile.last_name].filter(Boolean).join(" ") || (en ? "JEC member" : "Membre JEC");
       }
-      setNames(nextNames);
+      setNames(current => ({ ...current, ...nextNames }));
     }
 
     const meetingFromUrl = new URLSearchParams(window.location.search).get("meeting") || "";
     setSelectedMeeting(meetingFromUrl);
-    const workspaceFromUrl = meetingFromUrl
-      ? ballotList.find(ballot => ballot.meeting_id === meetingFromUrl)?.workspace_id ||
-        workspaceRows[0]?.id || ""
-      : workspaceRows[0]?.id || "";
+    const workspaceFromUrl = new URLSearchParams(window.location.search).get("workspace") ||
+      (meetingFromUrl
+        ? ballotList.find(ballot => ballot.meeting_id === meetingFromUrl)?.workspace_id || ""
+        : "") || workspaceRows[0]?.id || "";
     setSelectedWorkspace(current => current || workspaceFromUrl);
     setLoading(false);
   }
@@ -243,7 +242,7 @@ export default function DecisionsPage() {
       p_title: title.trim(),
       p_description: description.trim() || null,
       p_voting_mode: ballotType === "election" || ballotType === "decision" ? "single" : votingMode,
-      p_is_anonymous: anonymous,
+      p_is_anonymous: true,
       p_eligibility_scope: eligibility,
       p_results_visibility: resultsVisibility,
       p_quorum_percent: Number(quorum) || 0,
@@ -434,7 +433,7 @@ export default function DecisionsPage() {
               </label>
             </div>
             <div className="decisions-checks">
-              <label><input type="checkbox" checked={anonymous} onChange={event => setAnonymous(event.target.checked)}/><span>{en ? "Secret ballot (individual choices hidden)" : "Scrutin secret (choix individuels masqués)"}</span></label>
+              <p>{en ? "Secret ballot: individual choices and voter identities are never displayed." : "Scrutin secret : les choix individuels et l'identité des votants ne sont jamais affichés."}</p>
             </div>
             <p className="collab-muted">{en
               ? "The electorate is frozen when the ballot is created. A member may submit only once. Closing a ballot makes its aggregate results final."
