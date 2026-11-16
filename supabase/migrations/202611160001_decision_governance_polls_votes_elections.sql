@@ -386,7 +386,7 @@ begin
   left join public.jec_decision_ballot_selections s on s.option_id=o.id
   left join public.jec_decision_ballots b on b.id=s.ballot_id and b.poll_id=target_poll_id
   where o.poll_id=target_poll_id
-  group by o.id,o.label,o.detail,o.sort_order
+  group by o.id,o.label,o.detail,o.sort_order,o.created_at
   order by o.sort_order,o.created_at;
 end;
 $$;
