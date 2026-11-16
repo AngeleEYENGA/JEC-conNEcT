@@ -1454,3 +1454,9 @@
  .call-video-grid{grid-template-columns:repeat(auto-fit,minmax(min(100%,150px),1fr))}
  .call-video-grid>.call-video-tile,.call-video-grid>.call-peer-placeholder{min-height:145px}
 }
+
+.decision-candidate-picker{display:flex;flex-direction:column;gap:8px}
+.decision-candidate-picker>strong{font-size:11px;color:#625b70}
+.decision-candidate-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:7px}
+.decision-candidate{display:flex;align-items:center;gap:9px;padding:9px 11px;border:1px solid #e9e4ef;border-radius:9px;background:#fff;color:#494256;font-size:11px;cursor:pointer}
+.decision-candidate input{width:15px;height:15px;flex:none;accent-color:#663bb5}
