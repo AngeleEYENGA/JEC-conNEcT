@@ -469,6 +469,10 @@ begin
     'status',case when b.status='open' and b.closes_at<=now() then 'closed' else b.status end,
     'eligible_count',eligible_count,
     'voter_count',case when result_visible then voter_count else null end,
+    'is_eligible',exists (
+      select 1 from public.jec_governance_eligible_voters e
+      where e.ballot_id=target_ballot_id and e.user_id=(select auth.uid())
+    ),
     'has_voted',exists (
       select 1 from public.jec_governance_vote_submissions s
       where s.ballot_id=target_ballot_id and s.voter_id=(select auth.uid())
