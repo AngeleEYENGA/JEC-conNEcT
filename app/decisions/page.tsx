@@ -356,7 +356,7 @@ export default function DecisionsPage() {
                   <div className="decision-candidate-picker decision-wide"><strong>{t("Candidats (au moins deux)", "Candidates (at least two)")}</strong>
                     <p className="decision-muted">{t("Sélectionne les membres actifs de cet espace. Le système vérifie leur statut de membre vérifié avant de créer l'élection.", "Select active members of this workspace. The system verifies their membership status before creating the election.")}</p>
                     <div className="decision-candidate-list">{availableCandidates.map(candidate => <label className="decision-candidate" key={candidate.user_id}>
-                      <input type="checkbox" checked={candidateIds.includes(candidate.user_id)} onChange={e => setCandidateIds(current => e.target.checked ? [...current, candidate.user_id] : current.filter(id => id !== candidate.user_id)} />
+                      <input type="checkbox" checked={candidateIds.includes(candidate.user_id)} onChange={e => setCandidateIds(current => e.target.checked ? [...current, candidate.user_id] : current.filter(id => id !== candidate.user_id))} />
                       <span>{candidate.name}</span>
                     </label>)}</div>
                   </div>
