@@ -49,7 +49,7 @@ type LiveTranscriptSegment = {
   sessionId: string;
 };
 
-function VideoTile({ stream, label, muted = false }: { stream: MediaStream; label: string; muted?: boolean }) {
+function VideoTile({ stream, label, muted = false, fit = "cover" }: { stream: MediaStream; label: string; muted?: boolean; fit?: "cover" | "contain" }) {
   const ref = useRef<HTMLVideoElement>(null);
   const [playBlocked, setPlayBlocked] = useState(false);
 
@@ -73,7 +73,7 @@ function VideoTile({ stream, label, muted = false }: { stream: MediaStream; labe
 
   return (
     <div className="call-video-tile">
-      <video ref={ref} autoPlay playsInline muted={muted} onLoadedMetadata={() => void tryPlay()} />
+      <video ref={ref} autoPlay playsInline muted={muted} style={{ objectFit: fit }} onLoadedMetadata={() => void tryPlay()} />
       {!muted && playBlocked && (
         <button className="call-play-audio" onClick={() => void tryPlay()}>Activer le son</button>
       )}
@@ -113,6 +113,7 @@ export default function MeetingCallRoom({
   const [status, setStatus] = useState("Préparation de la salle");
   const [error, setError] = useState("");
   const [remoteStreams, setRemoteStreams] = useState<Record<string, MediaStream>>({});
+  const [remoteScreenStreams, setRemoteScreenStreams] = useState<Record<string, MediaStream>>({});
   const [remoteNames, setRemoteNames] = useState<Record<string, string>>({});
   const [remoteStates, setRemoteStates] = useState<Record<string, string>>({});
   const localStreamRef = useRef<MediaStream | null>(null);
@@ -121,6 +122,7 @@ export default function MeetingCallRoom({
   const peersRef = useRef<Map<string, RTCPeerConnection>>(new Map());
   const pendingCandidatesRef = useRef<Map<string, RTCIceCandidateInit[]>>(new Map());
   const remoteStreamRefs = useRef<Map<string, MediaStream>>(new Map());
+  const remoteScreenStreamRefs = useRef<Map<string, MediaStream>>(new Map());
   const iceServersRef = useRef<RTCIceServer[]>([
     { urls: "stun:stun.l.google.com:19302" },
     { urls: "stun:stun.cloudflare.com:3478" }
@@ -150,6 +152,7 @@ export default function MeetingCallRoom({
   const closePeer = useCallback((peerId: string) => {
     const pc = peersRef.current.get(peerId);
     remoteStreamRefs.current.delete(peerId);
+    remoteScreenStreamRefs.current.delete(peerId);
     if (pc) {
       const managedPc = pc as ManagedPeerConnection;
       if (managedPc.restartTimer !== null) window.clearTimeout(managedPc.restartTimer);
@@ -159,6 +162,11 @@ export default function MeetingCallRoom({
       peersRef.current.delete(peerId);
     }
     setRemoteStreams(current => {
+      const next = { ...current };
+      delete next[peerId];
+      return next;
+    });
+    setRemoteScreenStreams(current => {
       const next = { ...current };
       delete next[peerId];
       return next;
@@ -185,18 +193,23 @@ export default function MeetingCallRoom({
     });
     const cameraStream = localStreamRef.current;
     const audioTrack = cameraStream?.getAudioTracks()[0] ?? null;
-    const activeVideoStream = screenStreamRef.current ?? cameraStream;
-    const activeVideoTrack = activeVideoStream?.getVideoTracks()[0] ?? null;
+    const cameraTrack = cameraStream?.getVideoTracks()[0] ?? null;
+    const screenStream = screenStreamRef.current;
+    const screenTrack = screenStream?.getVideoTracks()[0] ?? null;
 
-    // Reserve the same two media sections, in the same order, on every peer.
-    // This prevents m-line reordering when a participant joins without camera.
+    // Keep stable media sections on every peer: audio, camera, then screen.
+    // Sharing a screen must never replace the participant's camera track.
     pc.addTransceiver(audioTrack ?? "audio", {
       direction: "sendrecv",
       streams: audioTrack && cameraStream ? [cameraStream] : []
     });
-    pc.addTransceiver(activeVideoTrack ?? "video", {
+    pc.addTransceiver(cameraTrack ?? "video", {
       direction: "sendrecv",
-      streams: activeVideoTrack && activeVideoStream ? [activeVideoStream] : []
+      streams: cameraTrack && cameraStream ? [cameraStream] : []
+    });
+    pc.addTransceiver(screenTrack ?? "video", {
+      direction: "sendrecv",
+      streams: screenTrack && screenStream ? [screenStream] : []
     });
 
     const managedPc = pc as ManagedPeerConnection;
@@ -217,33 +230,51 @@ export default function MeetingCallRoom({
       }
     };
     pc.ontrack = event => {
-      // Keep a single stream for the peer. Transceiver tracks can be
-      // streamless, so audio and video must be merged explicitly.
-      let remoteStream = remoteStreamRefs.current.get(peerId);
+      // The third reserved transceiver carries the shared screen. Keep it
+      // separate so the camera gallery remains visible during screen sharing.
+      const isScreenTrack = event.track.kind === "video" && pc.getTransceivers()[2] === event.transceiver;
+      const streamRefs = isScreenTrack ? remoteScreenStreamRefs.current : remoteStreamRefs.current;
+      let remoteStream = streamRefs.get(peerId);
       if (!remoteStream) {
-        remoteStream = new MediaStream(event.streams[0]?.getTracks() ?? []);
-        remoteStreamRefs.current.set(peerId, remoteStream);
+        remoteStream = new MediaStream();
+        streamRefs.set(peerId, remoteStream);
       }
-      const hasTrack = remoteStream.getTracks().some(track => track.id === event.track.id);
-      if (!hasTrack) remoteStream.addTrack(event.track);
+      if (!remoteStream.getTracks().some(track => track.id === event.track.id)) {
+        remoteStream.addTrack(event.track);
+      }
 
-      event.track.onended = () => {
-        const currentStream = remoteStreamRefs.current.get(peerId);
-        if (!currentStream) return;
-        currentStream.removeTrack(event.track);
-        if (currentStream.getTracks().length === 0) {
-          remoteStreamRefs.current.delete(peerId);
-          setRemoteStreams(current => {
-            const next = { ...current };
-            delete next[peerId];
-            return next;
-          });
-        } else {
-          setRemoteStreams(current => ({ ...current, [peerId]: currentStream }));
-        }
-      };
-
-      setRemoteStreams(current => ({ ...current, [peerId]: remoteStream! }));
+      if (isScreenTrack) {
+        const publishScreen = () => setRemoteScreenStreams(current => ({ ...current, [peerId]: remoteStream! }));
+        const hideScreen = () => setRemoteScreenStreams(current => {
+          const next = { ...current };
+          delete next[peerId];
+          return next;
+        });
+        event.track.onmute = hideScreen;
+        event.track.onunmute = publishScreen;
+        event.track.onended = () => {
+          remoteScreenStreamRefs.current.delete(peerId);
+          hideScreen();
+        };
+        publishScreen();
+      } else {
+        event.track.onended = () => {
+          const currentStream = remoteStreamRefs.current.get(peerId);
+          if (!currentStream) return;
+          currentStream.removeTrack(event.track);
+          if (currentStream.getTracks().length === 0) {
+            remoteStreamRefs.current.delete(peerId);
+            setRemoteStreams(current => {
+              const next = { ...current };
+              delete next[peerId];
+              return next;
+            });
+          } else {
+            setRemoteStreams(current => ({ ...current, [peerId]: currentStream }));
+          }
+        };
+        setRemoteStreams(current => ({ ...current, [peerId]: remoteStream! }));
+      }
       setRemoteNames(current => ({ ...current, [peerId]: peerName }));
     };
     const scheduleIceRecovery = () => {
@@ -559,13 +590,10 @@ export default function MeetingCallRoom({
   async function stopScreenShare() {
     const screenStream = screenStreamRef.current;
     if (!screenStream) return;
-    const cameraTrack = localStreamRef.current?.getVideoTracks()[0] ?? null;
     for (const pc of peersRef.current.values()) {
-      const videoTransceiver = pc.getTransceivers().find(transceiver =>
-        transceiver.sender.track?.kind === "video" || transceiver.receiver.track.kind === "video"
-      );
-      if (videoTransceiver) {
-        try { await videoTransceiver.sender.replaceTrack(cameraTrack); } catch { /* Peer may already be closing. */ }
+      const screenTransceiver = pc.getTransceivers()[2];
+      if (screenTransceiver) {
+        try { await screenTransceiver.sender.replaceTrack(null); } catch { /* Peer may already be closing. */ }
       }
     }
     screenStream.getTracks().forEach(track => track.stop());
@@ -585,11 +613,9 @@ export default function MeetingCallRoom({
       if (!screenTrack) throw new Error("Aucune source d'écran n'a été sélectionnée.");
       screenStreamRef.current = stream;
       for (const pc of peersRef.current.values()) {
-        let videoTransceiver = pc.getTransceivers().find(transceiver =>
-          transceiver.sender.track?.kind === "video" || transceiver.receiver.track.kind === "video"
-        );
-        if (!videoTransceiver) videoTransceiver = pc.addTransceiver("video", { direction: "sendrecv" });
-        await videoTransceiver.sender.replaceTrack(screenTrack);
+        const screenTransceiver = pc.getTransceivers()[2];
+        if (!screenTransceiver) throw new Error("Le canal de partage d’écran n’est pas disponible pour un participant. Rejoins à nouveau la réunion.");
+        await screenTransceiver.sender.replaceTrack(screenTrack);
       }
       screenTrack.onended = () => { void stopScreenShare(); };
       setSharingScreen(true);
@@ -625,12 +651,14 @@ export default function MeetingCallRoom({
     peersRef.current.clear();
     pendingCandidatesRef.current.clear();
     remoteStreamRefs.current.clear();
+    remoteScreenStreamRefs.current.clear();
     screenStreamRef.current?.getTracks().forEach(track => track.stop());
     screenStreamRef.current = null;
     setSharingScreen(false);
     localStreamRef.current?.getTracks().forEach(track => track.stop());
     localStreamRef.current = null;
     setRemoteStreams({});
+    setRemoteScreenStreams({});
     setRemoteNames({});
     setRemoteStates({});
     setMicrophoneReady(false);
@@ -832,14 +860,26 @@ export default function MeetingCallRoom({
       if (channelRef.current && supabase) void supabase.removeChannel(channelRef.current);
       peersRef.current.forEach(pc => pc.close());
       remoteStreamRefs.current.clear();
+      remoteScreenStreamRefs.current.clear();
       screenStreamRef.current?.getTracks().forEach(track => track.stop());
       localStreamRef.current?.getTracks().forEach(track => track.stop());
     };
   }, []);
 
-  const localStream = screenStreamRef.current ?? localStreamRef.current;
-  const remotePeerIds = [...new Set([...Object.keys(remoteNames), ...Object.keys(remoteStreams)])]
-    .filter(peerId => peerId !== userId);
+  const localStream = localStreamRef.current;
+  const remotePeerIds = [...new Set([
+    ...Object.keys(remoteNames),
+    ...Object.keys(remoteStreams),
+    ...Object.keys(remoteScreenStreams)
+  ])].filter(peerId => peerId !== userId);
+  const screenShareItems = [
+    ...(screenStreamRef.current ? [{ id: "local-screen", stream: screenStreamRef.current, label: "Ton écran partagé" }] : []),
+    ...Object.entries(remoteScreenStreams).map(([peerId, stream]) => ({
+      id: peerId,
+      stream,
+      label: (remoteNames[peerId] || "Participant") + " · écran partagé"
+    }))
+  ];
 
   return (
     <section className="meeting-call-room">
@@ -891,17 +931,33 @@ export default function MeetingCallRoom({
         </div>
       ) : (
         <>
-          <div className="call-video-grid">
-            {localStream && <VideoTile stream={localStream} label="Toi" muted />}
-            {remotePeerIds.map(peerId => remoteStreams[peerId]
-              ? <VideoTile key={peerId} stream={remoteStreams[peerId]} label={remoteNames[peerId] || "Participant"} />
-              : <div className="call-waiting-tile call-peer-placeholder" key={peerId}>
-                  <span>◉</span>
-                  <strong>{remoteNames[peerId] || "Participant"}</strong>
-                  <small>{remoteStates[peerId] || "Connexion média en cours…"}</small>
+          <div className="call-live-layout">
+            {screenShareItems.length > 0 && (
+              <section className="call-screen-share-stage">
+                <div className="call-gallery-heading"><strong>Partage d’écran</strong><span>{screenShareItems.length} partage(s) actif(s)</span></div>
+                <div className="call-screen-share-grid">
+                  {screenShareItems.map(item => <VideoTile key={item.id} stream={item.stream} label={item.label} muted fit="contain" />)}
                 </div>
+              </section>
             )}
-            {!remotePeerIds.length && <div className="call-waiting-tile"><span>◉</span><strong>En attente des autres participants…</strong></div>}
+            <div className="call-gallery-heading"><strong>Interlocuteurs</strong><span>{remotePeerIds.length + 1} participant(s)</span></div>
+            <div className="call-video-grid">
+              {localStream && (!cameraOff && localStream.getVideoTracks().some(track => track.readyState === "live")
+                ? <VideoTile stream={localStream} label="Toi" muted />
+                : <div className="call-waiting-tile call-peer-placeholder"><span>◉</span><strong>Toi</strong><small>Caméra coupée</small></div>)}
+              {remotePeerIds.map(peerId => {
+                const stream = remoteStreams[peerId];
+                const hasCamera = Boolean(stream?.getVideoTracks().some(track => track.readyState === "live"));
+                return hasCamera
+                  ? <VideoTile key={peerId} stream={stream!} label={remoteNames[peerId] || "Participant"} />
+                  : <div className="call-waiting-tile call-peer-placeholder" key={peerId}>
+                      <span>◉</span>
+                      <strong>{remoteNames[peerId] || "Participant"}</strong>
+                      <small>{stream ? "Caméra désactivée · audio actif" : (remoteStates[peerId] || "Connexion média en cours…")}</small>
+                    </div>;
+              })}
+              {!remotePeerIds.length && <div className="call-waiting-tile"><span>◉</span><strong>En attente des autres participants…</strong></div>}
+            </div>
           </div>
           <div className="call-controls">
             <button className={muted ? "call-control active" : "call-control"} onClick={() => {
