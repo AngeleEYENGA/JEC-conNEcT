@@ -309,7 +309,6 @@ export default function DecisionsPage() {
       : t("Le seuil requis n'est pas atteint. Une nouvelle délibération peut être nécessaire.", "The required threshold has not been reached. Further deliberation may be needed.");
   }
 
-  const candidateName = (id: string | null) => id ? candidates.find(c => c.user_id === id)?.name || (en ? "Candidate" : "Candidat") : "";
   const managerWorkspace = managerWorkspaces.some(space => space.id === workspaceId);
 
   return (
@@ -349,8 +348,8 @@ export default function DecisionsPage() {
                   {availableMeetings.map(meeting => <option key={meeting.id} value={meeting.id}>{meeting.title} · {dateLabel(meeting.starts_at, en)}</option>)}
                 </select></label>
                 <label>{t("Électeurs autorisés", "Eligible voters")}<select value={eligibilityScope} onChange={e => setEligibilityScope(e.target.value as typeof eligibilityScope)}>
-                  <option value="workspace_members">{t("Membres actifs de l'espace", "Active workspace members")}</option>
-                  <option value="meeting_participants">{t("Participants ayant accepté / assisté à la réunion", "Meeting participants who accepted / attended")}</option>
+                  <option value="workspace_members">{t("Membres vérifiés actifs de l'espace", "Active verified workspace members")}</option>
+                  <option value="meeting_participants">{t("Participants vérifiés ayant accepté / assisté", "Verified meeting participants who accepted / attended")}</option>
                   <option value="verified_members">{t("Tous les membres JEC vérifiés", "All verified JEC members")}</option>
                 </select></label>
                 {ballotType === "election" ? (
@@ -426,7 +425,7 @@ export default function DecisionsPage() {
                   </div>}
                   {open && result?.is_eligible && result.has_voted && <p className="decision-voted">✓ {t("Ta participation est enregistrée. Le bulletin ne peut pas être modifié.", "Your participation is recorded. Your ballot cannot be changed.")}</p>}
                   {open && result && !result.is_eligible && <p className="decision-muted">{t("Ce scrutin est réservé aux électeurs éligibles selon le périmètre indiqué.", "This ballot is restricted to voters eligible under the selected scope.")}</p>}
-                  {effectiveStatus === "draft" && new Date(ballot.opens_at).getTime() > Date.now() && <p className="decision-muted">{t("Le scrutin s'ouvrira automatiquement à la date prévue.", "The ballot will open automatically at the scheduled time.")}</p>}
+                  {effectiveStatus === "draft" && <p className="decision-muted">{new Date(ballot.opens_at).getTime() > Date.now() ? t("Scrutin programmé : un responsable l'ouvrira à la date prévue.", "Scheduled ballot: a manager will open it at the scheduled time.") : t("La date d'ouverture est atteinte : un responsable doit ouvrir le scrutin.", "The opening time has arrived: a manager must open the ballot.")}</p>}
                   {expired && effectiveStatus === "open" && <p className="decision-muted">{t("Date de clôture atteinte : les votes ne sont plus acceptés.", "Closing time reached: votes are no longer accepted.")}</p>}
                   {result?.results_visible && <div className="decision-results">
                     <div className="decision-results-heading"><strong>{t("Résultats", "Results")}</strong><span>{voteCount}/{result.eligible_count} {t("votants", "voters")}{turnout !== null ? " · " + turnout + "%" : ""}</span></div>
