@@ -901,7 +901,7 @@ export default function MeetingCallRoom({
         userId: row.user_id,
         displayName: row.user_id === userId
           ? displayName
-          : profileMap[row.user_id] || remoteNames[row.user_id] || "Participant",
+          : profileMap[row.user_id] || "Participant",
         joinedAt: row.joined_at
       }));
       setCallRoster(roster);
