@@ -334,6 +334,7 @@ export default function MeetingDetailPage(){
    {error&&<p className="alert error">{error}</p>}{notice&&<p className="alert success">{notice}</p>}
    <div className="meeting-detail-actions">
     {canCall?<Link href={"/reunions/"+meetingId+"/appel"} className="primary-button">◉ {en?"Join audio / video call":"Rejoindre l'appel audio / vidéo"}</Link>:<span className="call-not-available">{en?"Accept the invitation to join the call.":"Accepte l'invitation pour rejoindre l'appel."}</span>}
+    <Link href={"/decisions?meeting="+meetingId+"&workspace="+meeting.workspace_id} className="secondary-outline-button">◉ {en?"Consultations & votes":"Consultations & votes"}</Link>
     {meeting.meeting_url&&<a className="secondary-outline-button" href={meeting.meeting_url} target="_blank" rel="noreferrer">{en?"External video link":"Lien externe"}</a>}
     {manager&&meeting.meeting_status==="scheduled"&&<button className="secondary-outline-button" onClick={()=>void updateMeetingStatus("completed")}>{en?"Mark completed":"Marquer comme terminée"}</button>}
     {manager&&meeting.meeting_status==="scheduled"&&<button className="danger-outline-button" onClick={()=>void updateMeetingStatus("cancelled")}>{en?"Cancel meeting":"Annuler la réunion"}</button>}
