@@ -65,7 +65,6 @@ export default function DecisionsPage() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [votingMode, setVotingMode] = useState<"single" | "multiple">("single");
-  const [anonymous, setAnonymous] = useState(true);
   const [eligibility, setEligibility] = useState("workspace_members");
   const [resultsVisibility, setResultsVisibility] = useState("after_close");
   const [quorum, setQuorum] = useState("0");
@@ -312,9 +311,13 @@ export default function DecisionsPage() {
     const expressed = result.options.filter(option => !/^(abstention|abstain)$/i.test(option.label.trim()))
       .reduce((total, option) => total + (option.votes ?? 0), 0);
     const yesVotes = yes.votes ?? 0;
+    const otherVotes = result.options
+      .filter(option => option.id !== yes.id && !/^(abstention|abstain)$/i.test(option.label.trim()))
+      .map(option => option.votes ?? 0);
     const passed = ballot.approval_rule === "two_thirds" ? expressed > 0 && yesVotes / expressed >= 2 / 3
       : ballot.approval_rule === "absolute_majority" ? yesVotes > result.eligible_count / 2
-      : yesVotes > expressed / 2;
+      : ballot.approval_rule === "plurality" ? yesVotes > Math.max(0, ...otherVotes)
+      : expressed > 0 && yesVotes > expressed / 2;
     return passed ? (en ? "Proposition approved by the configured threshold" : "Proposition adoptée selon le seuil défini")
       : (en ? "Approval threshold not reached" : "Seuil d'adoption non atteint");
   }
@@ -491,7 +494,7 @@ export default function DecisionsPage() {
               {result?.is_eligible && !result.has_voted && effectiveStatus === "open" && <button className="primary-button" disabled={busy || voteSelection.length === 0} onClick={() => void castVote(ballot)}>{en ? "Submit my vote" : "Déposer mon vote"}</button>}
               {result && !result.is_eligible && effectiveStatus === "open" && <p className="governance-hidden-results">{en ? "You are not part of this ballot's electorate." : "Tu ne fais pas partie de l'électorat de ce scrutin."}</p>}
               {manager && ballot.status === "draft" && <button className="secondary-outline-button" disabled={busy} onClick={() => void changeStatus(ballot.id, "open")}>{en ? "Open ballot" : "Ouvrir le scrutin"}</button>}
-              {manager && ballot.status === "open" && <button className="danger-outline-button" disabled={busy} onClick={() => void changeStatus(ballot.id, "close")}>{en ? "Close ballot" : "Clôturer le scrutin"}</button>}
+              {manager && ballot.status === "open" && effectiveStatus === "open" && <button className="danger-outline-button" disabled={busy} onClick={() => void changeStatus(ballot.id, "close")}>{en ? "Close ballot" : "Clôturer le scrutin"}</button>}
             </article>;
           }) : <div className="collab-empty"><span>◉</span><h3>{en ? "No ballot yet" : "Aucun scrutin pour le moment"}</h3><p>{en ? "Create a consultation, a decision vote or an internal election for this workspace." : "Crée une consultation, un vote décisionnel ou une élection interne pour cet espace."}</p></div>}
         </section>
