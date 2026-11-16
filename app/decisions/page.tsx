@@ -136,10 +136,10 @@ export default function DecisionsPage() {
       const { data: profiles, error: profileError } = await supabase.from("jec_profiles")
         .select("user_id,display_name,first_name,last_name").in("user_id", memberIds);
       if (profileError) setError(profileError.message);
-      const names = new Map((profiles || []).map((profile: { user_id: string; display_name: string | null; first_name: string | null; last_name: string | null }) => [
+      const names = new Map<string, string>((profiles || []).map((profile: { user_id: string; display_name: string | null; first_name: string | null; last_name: string | null }) => [
         profile.user_id,
         profile.display_name || [profile.first_name, profile.last_name].filter(Boolean).join(" ") || (en ? "JEC member" : "Membre JEC")
-      ]));
+      ] as [string, string]));
       candidateRows = memberRows.map(member => ({
         user_id: member.user_id,
         workspace_id: member.workspace_id,
