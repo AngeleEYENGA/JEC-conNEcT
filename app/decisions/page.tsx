@@ -55,6 +55,7 @@ export default function DecisionsPage() {
   const [decisionType, setDecisionType] = useState<"poll" | "vote" | "election">("poll");
   const [selectionMode, setSelectionMode] = useState<"single" | "multiple">("single");
   const [approvalRule, setApprovalRule] = useState("plurality");
+  const [resultsVisibility, setResultsVisibility] = useState<"after_close" | "immediate">("after_close");
   const [quorum, setQuorum] = useState("0");
   const [allowAbstention, setAllowAbstention] = useState(true);
   const [endsAt, setEndsAt] = useState(localDateTime());
@@ -154,7 +155,7 @@ export default function DecisionsPage() {
       target_description: description.trim() || null,
       target_decision_type: decisionType,
       target_selection_mode: decisionType === "election" ? "single" : selectionMode,
-      target_results_visibility: decisionType === "election" ? "after_close" : "after_close",
+      target_results_visibility: decisionType === "election" ? "after_close" : resultsVisibility,
       target_ends_at: new Date(endsAt).toISOString(),
       target_quorum_percent: Number(quorum),
       target_approval_rule: decisionType === "election" ? "plurality" : approvalRule,
@@ -163,7 +164,7 @@ export default function DecisionsPage() {
     });
     if (createError) setError(createError.message);
     else {
-      setTitle(""); setDescription(""); setOptionsText(""); setDecisionType("poll"); setSelectionMode("single");
+      setTitle(""); setDescription(""); setOptionsText(""); setDecisionType("poll"); setSelectionMode("single"); setResultsVisibility("after_close");
       setNotice(en ? "Decision published. Eligible workspace members can now participate." : "Décision publiée. Les membres éligibles de l’espace peuvent maintenant participer.");
       await load();
     }
@@ -238,6 +239,9 @@ export default function DecisionsPage() {
     if (poll.approval_rule === "simple_majority") accepted = pctOfVotes > 0.5;
     if (poll.approval_rule === "absolute_majority") accepted = pctOfEligible > 0.5;
     if (poll.approval_rule === "two_thirds") accepted = pctOfVotes >= 2 / 3;
+    if (poll.decision_type === "poll") {
+      return t("Tendance de la consultation (non contraignante) : ", "Consultation trend (non-binding): ") + winners[0].option_label;
+    }
     return accepted
       ? t("Résultat conforme à la règle de décision sélectionnée : ", "Result meets the selected decision rule: ") + winners[0].option_label
       : t("Le seuil de décision n’est pas atteint. Une nouvelle délibération peut être nécessaire.", "The decision threshold has not been met. Further deliberation may be needed.");
@@ -274,6 +278,7 @@ export default function DecisionsPage() {
                 <label className="decision-wide">{decisionType === "election" ? t("Candidats (un par ligne : Nom | présentation)", "Candidates (one per line: Name | statement)") : t("Choix proposés (un par ligne : Choix | précision)", "Options (one per line: Option | detail)")}<textarea rows={5} value={optionsText} onChange={e => setOptionsText(e.target.value)} required placeholder={t("Option A\nOption B\nAbstention possible via le bouton dédié", "Option A\nOption B\nAbstention is available at voting time")} /></label>
                 <label>{t("Mode de sélection", "Selection mode")}<select value={selectionMode} disabled={decisionType === "election"} onChange={e => setSelectionMode(e.target.value as "single" | "multiple")}><option value="single">{t("Un seul choix", "Single choice")}</option><option value="multiple">{t("Plusieurs choix possibles", "Multiple choices")}</option></select></label>
                 <label>{t("Règle de décision", "Decision rule")}<select value={approvalRule} disabled={decisionType === "election" || selectionMode === "multiple"} onChange={e => setApprovalRule(e.target.value)}><option value="plurality">{t("Pluralité des voix", "Most votes")}</option><option value="simple_majority">{t("Majorité simple", "Simple majority")}</option><option value="absolute_majority">{t("Majorité absolue", "Absolute majority")}</option><option value="two_thirds">{t("Deux tiers", "Two-thirds majority")}</option></select></label>
+                <label>{t("Affichage des résultats", "Results visibility")}<select value={decisionType === "election" ? "after_close" : resultsVisibility} disabled={decisionType === "election"} onChange={e => setResultsVisibility(e.target.value as "after_close" | "immediate")}><option value="after_close">{t("Après clôture", "After closing")}</option><option value="immediate">{t("En direct", "Live")}</option></select></label>
                 <label>{t("Quorum requis (%)", "Required quorum (%)")}<input type="number" min="0" max="100" step="1" value={quorum} onChange={e => setQuorum(e.target.value)} /></label>
                 <label>{t("Clôture du scrutin", "Voting closes")}<input type="datetime-local" value={endsAt} min={localDateTime(0)} onChange={e => setEndsAt(e.target.value)} required /></label>
                 <label className="decision-check"><input type="checkbox" checked={allowAbstention} onChange={e => setAllowAbstention(e.target.checked)} /><span>{t("Autoriser l’abstention", "Allow abstention")}</span></label>
