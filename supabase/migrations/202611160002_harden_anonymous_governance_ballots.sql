@@ -7,11 +7,11 @@ alter table public.jec_governance_vote_choices
   add column if not exists anonymous_vote_id uuid;
 
 alter table public.jec_governance_vote_choices
-  alter column id set not null,
-  alter column voter_id drop not null;
+  drop constraint if exists jec_governance_vote_choices_pkey;
 
 alter table public.jec_governance_vote_choices
-  drop constraint if exists jec_governance_vote_choices_pkey;
+  alter column id set not null,
+  alter column voter_id drop not null;
 
 alter table public.jec_governance_vote_choices
   add constraint jec_governance_vote_choices_pkey primary key (id);
