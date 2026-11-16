@@ -38,7 +38,7 @@ export default function MeetingDetailPage(){
  const params=useParams<{id:string}>(); const meetingId=params.id;
  const {lang}=useLanguage(); const en=lang==="en";
  const [loading,setLoading]=useState(true); const [meeting,setMeeting]=useState<Meeting|null>(null);
- const [userId,setUserId]=useState(""); const [manager,setManager]=useState(false);
+ const [userId,setUserId]=useState(""); const [manager,setManager]=useState(false); const [canManageGovernance,setCanManageGovernance]=useState(false);
  const [participants,setParticipants]=useState<Participant[]>([]);
  const [callAttendance,setCallAttendance]=useState<CallAttendance[]>([]);
  const [roster,setRoster]=useState<Roster[]>([]);
@@ -73,7 +73,7 @@ export default function MeetingDetailPage(){
    .eq("id",meetingId).maybeSingle();
   if(meetingError||!meetingRow){setError(en?"This meeting is unavailable.":"Cette réunion n'est pas accessible.");setMeeting(null);setLoading(false);return;}
   const mt=meetingRow as unknown as Meeting;setMeeting(mt);
-  const [memberResult,rosterResult,participantResult,agendaResult,decisionResult,minutesResult,transcriptResult,taskResult]=await Promise.all([
+  const [memberResult,rosterResult,participantResult,agendaResult,decisionResult,minutesResult,transcriptResult,taskResult,adminResult]=await Promise.all([
    supabase.from("jec_workspace_members").select("workspace_role,membership_status").eq("workspace_id",mt.workspace_id).eq("user_id",user.id).maybeSingle(),
    supabase.from("jec_workspace_members").select("user_id,workspace_role,membership_status").eq("workspace_id",mt.workspace_id).eq("membership_status","active"),
    supabase.from("jec_meeting_participants").select("user_id,attendance_status,responded_at,attended_at").eq("meeting_id",meetingId),
@@ -81,7 +81,8 @@ export default function MeetingDetailPage(){
    supabase.from("jec_meeting_decisions").select("id,title,detail,decision_status,created_at").eq("meeting_id",meetingId).order("created_at",{ascending:false}),
    supabase.from("jec_meeting_minutes").select("id,content,minutes_status,prepared_by,approved_by,approved_at").eq("meeting_id",meetingId).maybeSingle(),
    supabase.from("jec_meeting_transcripts").select("id,transcript_text,language,source_type,transcript_status,created_at").eq("meeting_id",meetingId).order("created_at",{ascending:false}),
-   supabase.from("jec_workspace_tasks").select("id,title,task_status,priority,assigned_to,due_at,created_by").eq("meeting_id",meetingId).order("created_at",{ascending:false})
+   supabase.from("jec_workspace_tasks").select("id,title,task_status,priority,assigned_to,due_at,created_by").eq("meeting_id",meetingId).order("created_at",{ascending:false}),
+   supabase.rpc("is_jec_admin")
   ]);
   const {data:callSessionRows,error:callSessionError}=await supabase.from("jec_meeting_call_sessions")
    .select("id,started_at,ended_at,status")
@@ -110,6 +111,7 @@ export default function MeetingDetailPage(){
   if(failures.length)setError(failures[0]!.message);
   const role=memberResult.data?.workspace_role??"member";
   setManager(mt.created_by===user.id||role==="owner"||role==="manager");
+  setCanManageGovernance(adminResult.data===true||role==="owner"||role==="manager");
   setRoster((rosterResult.data??[]) as Roster[]);
   setParticipants((participantResult.data??[]) as Participant[]);
   setAgendaItems((agendaResult.data??[]) as AgendaItem[]);
@@ -335,6 +337,7 @@ export default function MeetingDetailPage(){
    <div className="meeting-detail-actions">
     {canCall?<Link href={"/reunions/"+meetingId+"/appel"} className="primary-button">◉ {en?"Join audio / video call":"Rejoindre l'appel audio / vidéo"}</Link>:<span className="call-not-available">{en?"Accept the invitation to join the call.":"Accepte l'invitation pour rejoindre l'appel."}</span>}
     {meeting.meeting_url&&<a className="secondary-outline-button" href={meeting.meeting_url} target="_blank" rel="noreferrer">{en?"External video link":"Lien externe"}</a>}
+    {canManageGovernance&&<Link className="secondary-outline-button" href={"/decisions?workspaceId="+encodeURIComponent(meeting.workspace_id)+"&meetingId="+encodeURIComponent(meetingId)}>{en?"Organize a vote":"Organiser un vote"}</Link>}
     {manager&&meeting.meeting_status==="scheduled"&&<button className="secondary-outline-button" onClick={()=>void updateMeetingStatus("completed")}>{en?"Mark completed":"Marquer comme terminée"}</button>}
     {manager&&meeting.meeting_status==="scheduled"&&<button className="danger-outline-button" onClick={()=>void updateMeetingStatus("cancelled")}>{en?"Cancel meeting":"Annuler la réunion"}</button>}
    </div>
