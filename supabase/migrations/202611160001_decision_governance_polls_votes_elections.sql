@@ -172,7 +172,7 @@ begin
   if target_ends_at is null or target_ends_at <= now() then
     raise exception 'The closing date must be in the future' using errcode='22023';
   end if;
-  if jsonb_typeof(target_options) <> 'array'
+  if target_options is null or jsonb_typeof(target_options) is distinct from 'array'
      or jsonb_array_length(target_options) < 2
      or jsonb_array_length(target_options) > 20 then
     raise exception 'A decision must contain between 2 and 20 options or candidates' using errcode='22023';
@@ -262,7 +262,7 @@ begin
   end if;
 
   select count(distinct choice_id) into distinct_count
-  from unnest(chosen_ids) as choice_id;
+  from unnest(chosen_ids) as selected(choice_id);
   if distinct_count <> chosen_count then
     raise exception 'Duplicate options are not allowed' using errcode='22023';
   end if;
@@ -288,7 +288,7 @@ begin
   returning id into new_ballot_id;
 
   insert into public.jec_decision_ballot_selections(ballot_id,option_id)
-  select new_ballot_id,choice_id from unnest(chosen_ids) as choice_id;
+  select new_ballot_id,selected.choice_id from unnest(chosen_ids) as selected(choice_id);
 end;
 $$;
 revoke all on function public.jec_cast_decision_ballot(uuid,uuid[]) from public,anon;
