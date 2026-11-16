@@ -48,10 +48,35 @@ type LiveTranscriptSegment = {
   createdAt: string;
   sessionId: string;
 };
+type CallRosterItem = {
+  userId: string;
+  displayName: string;
+  joinedAt: string;
+};
 
-function VideoTile({ stream, label, muted = false }: { stream: MediaStream; label: string; muted?: boolean }) {
+function VideoTile({ stream, label, muted = false, noVideo = false }: { stream: MediaStream; label: string; muted?: boolean; noVideo?: boolean }) {
   const ref = useRef<HTMLVideoElement>(null);
   const [playBlocked, setPlayBlocked] = useState(false);
+  const videoTrackCount = stream.getVideoTracks().length;
+  const [hasVideo, setHasVideo] = useState(videoTrackCount > 0);
+
+  useEffect(() => {
+    const tracks = stream.getVideoTracks();
+    const refreshVideoState = () => setHasVideo(
+      tracks.some(track => track.readyState === "live" && track.enabled && !track.muted)
+    );
+    refreshVideoState();
+    tracks.forEach(track => {
+      track.addEventListener("mute", refreshVideoState);
+      track.addEventListener("unmute", refreshVideoState);
+      track.addEventListener("ended", refreshVideoState);
+    });
+    return () => tracks.forEach(track => {
+      track.removeEventListener("mute", refreshVideoState);
+      track.removeEventListener("unmute", refreshVideoState);
+      track.removeEventListener("ended", refreshVideoState);
+    });
+  }, [stream, videoTrackCount]);
 
   const tryPlay = useCallback(async () => {
     const video = ref.current;
@@ -74,6 +99,7 @@ function VideoTile({ stream, label, muted = false }: { stream: MediaStream; labe
   return (
     <div className="call-video-tile">
       <video ref={ref} autoPlay playsInline muted={muted} onLoadedMetadata={() => void tryPlay()} />
+      {(noVideo || !hasVideo) && <div className="call-no-video-overlay"><span>◉</span><strong>{label}</strong><small>Caméra désactivée</small></div>}
       {!muted && playBlocked && (
         <button className="call-play-audio" onClick={() => void tryPlay()}>Activer le son</button>
       )}
@@ -115,6 +141,7 @@ export default function MeetingCallRoom({
   const [remoteStreams, setRemoteStreams] = useState<Record<string, MediaStream>>({});
   const [remoteNames, setRemoteNames] = useState<Record<string, string>>({});
   const [remoteStates, setRemoteStates] = useState<Record<string, string>>({});
+  const [callRoster, setCallRoster] = useState<CallRosterItem[]>([]);
   const localStreamRef = useRef<MediaStream | null>(null);
   const screenStreamRef = useRef<MediaStream | null>(null);
   const channelRef = useRef<any>(null);
@@ -633,6 +660,7 @@ export default function MeetingCallRoom({
     setRemoteStreams({});
     setRemoteNames({});
     setRemoteStates({});
+    setCallRoster([]);
     setMicrophoneReady(false);
     setRelayAvailable(false);
     iceServersRef.current = [
@@ -837,9 +865,80 @@ export default function MeetingCallRoom({
     };
   }, []);
 
+  useEffect(() => {
+    const supabase = getSupabaseBrowserClient();
+    const activeSessionId = sessionId || sessionIdRef.current;
+    if (!joined || !activeSessionId || !supabase) {
+      if (!joined) setCallRoster([]);
+      return;
+    }
+    let active = true;
+
+    const refreshCallRoster = async () => {
+      const { data: rows, error: rosterError } = await supabase
+        .from("jec_meeting_call_participants")
+        .select("user_id,joined_at")
+        .eq("session_id", activeSessionId)
+        .is("left_at", null)
+        .order("joined_at", { ascending: true });
+      if (!active || rosterError) return;
+
+      const ids = (rows ?? []).map((row: { user_id: string }) => row.user_id);
+      const profileMap: Record<string, string> = {};
+      if (ids.length) {
+        const { data: profiles } = await supabase
+          .from("jec_profiles")
+          .select("user_id,display_name,first_name,last_name")
+          .in("user_id", ids);
+        for (const profile of profiles ?? []) {
+          profileMap[profile.user_id] = profile.display_name ||
+            [profile.first_name, profile.last_name].filter(Boolean).join(" ") || "Participant";
+        }
+      }
+      if (!active) return;
+
+      const roster: CallRosterItem[] = (rows ?? []).map((row: { user_id: string; joined_at: string }) => ({
+        userId: row.user_id,
+        displayName: row.user_id === userId
+          ? displayName
+          : profileMap[row.user_id] || "Participant",
+        joinedAt: row.joined_at
+      }));
+      setCallRoster(roster);
+
+      const unseenNames: Record<string, string> = {};
+      roster.forEach(person => {
+        if (person.userId !== userId) unseenNames[person.userId] = person.displayName;
+      });
+      setRemoteNames(current => ({ ...current, ...unseenNames }));
+      roster.forEach(person => {
+        if (person.userId === userId) return;
+        setRemoteStates(current => ({
+          ...current,
+          [person.userId]: current[person.userId] || "Synchronisation du média…"
+        }));
+        // The database roster is a recovery path if a Realtime presence event
+        // was missed by a browser that joined earlier.
+        if (!peersRef.current.has(person.userId)) {
+          void createOffer(person.userId, person.displayName);
+        }
+      });
+    };
+
+    void refreshCallRoster();
+    const interval = window.setInterval(() => void refreshCallRoster(), 3000);
+    return () => {
+      active = false;
+      window.clearInterval(interval);
+    };
+  }, [joined, sessionId, userId, displayName, createOffer]);
+
   const localStream = screenStreamRef.current ?? localStreamRef.current;
-  const remotePeerIds = [...new Set([...Object.keys(remoteNames), ...Object.keys(remoteStreams)])]
-    .filter(peerId => peerId !== userId);
+  const remotePeerIds = [...new Set([
+    ...callRoster.map(person => person.userId),
+    ...Object.keys(remoteNames),
+    ...Object.keys(remoteStreams)
+  ])].filter(peerId => peerId !== userId);
 
   return (
     <section className="meeting-call-room">
@@ -891,13 +990,17 @@ export default function MeetingCallRoom({
         </div>
       ) : (
         <>
+          <div className="call-participant-summary">
+            <strong>{callRoster.length || remotePeerIds.length + 1} participant{(callRoster.length || remotePeerIds.length + 1) > 1 ? "s" : ""}</strong>
+            <span>{callRoster.map(person => person.displayName).join(" · ") || "Synchronisation des participants…"}</span>
+          </div>
           <div className="call-video-grid">
-            {localStream && <VideoTile stream={localStream} label="Toi" muted />}
+            {localStream && <VideoTile stream={localStream} label="Toi" muted noVideo={cameraOff && !sharingScreen} />}
             {remotePeerIds.map(peerId => remoteStreams[peerId]
-              ? <VideoTile key={peerId} stream={remoteStreams[peerId]} label={remoteNames[peerId] || "Participant"} />
+              ? <VideoTile key={peerId} stream={remoteStreams[peerId]} label={callRoster.find(person => person.userId === peerId)?.displayName || remoteNames[peerId] || "Participant"} />
               : <div className="call-waiting-tile call-peer-placeholder" key={peerId}>
                   <span>◉</span>
-                  <strong>{remoteNames[peerId] || "Participant"}</strong>
+                  <strong>{callRoster.find(person => person.userId === peerId)?.displayName || remoteNames[peerId] || "Participant"}</strong>
                   <small>{remoteStates[peerId] || "Connexion média en cours…"}</small>
                 </div>
             )}
