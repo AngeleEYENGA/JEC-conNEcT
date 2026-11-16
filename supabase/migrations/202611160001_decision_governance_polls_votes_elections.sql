@@ -58,7 +58,8 @@ create table if not exists public.jec_decision_voter_participation (
 create table if not exists public.jec_decision_ballots (
   id uuid primary key default gen_random_uuid(),
   poll_id uuid not null references public.jec_decision_polls(id) on delete cascade,
-  cast_at timestamptz not null default now()
+  -- No voter ID or timestamp is stored on a ballot; only aggregate results are exposed.
+  poll_id uuid not null references public.jec_decision_polls(id) on delete cascade
 );
 
 create table if not exists public.jec_decision_ballot_selections (
@@ -68,7 +69,7 @@ create table if not exists public.jec_decision_ballot_selections (
 );
 
 create index if not exists idx_jec_decision_ballots_poll
-  on public.jec_decision_ballots(poll_id,cast_at);
+  on public.jec_decision_ballots(poll_id);
 create index if not exists idx_jec_decision_participation_poll
   on public.jec_decision_voter_participation(poll_id,cast_at);
 
@@ -119,7 +120,11 @@ using (user_id=(select auth.uid()));
 -- No direct policy is created for ballots or selections: ballot content is
 -- accessible only through the aggregate results function below.
 
-create or replace function public.jec_create_decision_poll(
+-- The invoker wrappers below are callable by authenticated members only.
+-- Their private implementations perform the controlled writes and checks.
+grant usage on schema private to authenticated;
+
+create or replace function private.jec_create_decision_poll_impl(
   target_workspace_id uuid,
   target_title text,
   target_description text,
@@ -219,10 +224,10 @@ begin
   return new_poll_id;
 end;
 $$;
-revoke all on function public.jec_create_decision_poll(uuid,text,text,text,text,text,timestamptz,numeric,text,boolean,jsonb) from public,anon;
-grant execute on function public.jec_create_decision_poll(uuid,text,text,text,text,text,timestamptz,numeric,text,boolean,jsonb) to authenticated;
+revoke all on function private.jec_create_decision_poll_impl(uuid,text,text,text,text,text,timestamptz,numeric,text,boolean,jsonb) from public,anon;
+grant execute on function private.jec_create_decision_poll_impl(uuid,text,text,text,text,text,timestamptz,numeric,text,boolean,jsonb) to authenticated;
 
-create or replace function public.jec_cast_decision_ballot(
+create or replace function private.jec_cast_decision_ballot_impl(
   target_poll_id uuid,
   target_option_ids uuid[] default array[]::uuid[]
 )
@@ -291,10 +296,10 @@ begin
   select new_ballot_id,selected.choice_id from unnest(chosen_ids) as selected(choice_id);
 end;
 $$;
-revoke all on function public.jec_cast_decision_ballot(uuid,uuid[]) from public,anon;
-grant execute on function public.jec_cast_decision_ballot(uuid,uuid[]) to authenticated;
+revoke all on function private.jec_cast_decision_ballot_impl(uuid,uuid[]) from public,anon;
+grant execute on function private.jec_cast_decision_ballot_impl(uuid,uuid[]) to authenticated;
 
-create or replace function public.jec_close_decision_poll(target_poll_id uuid)
+create or replace function private.jec_close_decision_poll_impl(target_poll_id uuid)
 returns void
 language plpgsql
 security definer
@@ -319,10 +324,10 @@ begin
   where id=target_poll_id and status='open';
 end;
 $$;
-revoke all on function public.jec_close_decision_poll(uuid) from public,anon;
-grant execute on function public.jec_close_decision_poll(uuid) to authenticated;
+revoke all on function private.jec_close_decision_poll_impl(uuid) from public,anon;
+grant execute on function private.jec_close_decision_poll_impl(uuid) to authenticated;
 
-create or replace function public.jec_get_decision_poll_results(target_poll_id uuid)
+create or replace function private.jec_get_decision_poll_results_impl(target_poll_id uuid)
 returns table (
   option_id uuid,
   option_label text,
@@ -390,6 +395,46 @@ begin
   order by o.sort_order,o.created_at;
 end;
 $$;
+revoke all on function private.jec_get_decision_poll_results_impl(uuid) from public,anon;
+grant execute on function private.jec_get_decision_poll_results_impl(uuid) to authenticated;
+
+
+create or replace function public.jec_create_decision_poll(target_workspace_id uuid, target_title text, target_description text, target_decision_type text, target_selection_mode text, target_results_visibility text, target_ends_at timestamptz, target_quorum_percent numeric, target_approval_rule text, target_allow_abstention boolean, target_options jsonb)
+returns uuid
+language sql
+security invoker
+set search_path = ''
+as $ select private.jec_create_decision_poll_impl(target_workspace_id,target_title,target_description,target_decision_type,target_selection_mode,target_results_visibility,target_ends_at,target_quorum_percent,target_approval_rule,target_allow_abstention,target_options); $;
+revoke all on function public.jec_create_decision_poll(uuid,text,text,text,text,text,timestamptz,numeric,text,boolean,jsonb) from public,anon;
+grant execute on function public.jec_create_decision_poll(uuid,text,text,text,text,text,timestamptz,numeric,text,boolean,jsonb) to authenticated;
+
+
+create or replace function public.jec_cast_decision_ballot(target_poll_id uuid, target_option_ids uuid[] default array[]::uuid[])
+returns void
+language sql
+security invoker
+set search_path = ''
+as $ select private.jec_cast_decision_ballot_impl(target_poll_id,target_option_ids); $;
+revoke all on function public.jec_cast_decision_ballot(uuid,uuid[]) from public,anon;
+grant execute on function public.jec_cast_decision_ballot(uuid,uuid[]) to authenticated;
+
+
+create or replace function public.jec_close_decision_poll(target_poll_id uuid)
+returns void
+language sql
+security invoker
+set search_path = ''
+as $ select private.jec_close_decision_poll_impl(target_poll_id); $;
+revoke all on function public.jec_close_decision_poll(uuid) from public,anon;
+grant execute on function public.jec_close_decision_poll(uuid) to authenticated;
+
+
+create or replace function public.jec_get_decision_poll_results(target_poll_id uuid)
+returns table (option_id uuid, option_label text, option_detail text, vote_count bigint, participant_count bigint, eligible_count bigint, turnout_percent numeric, quorum_met boolean, abstention_count bigint)
+language sql
+security invoker
+set search_path = ''
+as $ select * from private.jec_get_decision_poll_results_impl(target_poll_id); $;
 revoke all on function public.jec_get_decision_poll_results(uuid) from public,anon;
 grant execute on function public.jec_get_decision_poll_results(uuid) to authenticated;
 
