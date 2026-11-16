@@ -54,7 +54,7 @@ type CallRosterItem = {
   joinedAt: string;
 };
 
-function VideoTile({ stream, label, muted = false }: { stream: MediaStream; label: string; muted?: boolean }) {
+function VideoTile({ stream, label, muted = false, noVideo = false }: { stream: MediaStream; label: string; muted?: boolean; noVideo?: boolean }) {
   const ref = useRef<HTMLVideoElement>(null);
   const [playBlocked, setPlayBlocked] = useState(false);
   const videoTrackCount = stream.getVideoTracks().length;
@@ -99,7 +99,7 @@ function VideoTile({ stream, label, muted = false }: { stream: MediaStream; labe
   return (
     <div className="call-video-tile">
       <video ref={ref} autoPlay playsInline muted={muted} onLoadedMetadata={() => void tryPlay()} />
-      {!hasVideo && <div className="call-no-video-overlay"><span>◉</span><strong>{label}</strong><small>Caméra désactivée</small></div>}
+      {(noVideo || !hasVideo) && <div className="call-no-video-overlay"><span>◉</span><strong>{label}</strong><small>Caméra désactivée</small></div>}
       {!muted && playBlocked && (
         <button className="call-play-audio" onClick={() => void tryPlay()}>Activer le son</button>
       )}
@@ -931,7 +931,7 @@ export default function MeetingCallRoom({
       active = false;
       window.clearInterval(interval);
     };
-  }, [joined, sessionId, userId, displayName, remoteNames, createOffer]);
+  }, [joined, sessionId, userId, displayName, createOffer]);
 
   const localStream = screenStreamRef.current ?? localStreamRef.current;
   const remotePeerIds = [...new Set([
@@ -995,7 +995,7 @@ export default function MeetingCallRoom({
             <span>{callRoster.map(person => person.displayName).join(" · ") || "Synchronisation des participants…"}</span>
           </div>
           <div className="call-video-grid">
-            {localStream && <VideoTile stream={localStream} label="Toi" muted />}
+            {localStream && <VideoTile stream={localStream} label="Toi" muted noVideo={cameraOff && !sharingScreen} />}
             {remotePeerIds.map(peerId => remoteStreams[peerId]
               ? <VideoTile key={peerId} stream={remoteStreams[peerId]} label={callRoster.find(person => person.userId === peerId)?.displayName || remoteNames[peerId] || "Participant"} />
               : <div className="call-waiting-tile call-peer-placeholder" key={peerId}>
