@@ -40,6 +40,7 @@ export default function DecisionsPage() {
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [userId, setUserId] = useState("");
+  const [globalAdmin, setGlobalAdmin] = useState(false);
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [memberships, setMemberships] = useState<Membership[]>([]);
   const [polls, setPolls] = useState<Poll[]>([]);
@@ -60,9 +61,10 @@ export default function DecisionsPage() {
   const [optionsText, setOptionsText] = useState("");
 
   const managerWorkspaces = useMemo(() => {
+    if (globalAdmin) return workspaces;
     const ids = new Set(memberships.filter(m => m.workspace_role === "owner" || m.workspace_role === "manager").map(m => m.workspace_id));
     return workspaces.filter(w => ids.has(w.id));
-  }, [memberships, workspaces]);
+  }, [globalAdmin, memberships, workspaces]);
 
   const load = useCallback(async () => {
     const supabase = getSupabaseBrowserClient();
@@ -75,16 +77,23 @@ export default function DecisionsPage() {
       return;
     }
     setUserId(user.id);
-    const [spacesResult, membershipResult] = await Promise.all([
+    const [spacesResult, membershipResult, adminResult] = await Promise.all([
       supabase.from("jec_workspaces").select("id,name,slug").order("name"),
-      supabase.from("jec_workspace_members").select("workspace_id,workspace_role").eq("user_id", user.id).eq("membership_status", "active")
+      supabase.from("jec_workspace_members").select("workspace_id,workspace_role").eq("user_id", user.id).eq("membership_status", "active"),
+      supabase.rpc("is_jec_admin")
     ]);
     if (spacesResult.error) { setError(spacesResult.error.message); setLoading(false); return; }
     const spaces = (spacesResult.data || []) as Workspace[];
     const membershipsData = (membershipResult.data || []) as Membership[];
+    const isAdmin = adminResult.data === true;
+    setGlobalAdmin(isAdmin);
     setWorkspaces(spaces);
     setMemberships(membershipsData);
-    if (!workspaceId && spaces[0]) setWorkspaceId(spaces[0].id);
+    const managedIds = new Set(membershipsData.filter(m => m.workspace_role === "owner" || m.workspace_role === "manager").map(m => m.workspace_id));
+    const firstManaged = isAdmin ? spaces[0]?.id : spaces.find(space => managedIds.has(space.id))?.id;
+    setWorkspaceId(current => current && spaces.some(space => space.id === current) && (isAdmin || managedIds.has(current))
+      ? current
+      : (firstManaged || spaces[0]?.id || ""));
     if (!spaces.length) {
       setPolls([]); setOptions([]); setEligiblePollIds([]); setVotedPollIds([]); setResults({});
       setLoading(false);
