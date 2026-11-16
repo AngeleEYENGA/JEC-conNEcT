@@ -21,6 +21,10 @@ create table if not exists public.jec_governance_ballots (
   status text not null default 'draft' check (status in ('draft','open','closed','cancelled')),
   opens_at timestamptz not null default now(),
   closes_at timestamptz not null,
+  opened_at timestamptz,
+  opened_by uuid references auth.users(id) on delete set null,
+  closed_at timestamptz,
+  closed_by uuid references auth.users(id) on delete set null,
   created_by uuid not null references auth.users(id) on delete restrict,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
@@ -249,6 +253,7 @@ begin
     insert into public.jec_governance_eligible_voters(ballot_id,user_id)
     select new_ballot_id,m.user_id from public.jec_memberships m
     where m.membership_status='verified'
+      or private.is_jec_verified_or_admin(m.user_id)
     on conflict do nothing;
   end if;
 
@@ -323,7 +328,9 @@ begin
   if b.status<>'draft' or b.opens_at>now() or b.closes_at<=now() then
     raise exception 'This ballot cannot be opened at this time' using errcode='22023';
   end if;
-  update public.jec_governance_ballots set status='open',updated_at=now() where id=target_ballot_id;
+  update public.jec_governance_ballots
+  set status='open',opened_at=now(),opened_by=(select auth.uid()),updated_at=now()
+  where id=target_ballot_id;
 end;
 $$;
 revoke all on function private.jec_open_governance_ballot(uuid) from public,anon;
@@ -348,7 +355,9 @@ begin
     raise exception 'Only workspace managers can close this ballot' using errcode='42501';
   end if;
   if b.status<>'open' then raise exception 'This ballot is not open' using errcode='22023'; end if;
-  update public.jec_governance_ballots set status='closed',updated_at=now() where id=target_ballot_id;
+  update public.jec_governance_ballots
+  set status='closed',closed_at=now(),closed_by=(select auth.uid()),updated_at=now()
+  where id=target_ballot_id;
 end;
 $$;
 revoke all on function private.jec_close_governance_ballot(uuid) from public,anon;
