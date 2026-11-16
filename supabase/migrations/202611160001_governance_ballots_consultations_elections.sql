@@ -263,11 +263,14 @@ begin
     from public.jec_governance_options o
     where o.ballot_id=new_ballot_id
       and not exists (
-        select 1 from public.jec_governance_eligible_voters e
-        where e.ballot_id=new_ballot_id and e.user_id=o.candidate_user_id
+        select 1 from public.jec_workspace_members wm
+        where wm.workspace_id=p_workspace_id
+          and wm.user_id=o.candidate_user_id
+          and wm.membership_status='active'
+          and private.is_jec_verified_or_admin(wm.user_id)
       )
   ) then
-    raise exception 'Every candidate must belong to the selected electorate' using errcode='22023';
+    raise exception 'Every candidate must be an active verified member of this workspace' using errcode='22023';
   end if;
 
   return new_ballot_id;
