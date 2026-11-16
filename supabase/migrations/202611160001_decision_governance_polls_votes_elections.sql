@@ -380,7 +380,7 @@ begin
     o.id,
     o.label,
     o.detail,
-    count(s.option_id)::bigint,
+    count(b.id)::bigint,
     total_participants,
     total_eligible,
     case when total_eligible=0 then 0::numeric
