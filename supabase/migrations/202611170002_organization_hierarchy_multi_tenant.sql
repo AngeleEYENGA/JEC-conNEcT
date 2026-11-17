@@ -121,7 +121,7 @@ $$;
 
 drop trigger if exists trg_jec_validate_organization_hierarchy on public.jec_organizations;
 create trigger trg_jec_validate_organization_hierarchy
-before insert or update of parent_organization_id, organization_type, country_code
+before insert or update
 on public.jec_organizations
 for each row execute function private.validate_jec_organization_hierarchy();
 
