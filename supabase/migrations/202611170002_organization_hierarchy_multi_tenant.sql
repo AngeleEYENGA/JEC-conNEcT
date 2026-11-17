@@ -125,6 +125,50 @@ before insert or update of parent_organization_id, organization_type, country_co
 on public.jec_organizations
 for each row execute function private.validate_jec_organization_hierarchy();
 
+create table if not exists public.jec_organization_memberships (
+  organization_id uuid not null references public.jec_organizations(id) on delete cascade,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  organization_role text not null default 'member'
+    check (organization_role in (
+      'owner', 'admin', 'manager', 'secretary', 'treasurer',
+      'communication', 'audiovisual', 'spirituality', 'member', 'guest'
+    )),
+  membership_status text not null default 'invited'
+    check (membership_status in ('invited', 'active', 'suspended', 'left')),
+  invited_by uuid references auth.users(id) on delete set null,
+  joined_at timestamptz,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  primary key (organization_id, user_id),
+  constraint jec_organization_membership_joined_status
+    check (membership_status <> 'active' or joined_at is not null)
+);
+
+comment on table public.jec_organization_memberships is
+  'A user may belong to several JEC organizations with a different role and status in each one. Access to descendants is inherited from active memberships in ancestor organizations.';
+
+create index if not exists idx_jec_organization_memberships_user_status
+  on public.jec_organization_memberships(user_id, membership_status);
+create index if not exists idx_jec_organization_memberships_org_status_role
+  on public.jec_organization_memberships(organization_id, membership_status, organization_role);
+
+create or replace function private.touch_jec_organization_membership()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  new.updated_at := now();
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_jec_touch_organization_membership on public.jec_organization_memberships;
+create trigger trg_jec_touch_organization_membership
+before update on public.jec_organization_memberships
+for each row execute function private.touch_jec_organization_membership();
+
+
 create or replace function private.is_jec_organization_member(
   target_organization_id uuid,
   target_user_id uuid default null
@@ -194,48 +238,20 @@ as $$
     );
 $$;
 
-create table if not exists public.jec_organization_memberships (
-  organization_id uuid not null references public.jec_organizations(id) on delete cascade,
-  user_id uuid not null references auth.users(id) on delete cascade,
-  organization_role text not null default 'member'
-    check (organization_role in (
-      'owner', 'admin', 'manager', 'secretary', 'treasurer',
-      'communication', 'audiovisual', 'spirituality', 'member', 'guest'
-    )),
-  membership_status text not null default 'invited'
-    check (membership_status in ('invited', 'active', 'suspended', 'left')),
-  invited_by uuid references auth.users(id) on delete set null,
-  joined_at timestamptz,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now(),
-  primary key (organization_id, user_id),
-  constraint jec_organization_membership_joined_status
-    check (membership_status <> 'active' or joined_at is not null)
-);
+alter table public.jec_workspaces
+  add column if not exists organization_id uuid
+    references public.jec_organizations(id) on delete restrict;
+create index if not exists idx_jec_workspaces_organization
+  on public.jec_workspaces(organization_id)
+  where organization_id is not null;
 
-comment on table public.jec_organization_memberships is
-  'A user may belong to several JEC organizations with a different role and status in each one. Access to descendants is inherited from active memberships in ancestor organizations.';
+alter table public.jec_directory_entries
+  add column if not exists organization_id uuid
+    references public.jec_organizations(id) on delete set null;
+create index if not exists idx_jec_directory_entries_organization
+  on public.jec_directory_entries(organization_id)
+  where organization_id is not null;
 
-create index if not exists idx_jec_organization_memberships_user_status
-  on public.jec_organization_memberships(user_id, membership_status);
-create index if not exists idx_jec_organization_memberships_org_status_role
-  on public.jec_organization_memberships(organization_id, membership_status, organization_role);
-
-create or replace function private.touch_jec_organization_membership()
-returns trigger
-language plpgsql
-set search_path = ''
-as $$
-begin
-  new.updated_at := now();
-  return new;
-end;
-$$;
-
-drop trigger if exists trg_jec_touch_organization_membership on public.jec_organization_memberships;
-create trigger trg_jec_touch_organization_membership
-before update on public.jec_organization_memberships
-for each row execute function private.touch_jec_organization_membership();
 
 create or replace function private.jec_workspace_user_matches_organization(
   target_workspace_id uuid,
@@ -371,20 +387,6 @@ create policy "Organization managers remove memberships"
 on public.jec_organization_memberships for delete
 to authenticated
 using (private.can_manage_jec_organization(organization_id));
-
-alter table public.jec_workspaces
-  add column if not exists organization_id uuid
-    references public.jec_organizations(id) on delete restrict;
-create index if not exists idx_jec_workspaces_organization
-  on public.jec_workspaces(organization_id)
-  where organization_id is not null;
-
-alter table public.jec_directory_entries
-  add column if not exists organization_id uuid
-    references public.jec_organizations(id) on delete set null;
-create index if not exists idx_jec_directory_entries_organization
-  on public.jec_directory_entries(organization_id)
-  where organization_id is not null;
 
 create or replace function private.is_jec_workspace_member(
   target_workspace_id uuid,
