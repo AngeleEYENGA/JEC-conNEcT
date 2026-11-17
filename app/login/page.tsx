@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
+import { LanguageSwitcher, useLanguage } from "@/components/language-provider";
 
 function getSafeNextPath() {
   const requested = new URLSearchParams(window.location.search).get("next");
@@ -18,7 +19,6 @@ function getAuthCallbackUrl(nextPath: string) {
   callbackUrl.searchParams.set("next", nextPath);
   return callbackUrl.toString();
 }
-import { LanguageSwitcher, useLanguage } from "@/components/language-provider";
 
 export default function LoginPage() {
   const router = useRouter();
