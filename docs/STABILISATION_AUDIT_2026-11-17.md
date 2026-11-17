@@ -48,12 +48,19 @@
 - La table de membres actuelle comporte des adhésions en attente et vérifiées, mais les lignes observées n'ont pas de structure renseignée. Il ne faut pas en déduire une cartographie réelle des groupes.
 - Les votes sont déployés côté interface et base, mais aucun scrutin réel n'a encore été validé avec plusieurs comptes.
 
+## État de la fondation multi-organisations
+
+- La migration et la documentation du modèle sont ajoutées à la branche de travail.
+- La migration n'a pas été appliquée à Supabase, ni à la production ni à une base de prévisualisation. Sa compilation SQL, les politiques RLS et les parcours multi-comptes doivent encore être testés sur une base de développement avant toute application en production.
+- Les tables restent non peuplées : aucun mouvement national, groupe local, contact ou point cartographique n'est inventé.
+- Les fonctions d'accès aux espaces prennent en compte le rattachement organisationnel lorsqu'il existe. Les espaces historiques sans organisation gardent leur comportement existant.
+
 ## Prochaines priorités de développement
 
-1. Définir le modèle multi-organisations (international → mouvement national → groupe local), ses adhésions multiples et ses rôles, avec isolation stricte des données.
-2. Créer un référentiel public d'organisations/groupes distinct de l'annuaire nominatif, avec contacts institutionnels et consentement de publication.
-3. Relier progressivement les espaces et modules à une organisation sans modifier les droits historiques des espaces existants.
-4. Valider les parcours de connexion, adhésion, votes, réunions et fichiers avec plusieurs comptes réels.
+1. Obtenir un environnement de base de données de test sans coût imprévu, puis exécuter et tester la migration multi-organisations.
+2. Créer l'écran d'administration des organisations et les parcours d'adhésion / invitation.
+3. Construire l'annuaire public des mouvements et groupes locaux, puis la carte à partir de lieux validés.
+4. Rattacher progressivement les espaces existants après validation par les responsables, puis tester les documents, réunions, votes et messages entre comptes et organisations.
 5. Concevoir les notifications e-mail après vérification du fournisseur d'envoi, des coûts et des préférences anti-spam.
 
 ## Références techniques
