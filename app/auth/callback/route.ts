@@ -1,15 +1,13 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
+import { safeInternalPath } from "@/lib/auth/redirect";
 
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get("code");
   const oauthError = requestUrl.searchParams.get("error");
-  const requestedNext = requestUrl.searchParams.get("next") ?? "/";
-  const next = requestedNext.startsWith("/") && !requestedNext.startsWith("//")
-    ? requestedNext
-    : "/";
+  const next = safeInternalPath(requestUrl.searchParams.get("next"));
   const origin = requestUrl.origin;
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
