@@ -25,7 +25,11 @@ export async function proxy(request: NextRequest) {
   // Database RLS and RPC authorization remain the source of truth for data access.
   const { data: claimsData } = await supabase.auth.getClaims();
   const claims = claimsData?.claims ?? null;
-  const protectedPrefixes = [
+  const pathname = request.nextUrl.pathname;
+  const matchesPath = (prefix: string) =>
+    pathname === prefix || pathname.startsWith(prefix + "/");
+
+  const requiresSignIn = [
     "/compte",
     "/workspace",
     "/messagerie",
@@ -35,11 +39,7 @@ export async function proxy(request: NextRequest) {
     "/documents",
     "/gestion",
     "/partenaires"
-  ];
-  const pathname = request.nextUrl.pathname;
-  const requiresSignIn = protectedPrefixes.some(
-    (prefix) => pathname === prefix || pathname.startsWith(prefix + "/")
-  );
+  ].some(matchesPath);
 
   if (requiresSignIn && !claims) {
     const loginUrl = request.nextUrl.clone();
@@ -50,6 +50,46 @@ export async function proxy(request: NextRequest) {
     const redirectResponse = NextResponse.redirect(loginUrl);
     response.cookies.getAll().forEach((cookie) => redirectResponse.cookies.set(cookie));
     return redirectResponse;
+  }
+
+  // Do not rely on hidden navigation as an access-control mechanism.
+  // Collaboration routes require a verified JEC membership (or a platform admin).
+  const isMemberArea = [
+    "/workspace",
+    "/messagerie",
+    "/reunions",
+    "/decisions",
+    "/projets",
+    "/documents",
+    "/partenaires"
+  ].some(matchesPath);
+  const isAdminArea = matchesPath("/gestion");
+
+  if ((isMemberArea || isAdminArea) && claims) {
+    const userId = typeof claims.sub === "string" ? claims.sub : null;
+    const [{ data: membershipRows, error: membershipError }, { data: adminFlag, error: adminError }] =
+      await Promise.all([
+        userId
+          ? supabase
+              .from("jec_memberships")
+              .select("user_id")
+              .eq("user_id", userId)
+              .eq("membership_status", "verified")
+              .limit(1)
+          : Promise.resolve({ data: null, error: new Error("Missing authenticated user id") }),
+        supabase.rpc("is_jec_admin")
+      ]);
+
+    const isVerifiedMember = !membershipError && Array.isArray(membershipRows) && membershipRows.length > 0;
+    const isPlatformAdmin = !adminError && adminFlag === true;
+    const isAllowed = isAdminArea ? isPlatformAdmin : isVerifiedMember || isPlatformAdmin;
+
+    if (!isAllowed) {
+      // Redirect to the public portal; the account page remains available to signed-in users.
+      const publicResponse = NextResponse.redirect(new URL("/", request.url));
+      response.cookies.getAll().forEach((cookie) => publicResponse.cookies.set(cookie));
+      return publicResponse;
+    }
   }
 
   return response;
