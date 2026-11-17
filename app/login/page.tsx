@@ -4,14 +4,12 @@ import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
+import { safeInternalPath } from "@/lib/auth/redirect";
 import { LanguageSwitcher, useLanguage } from "@/components/language-provider";
 
 function getSafeNextPath() {
   const requested = new URLSearchParams(window.location.search).get("next");
-  if (!requested || !requested.startsWith("/") || requested.startsWith("//") || requested.includes("\\")) {
-    return "/";
-  }
-  return requested;
+  return safeInternalPath(requested);
 }
 
 function getAuthCallbackUrl(nextPath: string) {
