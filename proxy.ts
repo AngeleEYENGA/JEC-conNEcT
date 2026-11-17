@@ -23,7 +23,8 @@ export async function proxy(request: NextRequest) {
 
   // Verify the cookie-backed session before rendering protected application routes.
   // Database RLS and RPC authorization remain the source of truth for data access.
-  const { data: { claims } } = await supabase.auth.getClaims();
+  const { data: claimsData } = await supabase.auth.getClaims();
+  const claims = claimsData?.claims ?? null;
   const protectedPrefixes = [
     "/compte",
     "/workspace",
