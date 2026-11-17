@@ -88,6 +88,16 @@ const nav = [
   ["JEC AI","JEC AI","✧",""]
 ];
 
+const privateNavItems = new Set([
+  "Workspace",
+  "Messagerie",
+  "Réunions",
+  "Décisions & votes",
+  "Projets",
+  "Documents",
+  "Partenaires"
+]);
+
 function SourceLink({href,children}:{href:string;children:React.ReactNode}) {
   return <a className="source-link" href={href} target="_blank" rel="noreferrer">{children} ↗</a>;
 }
@@ -194,6 +204,14 @@ export default function Home() {
     (item.title+" "+item.titleEn+" "+item.summary+" "+item.summaryEn+" "+item.category).toLowerCase().includes(search.toLowerCase())
   ),[search]);
 
+  // Private collaboration modules are shown only to JEC-verified members or platform admins.
+  const canAccessMemberNavigation = Boolean(
+    identity && (identity.membershipStatus === "verified" || identity.isAdmin)
+  );
+  const visibleNav = canAccessMemberNavigation
+    ? nav
+    : nav.filter(([fr]) => !privateNavItems.has(fr));
+
   function NewsCard({item}:{item:typeof news[number]}) {
     return <article className="post-card verified-news-card">
       <div className="post-header">
@@ -263,7 +281,7 @@ export default function Home() {
     <aside className="sidebar">
       <Link href="/" className="brand-lockup side-brand"><div className="brand-mark"><span>JEC</span><i aria-hidden="true">✝</i></div><span>conNEcT</span></Link>
       <div className="workspace-switch"><div className="workspace-avatar">J</div><div><strong>JEC France</strong><small>{t("Portail public","Public portal")}</small></div><span className="chevron">⌄</span></div>
-      <nav className="main-nav">{nav.map(([fr,english,icon,group])=><div key={fr}>{group&&<p className="nav-group">{t(group==="ESPACE PUBLIC"?"ESPACE PUBLIC":group==="COLLABORATION"?"COLLABORATION":"PATRIMOINE",group==="ESPACE PUBLIC"?"PUBLIC SPACE":group==="COLLABORATION"?"COLLABORATION":"HERITAGE")}</p>}{(["Workspace","Messagerie","Réunions","Décisions & votes","Projets","Documents","Partenaires","Archives JEC"].includes(fr))?<Link href={fr==="Workspace"?"/workspace":fr==="Messagerie"?"/messagerie":fr==="Réunions"?"/reunions":fr==="Décisions & votes"?"/decisions":fr==="Projets"?"/projets":fr==="Partenaires"?"/partenaires":fr==="Archives JEC"?"/archives":"/documents"} className="nav-item"><span className="nav-icon">{icon}</span><span>{en?english:fr}</span></Link>:<button onClick={()=>setActive(fr)} className={active===fr?"nav-item active":"nav-item"}><span className={fr==="JEC AI"?"nav-icon sparkle":"nav-icon"}>{icon}</span><span>{en?english:fr}</span></button>}</div>)}</nav>
+      <nav className="main-nav">{visibleNav.map(([fr,english,icon,group])=><div key={fr}>{group&&<p className="nav-group">{t(group==="ESPACE PUBLIC"?"ESPACE PUBLIC":group==="COLLABORATION"?"COLLABORATION":"PATRIMOINE",group==="ESPACE PUBLIC"?"PUBLIC SPACE":group==="COLLABORATION"?"COLLABORATION":"HERITAGE")}</p>}{(["Workspace","Messagerie","Réunions","Décisions & votes","Projets","Documents","Partenaires","Archives JEC"].includes(fr))?<Link href={fr==="Workspace"?"/workspace":fr==="Messagerie"?"/messagerie":fr==="Réunions"?"/reunions":fr==="Décisions & votes"?"/decisions":fr==="Projets"?"/projets":fr==="Partenaires"?"/partenaires":fr==="Archives JEC"?"/archives":"/documents"} className="nav-item"><span className="nav-icon">{icon}</span><span>{en?english:fr}</span></Link>:<button onClick={()=>setActive(fr)} className={active===fr?"nav-item active":"nav-item"}><span className={fr==="JEC AI"?"nav-icon sparkle":"nav-icon"}>{icon}</span><span>{en?english:fr}</span></button>}</div>)}</nav>
       {identity?.isAdmin&&<div className="admin-nav-group"><p className="nav-group">{t("ADMINISTRATION","ADMINISTRATION")}</p><Link href="/gestion" className="nav-item admin-nav-link"><span className="nav-icon">⚙</span><span>{t("Espace administrateur","Administrator area")}</span></Link></div>}
       <div className="sidebar-bottom"><div className="help-card"><div className="help-icon">✧</div><strong>{t("Sources vérifiables","Verifiable sources")}</strong><p>{t("Les faits publics renvoient à leurs publications d'origine.","Public facts link to their original publications.")}</p><button onClick={()=>setActive("Actualités JEC")}>{t("Voir les sources →","Browse sources →")}</button></div>{identity?<div className="profile-mini profile-mini-auth"><Link href="/compte" className="profile-avatar-link"><div className="avatar user">{identity.avatarUrl?<img src={identity.avatarUrl} alt=""/>:identity.displayName.trim().split(/\s+/).slice(0,2).map(x=>x[0]).join("").toUpperCase()}</div></Link><Link href="/compte" className="profile-identity"><strong>{identity.displayName}</strong><small>{identity.isAdmin?t("Administrateur JEC-conNEcT","JEC-conNEcT administrator"):identity.membershipStatus==="verified"?t("Membre JEC vérifié","Verified JEC member"):identity.membershipStatus==="rejected"?t("Adhésion non validée","Membership not approved"):t("Compte connecté · adhésion à confirmer","Signed in · membership pending")}</small></Link><button className="profile-signout" onClick={signOut} title={t("Se déconnecter","Sign out")} aria-label={t("Se déconnecter","Sign out")}>↪</button></div>:<div className="profile-mini"><div className="avatar user">VP</div><div><strong>{t("Visiteur","Visitor")}</strong><small>{t("Aperçu public · non connecté","Public preview · signed out")}</small></div><Link className="profile-signin" href="/login">{t("Connexion","Sign in")}</Link></div>}</div>
     </aside>
@@ -277,7 +295,7 @@ export default function Home() {
           <div className="content-grid"><section className="feed-column"><div className="section-heading"><div><p className="eyebrow">{t("PUBLICATIONS OFFICIELLES","OFFICIAL PUBLICATIONS")}</p><h2>{t("Les dernières actualités repérées","Latest verified news")}</h2></div><button className="text-button" onClick={()=>setActive("Actualités JEC")}>{t("Toutes les actualités ↗","All news ↗")}</button></div>{filteredNews.slice(0,3).map(item=><NewsCard key={item.url ?? item.detailPath ?? item.title} item={item}/>)}</section>
           <aside className="right-column"><section className="widget-card"><div className="widget-heading"><h3>{t("Repères historiques","Historical milestones")}</h3><button onClick={()=>setActive("Découvrir la JEC")}>{t("Explorer","Explore")}</button></div><div className="fact-item"><b>1929</b><div><strong>{t("Origines de la JEC en France","Origins of JEC in France")}</strong><small>{t("Premiers groupes autour de Louis Chaudron et Paul Vignaux.","First groups around Louis Chaudron and Paul Vignaux.")}</small></div></div><div className="fact-item"><b>1946</b><div><strong>{t("Coordination internationale","International coordination")}</strong><small>{t("Fondation de la JECI / IYCS.","Foundation of JECI / IYCS.")}</small></div></div><Link className="widget-link" href="/decouvrir#frise-chronologique">{t("Voir la frise chronologique →","Explore the timeline →")}</Link></section>
           <section className="widget-card"><div className="widget-heading"><h3>{t("Événement à suivre","Event to follow")}</h3><button onClick={()=>setActive("Agenda public")}>{t("Agenda","Calendar")}</button></div><div className="event-item"><div className="event-date"><b>2027</b><span>JUL–AUG</span></div><div><strong>{t("JMJ Séoul 2027","WYD Seoul 2027")}</strong><small>29 juillet – 8 août · Corée du Sud</small><SourceLink href="https://www.jmj2027.fr/">{t("Site officiel","Official website")}</SourceLink></div></div></section>
-          <section className="ai-card"><div className="ai-spark">✧</div><p className="eyebrow">JEC CONNECT</p><h3>{t("Un espace à construire ensemble","A space to build together")}</h3><p>{t("JEC-conNEcT relie les espaces de travail, projets, tâches, réunions et échanges de ses membres. Les archives avancées et l’assistant IA viendront dans une prochaine phase.","JEC-conNEcT connects members’ workspaces, projects, tasks, meetings and conversations. Advanced archives and the AI assistant are planned for a later phase.")}</p><button onClick={()=>setActive("Workspace")}>{t("Découvrir les modules →","Explore modules →")}</button></section><p className="prototype-note">{t("Prototype de présentation · Contenus publics sourcés","Presentation prototype · Public sourced content")}<br/>{t("Les espaces privés sont accessibles aux membres autorisés selon les droits de chaque équipe.","Private workspaces are available to authorized members according to each team’s permissions.")}</p></aside></div>
+          {canAccessMemberNavigation&&<><section className="ai-card"><div className="ai-spark">✧</div><p className="eyebrow">JEC CONNECT</p><h3>{t("Un espace à construire ensemble","A space to build together")}</h3><p>{t("JEC-conNEcT relie les espaces de travail, projets, tâches, réunions et échanges de ses membres. Les archives avancées et l’assistant IA viendront dans une prochaine phase.","JEC-conNEcT connects members’ workspaces, projects, tasks, meetings and conversations. Advanced archives and the AI assistant are planned for a later phase.")}</p><button onClick={()=>setActive("Workspace")}>{t("Découvrir les modules →","Explore modules →")}</button></section><p className="prototype-note">{t("Prototype de présentation · Contenus publics sourcés","Presentation prototype · Public sourced content")}<br/>{t("Les espaces privés sont accessibles aux membres autorisés selon les droits de chaque équipe.","Private workspaces are available to authorized members according to each team’s permissions.")}</p></>}</aside></div>
         </>:renderContent()}
       </div>
     </main>
