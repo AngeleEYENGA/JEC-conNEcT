@@ -21,8 +21,36 @@ export async function proxy(request: NextRequest) {
     }
   });
 
-  // Refresh and validate the cookie-backed session on requests that pass through the proxy.
-  await supabase.auth.getClaims();
+  // Verify the cookie-backed session before rendering protected application routes.
+  // Database RLS and RPC authorization remain the source of truth for data access.
+  const { data: { claims } } = await supabase.auth.getClaims();
+  const protectedPrefixes = [
+    "/compte",
+    "/workspace",
+    "/messagerie",
+    "/reunions",
+    "/decisions",
+    "/projets",
+    "/documents",
+    "/gestion",
+    "/partenaires"
+  ];
+  const pathname = request.nextUrl.pathname;
+  const requiresSignIn = protectedPrefixes.some(
+    (prefix) => pathname === prefix || pathname.startsWith(prefix + "/")
+  );
+
+  if (requiresSignIn && !claims) {
+    const loginUrl = request.nextUrl.clone();
+    loginUrl.pathname = "/login";
+    loginUrl.search = "";
+    loginUrl.searchParams.set("next", pathname + request.nextUrl.search);
+
+    const redirectResponse = NextResponse.redirect(loginUrl);
+    response.cookies.getAll().forEach((cookie) => redirectResponse.cookies.set(cookie));
+    return redirectResponse;
+  }
+
   return response;
 }
 
