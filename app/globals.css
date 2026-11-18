@@ -1460,3 +1460,56 @@
 .decision-candidate-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:7px}
 .decision-candidate{display:flex;align-items:center;gap:9px;padding:9px 11px;border:1px solid #e9e4ef;border-radius:9px;background:#fff;color:#494256;font-size:11px;cursor:pointer}
 .decision-candidate input{width:15px;height:15px;flex:none;accent-color:#663bb5}
+
+
+/* Public spirituality area */
+.spiritual-content{padding-top:36px}
+.spiritual-hero{position:relative;overflow:hidden;border-radius:17px;padding:30px 34px;margin:18px 0 22px;color:#fff;background:linear-gradient(115deg,#292642 0%,#514078 55%,#82619a 100%);box-shadow:0 12px 30px rgba(57,43,83,.12)}
+.spiritual-hero:after{content:"";position:absolute;width:250px;height:250px;border:1px solid rgba(255,255,255,.15);border-radius:50%;right:-70px;top:-95px;box-shadow:0 0 0 26px rgba(255,255,255,.035),0 0 0 54px rgba(255,255,255,.025)}
+.spiritual-hero-symbol{position:absolute;right:52px;top:25px;font-size:74px;line-height:1;color:#f4dca4;opacity:.9}
+.spiritual-hero .eyebrow{color:#e5d9f1}
+.spiritual-hero h2{position:relative;z-index:1;max-width:650px;font:800 clamp(21px,3vw,29px)/1.2 Manrope;letter-spacing:-.7px;margin:0 0 12px}
+.spiritual-hero>p:not(.eyebrow){position:relative;z-index:1;max-width:650px;color:#eee8f4;font-size:12px;line-height:1.8;margin:0}
+.spiritual-hero-footer{position:relative;z-index:1;display:flex;gap:9px;flex-wrap:wrap;margin-top:22px}
+.spiritual-hero-footer span{padding:7px 10px;border:1px solid rgba(255,255,255,.22);border-radius:30px;background:rgba(255,255,255,.08);font-size:9px;color:#f1ebf7}
+.spiritual-section{margin:18px 0;padding:22px}
+.spiritual-resource-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.spiritual-resource-card{display:flex;flex-direction:column;align-items:flex-start;min-width:0;padding:17px;border:1px solid #eee9f4;border-radius:12px;background:linear-gradient(180deg,#fff 0%,#fcfbfe 100%)}
+.spiritual-resource-icon{display:grid;place-items:center;width:39px;height:39px;border-radius:12px;background:#f2ecf8;color:#65418f;font-size:20px;margin-bottom:13px}
+.spiritual-resource-card .collab-type{margin:0 0 3px}
+.spiritual-resource-card h3{font:800 14px Manrope;color:#39334f;margin:7px 0}
+.spiritual-resource-card>p:not(.collab-type){font-size:10px;color:#817b8e;line-height:1.75;margin:0 0 17px}
+.spiritual-cta{display:inline-flex;align-items:center;gap:6px;margin-top:auto;padding:8px 11px;border:1px solid #e5dced;border-radius:8px;background:#f8f4fb;color:#65418f;text-decoration:none;font-size:9px;font-weight:800;transition:background .15s,border-color .15s}
+.spiritual-cta:hover{background:#efe7f7;border-color:#d4c2e4}
+.spiritual-source-note{font-size:9px;line-height:1.6;color:#958ea0;margin:14px 2px 0}
+.spiritual-intro{font-size:10px;color:#817b8e;line-height:1.7;margin:-4px 0 16px}
+.spiritual-steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:11px}
+.spiritual-step{padding:17px;border:1px solid #eee9f4;border-radius:11px;background:#fcfbfd}
+.spiritual-step>span{display:grid;place-items:center;width:29px;height:29px;border-radius:9px;background:#eee7f6;color:#69459a;font:800 10px Manrope}
+.spiritual-step h3{font:800 11px Manrope;letter-spacing:.6px;color:#4c3b67;margin:13px 0 7px}
+.spiritual-step p{font-size:10px;line-height:1.75;color:#7e788b;margin:0}
+.spiritual-meeting-tip{margin-top:13px;padding:14px 16px;border-left:3px solid #9a7ab9;background:#f8f5fb;border-radius:0 9px 9px 0}
+.spiritual-meeting-tip strong{font:800 10px Manrope;color:#594371}
+.spiritual-meeting-tip p{font-size:10px;line-height:1.7;color:#7e788b;margin:5px 0 0}
+.spiritual-bottom-grid{display:grid;grid-template-columns:1.2fr .8fr;gap:13px;margin:18px 0}
+.spiritual-prayer-card{padding:22px;border-radius:14px;color:#fff;background:linear-gradient(130deg,#3d355b,#665184)}
+.spiritual-prayer-card .eyebrow{color:#e3d8ef}
+.spiritual-prayer-card h2,.spiritual-music-card h2{font:800 17px Manrope;letter-spacing:-.3px;margin:0 0 10px}
+.spiritual-prayer-text{font:500 12px/1.9 Georgia,serif;color:#f0ebf5;margin:0 0 13px}
+.spiritual-prayer-card small{font-size:8px;color:#d5c9e2}
+.spiritual-music-card{padding:22px;border:1px solid #eee9f4;border-radius:14px;background:#fff}
+.spiritual-music-card .spiritual-resource-icon{margin-bottom:10px}
+.spiritual-music-card h2{color:#39334f}
+.spiritual-music-card>p:not(.collab-type){font-size:10px;line-height:1.75;color:#817b8e;margin:0 0 16px}
+.spiritual-validation-note{margin:18px 0 4px;padding:16px 18px;border:1px dashed #dcd2e8;border-radius:12px;background:#fbf9fd}
+.spiritual-validation-note strong{font:800 10px Manrope;color:#56436f}
+.spiritual-validation-note p{font-size:9px;line-height:1.7;color:#827b8d;margin:6px 0 0}
+@media(max-width:760px){
+  .spiritual-resource-grid{grid-template-columns:1fr}
+  .spiritual-steps{grid-template-columns:1fr}
+  .spiritual-bottom-grid{grid-template-columns:1fr}
+  .spiritual-hero{padding:24px 21px}
+  .spiritual-hero-symbol{right:18px;top:18px;font-size:48px}
+  .spiritual-section{padding:17px}
+  .spiritual-hero h2{max-width:85%}
+}
