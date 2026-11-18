@@ -66,12 +66,12 @@ Les contrôles ci-dessous sont des lectures exécutées dans des transactions an
 - Le modèle et la migration sont préparés sur la branche de travail : international → mouvement national → groupe local, adhésions multi-organisations et rattachement optionnel des espaces.
 - La migration `202611170002_organization_hierarchy_multi_tenant.sql` n'a pas été appliquée à Supabase ; les tables `jec_organizations` et `jec_organization_memberships`, ainsi que les colonnes `organization_id`, sont toujours absentes.
 - Aucune organisation, aucun mouvement national et aucun groupe local fictif n'a été créé.
-- Aucune branche de développement Supabase n'existe actuellement. Le devis retourné pour une branche est de **0,01344 USD par heure**. La création de cette ressource payante attend l'accord explicite de la propriétaire du projet.
+- Aucune branche de développement Supabase n'existe actuellement. Le devis retourné pour une branche est de **0,01344 USD par heure**. Par décision de pilotage du 18 novembre 2026, aucune ressource payante ne sera créée à ce stade : la validation multi-organisations est reportée aux perspectives d'évolution et sera présentée comme une étape future, conditionnée à la disponibilité d'un environnement de test et à la validation du budget.
 - La migration multi-organisations ne doit pas être appliquée à la production avant validation sur une base de test, notamment des politiques RLS et des scénarios d'accès parent/enfant entre plusieurs comptes.
 
 ## Prochaines priorités de développement
 
-1. Obtenir l'accord pour créer une branche Supabase de test au coût horaire annoncé, ou utiliser un environnement PostgreSQL/Supabase local équivalent, puis exécuter et tester la migration multi-organisations.
+1. **Perspective d'évolution :** obtenir ultérieurement un environnement de test sans risque pour la production, valider la migration multi-organisations et tester les politiques RLS ainsi que les scénarios parent/enfant avant d'activer cette architecture. Le coût indicatif d'une branche Supabase vérifié le 18 novembre 2026 est de 0,01344 USD/heure ; aucune branche n'est créée ni facturée à ce stade.
 2. Compléter la recette navigateur avec un compte public, un compte en attente, un membre vérifié non administrateur et un administrateur, notamment les URL directes.
 3. Créer l'écran d'administration des organisations et les parcours d'adhésion / invitation.
 4. Construire l'annuaire public des mouvements et groupes locaux, puis la carte à partir de lieux validés.
