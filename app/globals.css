@@ -1902,6 +1902,15 @@
 
 
 
+
+/* Make the media picker an unmistakable primary composer action */
+.community-media-picker-row{padding:12px 13px;border:1px dashed #d9c8e9;border-radius:13px;background:linear-gradient(115deg,#fbf8ff,#fff9fa);gap:10px}
+.community-media-picker{min-height:42px;padding:10px 15px;border:1px solid #d9c8e9;border-radius:10px;background:#efe7f8;color:#573477;font-size:12px;box-shadow:0 4px 12px rgba(89,58,124,.08)}
+.community-media-picker>span{width:23px;height:23px;display:grid;place-items:center;border-radius:7px;background:#76549a;color:#fff;font-size:19px;font-weight:700}
+.community-media-picker strong{font-size:11px;letter-spacing:.01em}
+.community-media-picker-row>small{font-size:10px;line-height:1.5;color:#776b84}
+.community-media-picker:hover{background:#e7dcf2;border-color:#c9b4de;transform:translateY(-2px);box-shadow:0 7px 16px rgba(89,58,124,.12)}
+@media(max-width:520px){.community-media-picker-row{align-items:stretch}.community-media-picker{width:100%;justify-content:center}.community-media-picker-row>small{display:block;text-align:center;width:100%}}
 /* Social feed: media, reshares and lively interactions */
 .community-card-enter{animation:communityCardIn .48s cubic-bezier(.2,.75,.25,1) both}
 .community-post-card{transition:transform .22s ease,box-shadow .22s ease,border-color .22s ease}
