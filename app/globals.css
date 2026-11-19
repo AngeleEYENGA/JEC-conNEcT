@@ -1720,3 +1720,6 @@
   .spiritual-sharing-gate,.spiritual-admin-review-link{align-items:flex-start;flex-direction:column}
   .spiritual-own-pending article small{margin-left:0}
 }
+
+/* A locked Workspace entry remains visible in the public portal and explains how to gain access. */
+.nav-item-locked{color:#8b849c;background:#faf9fc;border:1px dashed #e8e3ef}.nav-item-locked .nav-icon{color:#9b8ead}.nav-item-loading{opacity:.65;cursor:wait}
