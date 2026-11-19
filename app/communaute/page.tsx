@@ -510,13 +510,37 @@ export default function CommunityPage() {
     return (author + " " + post.body + " " + originalBody).toLowerCase().includes(search.toLowerCase());
   });
 
+  function renderMedia(media:MediaAsset[], compact=false) {
+    if(!media.length) return null;
+    return <div className={compact ? "community-media-grid compact" : "community-media-grid"}>
+      {media.map(item=>{
+        if(!item.signedUrl) return <div className="community-media-unavailable" key={item.id}>{en ? "Media temporarily unavailable" : "Média temporairement indisponible"}</div>;
+        if(item.mime_type.startsWith("image/")) return (
+          <a className="community-media-item image" href={item.signedUrl} target="_blank" rel="noreferrer" key={item.id}>
+            <img src={item.signedUrl} alt={item.file_name} loading="lazy"/>
+          </a>
+        );
+        if(item.mime_type.startsWith("video/")) return (
+          <div className="community-media-item video" key={item.id}>
+            <video src={item.signedUrl} controls playsInline preload="metadata" aria-label={item.file_name}/>
+          </div>
+        );
+        return (
+          <div className="community-media-audio" key={item.id}>
+            <span>♫</span><div><strong>{item.file_name}</strong><audio src={item.signedUrl} controls preload="metadata"/></div>
+          </div>
+        );
+      })}
+    </div>;
+  }
+
   function renderPost(post: Post) {
     const author = profileById.get(post.author_id);
     const authorLabel = profileName(author, en ? "JEC member" : "Membre JEC");
     const own = post.author_id === userId;
     const moodText = moodLabel(post.mood, en);
     return (
-      <article className={"community-post-card" + (post.status !== "published" ? " is-moderated" : "")} key={post.id}>
+      <article className={"community-post-card community-card-enter" + (post.status !== "published" ? " is-moderated" : "")} key={post.id}>
         <div className="community-post-header">
           <div className="community-avatar">
             {author?.avatar_url ? <img src={author.avatar_url} alt="" /> : initials(authorLabel)}
@@ -539,8 +563,29 @@ export default function CommunityPage() {
             <textarea value={editBody} onChange={event => setEditBody(event.target.value)} rows={4} maxLength={5000} required />
             <div><button type="button" className="community-secondary-button" onClick={() => setEditingPostId(null)}>{en ? "Cancel" : "Annuler"}</button><button className="community-primary-button" disabled={busy || !editBody.trim()}>{en ? "Save changes" : "Enregistrer"}</button></div>
           </form>
+        ) : post.shared_post_id ? (
+          <div className="community-reshare-content">
+            {post.body && <p className="community-post-body community-reshare-comment">{post.body}</p>}
+            {post.sharedPost ? (
+              <div className="community-shared-original">
+                <div className="community-shared-author">
+                  <div className="community-comment-avatar">
+                    {profileById.get(post.sharedPost.author_id)?.avatar_url
+                      ? <img src={profileById.get(post.sharedPost.author_id)?.avatar_url ?? ""} alt=""/>
+                      : initials(profileName(profileById.get(post.sharedPost.author_id),en ? "JEC member" : "Membre JEC"))}
+                  </div>
+                  <div><strong>{profileName(profileById.get(post.sharedPost.author_id),en ? "JEC member" : "Membre JEC")}</strong><time>{formatDate(post.sharedPost.created_at,en)}</time></div>
+                </div>
+                {post.sharedPost.body && <p className="community-post-body">{post.sharedPost.body}</p>}
+                {renderMedia(post.sharedPost.media,true)}
+              </div>
+            ) : <p className="community-media-unavailable">{en ? "The original post is no longer available." : "La publication d'origine n'est plus disponible."}</p>}
+          </div>
         ) : (
-          <p className="community-post-body">{post.body}</p>
+          <>
+            {post.body && <p className="community-post-body">{post.body}</p>}
+            {renderMedia(post.media)}
+          </>
         )}
 
         {post.status === "published" && (
@@ -550,7 +595,7 @@ export default function CommunityPage() {
                 const count = post.reactions.filter(reaction => reaction.reaction_type === option.value).length;
                 const active = post.reactions.some(reaction => reaction.user_id === userId && reaction.reaction_type === option.value);
                 return (
-                  <button key={option.value} type="button" className={active ? "community-reaction active" : "community-reaction"} onClick={() => void toggleReaction(post, option.value)} aria-pressed={active}>
+                  <button key={option.value} type="button" className={"community-reaction" + (option.value==="like" ? " community-reaction-primary" : "") + (active ? " active" : "")} onClick={() => void toggleReaction(post, option.value)} aria-pressed={active}>
                     <span>{option.emoji}</span><small>{en ? option.en : option.fr}</small>{count > 0 && <b>{count}</b>}
                   </button>
                 );
@@ -561,6 +606,9 @@ export default function CommunityPage() {
                 <span>💬</span> {post.comments.length} {en ? "comments" : "commentaire(s)"}
               </button>
               <span>{post.reactions.length} {en ? "reactions" : "réaction(s)"}</span>
+              {post.status==="published" && !post.shared_post_id && <button type="button" className="community-text-action community-share-action" onClick={() => {setShareTarget(post);setShareComment("");}}>
+                <span>🔁</span> {en ? "Reshare" : "Repartager"}
+              </button>}
             </div>
             {openComments === post.id && (
               <div className="community-comments">
@@ -622,12 +670,47 @@ export default function CommunityPage() {
           {notice && <p className="community-alert success">{notice}</p>}
 
           <form className="community-composer" onSubmit={createPost}>
-            <div className="community-composer-heading"><div className="community-composer-icon">✎</div><div><strong>{en ? "What would you like to share?" : "Qu'as-tu envie de partager ?"}</strong><span>{en ? "A thought, a feeling, a small or big moment…" : "Une pensée, une humeur, un petit ou grand moment…"}</span></div></div>
-            <textarea rows={4} value={body} onChange={event => setBody(event.target.value)} maxLength={5000} placeholder={en ? "Tell the community what's happening…" : "Raconte à la communauté ce qui se passe…"} required />
+            <div className="community-composer-heading"><div className="community-composer-icon">✎</div><div><strong>{en ? "What would you like to share?" : "Qu'as-tu envie de partager ?"}</strong><span>{en ? "A thought, a feeling, a photo, a short video or audio…" : "Une pensée, une humeur, une photo, une courte vidéo ou un audio…"}</span></div></div>
+            <textarea rows={4} value={body} onChange={event => setBody(event.target.value)} maxLength={5000} placeholder={en ? "Tell the community what's happening…" : "Raconte à la communauté ce qui se passe…"} />
+            <div className="community-media-picker-row">
+              <label className="community-media-picker">
+                <input type="file" accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,audio/mpeg,audio/mp4,audio/aac,audio/wav,audio/ogg,audio/webm" multiple
+                  onChange={event=>{
+                    const picked=Array.from(event.target.files ?? []);
+                    event.target.value="";
+                    if(!picked.length) return;
+                    const accepted:File[]=[];
+                    for(const file of picked){
+                      const mime=getMediaMimeType(file);
+                      if(!mime){setError(en ? "Choose an image, video or audio file." : "Choisis un fichier image, vidéo ou audio.");continue;}
+                      if(file.size>MAX_MEDIA_FILE_SIZE){setError(en ? "Each file must be 20 MB or smaller." : "Chaque fichier doit faire 20 Mo maximum.");continue;}
+                      accepted.push(file);
+                    }
+                    setMediaFiles(current=>{
+                      const next=[...current,...accepted];
+                      if(next.length>MAX_MEDIA_FILES){setError(en ? "You can attach up to 5 files." : "Tu peux joindre jusqu'à 5 fichiers.");return current;}
+                      if(next.reduce((sum,file)=>sum+file.size,0)>MAX_MEDIA_TOTAL_SIZE){setError(en ? "The total media size must not exceed 50 MB." : "Le poids total des médias ne doit pas dépasser 50 Mo.");return current;}
+                      return next;
+                    });
+                  }}/>
+                <span>＋</span><strong>{en ? "Add media" : "Ajouter un média"}</strong>
+              </label>
+              <small>{en ? "Photos · GIFs · Videos · Audio" : "Photos · GIF · Vidéos · Audio"} · 5 {en ? "files max" : "fichiers max"}</small>
+            </div>
+            {mediaFiles.length>0 && <div className="community-media-preview-list">
+              {mediaFiles.map((file,index)=>{
+                const mime=getMediaMimeType(file) ?? "";
+                return <div className="community-media-preview" key={file.name+"-"+file.size+"-"+index}>
+                  {mime.startsWith("image/") ? <img src={mediaPreviews[index]} alt={file.name}/> : mime.startsWith("video/") ? <video src={mediaPreviews[index]} muted controls playsInline/> : <div className="community-audio-preview"><span>♫</span><strong>{file.name}</strong></div>}
+                  <div className="community-media-preview-meta"><strong>{file.name}</strong><small>{formatMediaSize(file.size,en)}</small></div>
+                  <button type="button" onClick={()=>void removeQueuedMedia(index)} aria-label={en ? "Remove media" : "Retirer le média"}>×</button>
+                </div>;
+              })}
+            </div>}
             <div className="community-composer-bottom">
               <label className="community-mood-select"><span>😊 {en ? "My mood" : "Mon humeur"}</span><select value={mood} onChange={event => setMood(event.target.value as Mood | "")}><option value="">{en ? "Choose (optional)" : "Choisir (facultatif)"}</option>{moods.map(item => <option value={item.value} key={item.value}>{item.emoji} {en ? item.en : item.fr}</option>)}</select></label>
               <span className="community-char-count">{body.length}/5000</span>
-              <button className="community-primary-button" disabled={busy || !body.trim()}>{busy ? (en ? "Publishing…" : "Publication…") : (en ? "Publish" : "Publier")} <span>↗</span></button>
+              <button className="community-primary-button" disabled={busy || (!body.trim() && mediaFiles.length===0)}>{busy ? (uploadLabel || (en ? "Publishing…" : "Publication…")) : (en ? "Publish" : "Publier")} <span>↗</span></button>
             </div>
             <p className="community-privacy-note">🔒 {en ? "Visible only to verified JEC members. Be kind and protect everyone's privacy." : "Visible uniquement aux membres JEC vérifiés. Restons bienveillants et protégeons la vie privée de chacun."}</p>
           </form>
@@ -678,6 +761,17 @@ export default function CommunityPage() {
           <p className="community-sidebar-note">{en ? "The feed is private to verified JEC members. Public pages remain available to visitors." : "Le fil est privé et réservé aux membres JEC vérifiés. Les pages publiques restent accessibles aux visiteurs."}</p>
         </aside>
       </div>
+
+      {shareTarget && <div className="community-modal-backdrop" role="presentation" onMouseDown={event => { if (event.target===event.currentTarget) setShareTarget(null); }}>
+        <section className="community-share-modal" role="dialog" aria-modal="true" aria-labelledby="community-share-title">
+          <button type="button" className="community-modal-close" onClick={()=>setShareTarget(null)} aria-label={en ? "Close" : "Fermer"}>×</button>
+          <span className="community-eyebrow">{en ? "SPREAD THE WORD" : "FAIRE CIRCULER"}</span>
+          <h2 id="community-share-title">{en ? "Reshare this post" : "Repartager cette publication"}</h2>
+          <p>{en ? "Add a thought to introduce this post to the community (optional)." : "Ajoute un mot pour accompagner cette publication (facultatif)."}</p>
+          <textarea rows={4} maxLength={5000} value={shareComment} onChange={event=>setShareComment(event.target.value)} placeholder={en ? "Why are you sharing it?" : "Pourquoi souhaites-tu la partager ?"} />
+          <div><button type="button" className="community-secondary-button" onClick={()=>setShareTarget(null)}>{en ? "Cancel" : "Annuler"}</button><button type="button" className="community-primary-button" disabled={busy} onClick={()=>void resharePost()}>{en ? "Reshare" : "Repartager"} ↗</button></div>
+        </section>
+      </div>}
 
       {reportTarget && <div className="community-modal-backdrop" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) setReportTarget(null); }}>
         <section className="community-report-modal" role="dialog" aria-modal="true" aria-labelledby="community-report-title">
