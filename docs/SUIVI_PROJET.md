@@ -298,10 +298,17 @@ La PR d'envoi d'e-mails via Google SMTP (#17) a été fermée sans fusion après
 
 - Branche de travail : `feat/jec-community-media-sharing-20261120`.
 - Bucket privé `jec-community-media` créé sur Supabase ; aucune exposition anonyme.
-- Table `jec_community_media` et politiques RLS/Storage appliquées via les migrations `20261119215121_jec_community_media_and_shares_20261120` et `20261119220552_jec_community_media_read_scope_20261120`.
+- Table `jec_community_media` et politiques RLS/Storage appliquées via les migrations `20261119215121_jec_community_media_and_shares_20261120`, `20261119220552_jec_community_media_read_scope_20261120` et `20261119221704_jec_community_reaction_update_scope`.
 - Publication avec jusqu'à 5 images, GIF animés, vidéos ou fichiers audio ; 20 Mo par fichier et 50 Mo par publication.
 - Affichage par URL signée de 1 heure, lecteurs natifs audio/vidéo et galerie responsive.
 - Repartage d'une publication originale, avec commentaire facultatif et notification interne.
 - Bouton « J'aime » renforcé visuellement ; cinq types de réactions conservés.
 - Animations légères des cartes, boutons et fenêtres ; respect de `prefers-reduced-motion`.
 - Aucun déploiement de cette évolution en production n'a encore été effectué. Les tests d'upload et de repartage avec un membre vérifié restent requis avant fusion.
+
+
+## Correctif du bouton J'aime — 19 novembre 2026
+- L'erreur `permission denied for table jec_community_reactions` provenait de l'utilisation de `upsert`, incompatible avec les privilèges de mise à jour limités aux colonnes `reaction_type`.
+- Le client utilise désormais INSERT / UPDATE(reaction_type) / DELETE selon la réaction déjà présente.
+- La politique RLS UPDATE vérifie que la ligne appartient au membre et que la publication cible reste publiée.
+- Vérification des privilèges : INSERT/SELECT/DELETE autorisés au rôle authentifié ; UPDATE global refusé ; UPDATE de `reaction_type` autorisé ; aucune mise à jour de `post_id` ou `user_id` ; aucune lecture anonyme.
