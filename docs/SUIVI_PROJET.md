@@ -285,8 +285,23 @@ Le schéma de collaboration existait déjà dans Supabase ; cette itération a r
 | Fil communautaire global | Première version intégrée à la branche de travail | Publication de textes et d'humeurs, réactions, commentaires, signalements et file de modération. Séparé des fils privés des Workspaces. |
 | Protection des contenus | En place au niveau base / route | Route `/communaute` protégée ; RLS active sur les quatre tables communautaires ; membres vérifiés et administrateurs seulement. |
 | Notifications liées à la communauté | En place dans le centre interne | Une notification interne est créée pour l'auteur lors d'un nouveau commentaire ou d'une réaction d'un autre membre. |
-| Photos / vidéos | À développer | La première version est textuelle. Le stockage de médias et ses règles de confidentialité restent à cadrer. |
+| Photos / GIF / vidéos / audio | Intégré à la branche de travail | Bucket privé Supabase, prévisualisation, URL signées temporaires, limites de taille, politiques RLS/Storage. Parcours authentifié encore à tester. |
+| Repartage | Intégré à la branche de travail | Repartage avec commentaire facultatif, affichage de l'original et notification interne à son auteur. |
+| Animations sociales | Intégrées à la branche de travail | Animation des cartes/réactions/modales et respect de la préférence de réduction des animations. |
 | Push / e-mails transactionnels | Perspectives | Notifications push système et e-mails de nouveau message / confirmation reportés à une étape ultérieure. Aucun envoi e-mail n'est annoncé comme opérationnel. |
 | SMS Twilio | Perspectives avec financement | À chiffrer et à financer avant intégration. |
 
 La PR d'envoi d'e-mails via Google SMTP (#17) a été fermée sans fusion après un test non concluant. Les notifications internes déjà présentes restent prioritaires. Voir `COMMUNAUTE_SOCIALE.md` pour les critères d'acceptation et les limites de cette première version.
+
+
+## Évolution Communauté — médias et repartage (20 novembre 2026)
+
+- Branche de travail : `feat/jec-community-media-sharing-20261120`.
+- Bucket privé `jec-community-media` créé sur Supabase ; aucune exposition anonyme.
+- Table `jec_community_media` et politiques RLS/Storage appliquées via la migration `20261119215121_jec_community_media_and_shares_20261120`.
+- Publication avec jusqu'à 5 images, GIF animés, vidéos ou fichiers audio ; 20 Mo par fichier et 50 Mo par publication.
+- Affichage par URL signée de 1 heure, lecteurs natifs audio/vidéo et galerie responsive.
+- Repartage d'une publication originale, avec commentaire facultatif et notification interne.
+- Bouton « J'aime » renforcé visuellement ; cinq types de réactions conservés.
+- Animations légères des cartes, boutons et fenêtres ; respect de `prefers-reduced-motion`.
+- Aucun déploiement de cette évolution en production n'a encore été effectué. Les tests d'upload et de repartage avec un membre vérifié restent requis avant fusion.
