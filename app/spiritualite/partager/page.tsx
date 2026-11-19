@@ -301,7 +301,9 @@ export default function SpiritualSharingPage() {
             </div>
           </div>
 
-          {!userId ? (
+          {loading ? (
+            <div className="spiritual-sharing-gate"><p>{t("Vérification de ton accès…", "Checking your access…")}</p></div>
+          ) : !userId ? (
             <div className="spiritual-sharing-gate">
               <p>{t("Pour proposer une ressource, connecte-toi avec ton compte JEC.", "To submit a resource, sign in with your JEC account.")}</p>
               <Link href="/login" className="spiritual-cta">{t("Se connecter", "Sign in")} →</Link>
