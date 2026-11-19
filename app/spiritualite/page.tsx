@@ -69,6 +69,15 @@ export default function SpiritualityPage() {
           <Link href="/spiritualite/preparer" className="spiritual-cta">{t("Préparer un temps spi", "Prepare a gathering")} →</Link>
         </section>
 
+        <section className="spiritual-calendar-promo spiritual-share-promo">
+          <div>
+            <p className="eyebrow">{t("PARTAGE ENTRE ÉQUIPES", "SHARE BETWEEN TEAMS")}</p>
+            <h2>{t("Partager prières et méditations", "Share prayers and reflections")}</h2>
+            <p>{t("Découvre les ressources proposées par les équipes JEC et soumets tes propres contributions pour relecture.", "Discover resources shared by JEC teams and submit your own contributions for review.")}</p>
+          </div>
+          <Link href="/spiritualite/partager" className="spiritual-cta">{t("Espace de partage", "Sharing space")} →</Link>
+        </section>
+
         <section className="collab-section spiritual-section">
           <div className="collab-section-heading">
             <div>
