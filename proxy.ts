@@ -31,6 +31,7 @@ export async function proxy(request: NextRequest) {
 
   const requiresSignIn = [
     "/compte",
+    "/communaute",
     "/workspace",
     "/messagerie",
     "/reunions",
@@ -55,6 +56,7 @@ export async function proxy(request: NextRequest) {
   // Do not rely on hidden navigation as an access-control mechanism.
   // Collaboration routes require a verified JEC membership (or a platform admin).
   const isMemberArea = [
+    "/communaute",
     "/workspace",
     "/messagerie",
     "/reunions",
