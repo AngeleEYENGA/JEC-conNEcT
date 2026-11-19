@@ -358,11 +358,9 @@ export default function Home() {
                   <span className="nav-icon">{canAccessMemberNavigation?icon:"🔒"}</span><span>{en?english:fr}</span>
                 </Link>
           ) : fr==="Communauté" ? (
-            !authResolved
-              ? <span className="nav-item nav-item-loading" aria-disabled="true" title={communityNavTitle}><span className="nav-icon">{icon}</span><span>{en?english:fr}</span></span>
-              : <Link href={communityNavHref} className={canAccessMemberNavigation?"nav-item":"nav-item nav-item-locked"} title={communityNavTitle} aria-label={communityNavTitle}>
-                  <span className="nav-icon">{canAccessMemberNavigation?icon:"🔒"}</span><span>{en?english:fr}</span>
-                </Link>
+            <Link href={communityNavHref} className={canAccessMemberNavigation?"nav-item":"nav-item nav-item-locked"} title={communityNavTitle} aria-label={communityNavTitle}>
+              <span className="nav-icon">{canAccessMemberNavigation?icon:"🔒"}</span><span>{en?english:fr}</span>
+            </Link>
           ) : fr==="Spiritualité" ? (
             <Link href="/spiritualite" className="nav-item"><span className="nav-icon">{icon}</span><span>{en?english:fr}</span></Link>
           ) : (["Messagerie","Communauté","Réunions","Décisions & votes","Projets","Documents","Partenaires","Archives JEC"].includes(fr)) ? (
