@@ -268,3 +268,12 @@ Le schéma de collaboration existait déjà dans Supabase ; cette itération a r
 - Un seul scrutin est présent dans la base : `Sondage test`, en brouillon, avec trois choix et trois électeurs éligibles dans l'espace pilote. Il n'est pas ouvert ; il a été laissé intact. Aucun vote ni choix n'a été ajouté durant cet audit.
 - L'interface rappelle que les élections importantes doivent respecter les statuts et règles de contrôle du mouvement. Le module ne doit pas être présenté comme une procédure électorale statutaire validée avant cadrage par les responsables JEC.
 - Les tests de bout en bout avec des comptes réels et plusieurs appareils restent à réaliser. Aucune migration n'a été appliquée pendant cet audit.
+
+
+## Maintenance du 19 novembre 2026 — alignement des migrations de gouvernance
+
+- Les migrations de gouvernance dans Git ont été renommées pour correspondre exactement aux versions déjà enregistrées dans l'historique Supabase : `20261116160330_governance_ballots_consultations_elections_20261116.sql`, `20261116191345_harden_anonymous_governance_ballots.sql` et `20261116191806_harden_governance_table_privileges.sql`.
+- La migration fondatrice, auparavant disponible uniquement sur la branche de la PR #13, a été intégrée à la branche de stabilisation afin que le schéma du scrutin soit reproductible à partir de cette branche.
+- Les anciens fichiers aux préfixes provisoires `202611160002` et `202611160003` ont été retirés de la branche de stabilisation.
+- Cette opération est exclusivement une correction de l'historique source Git. Les migrations sont déjà appliquées dans Supabase ; aucune commande DDL ni migration distante n'a été exécutée pendant cette réconciliation.
+- Contrôle du dépôt : les trois fichiers présents suivent désormais le même ordre chronologique et les mêmes versions que l'historique Supabase. La PR #15 reste ouverte en brouillon ; aucun merge ni nouveau déploiement Vercel n'a été déclenché.
