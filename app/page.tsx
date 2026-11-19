@@ -199,7 +199,7 @@ export default function Home() {
     });
 
     const initialAuthVersion=authEventVersion;
-    void supabase.auth.getUser().then(({data}:{data:{user:{id:string;email?:string;user_metadata?:Record<string,unknown>}|null}})=>{
+    void supabase.auth.getUser().then(({data:{user}}:{data:{user:{id:string;email?:string;user_metadata?:Record<string,unknown>}|null}})=>{
       if(!mounted||authEventVersion!==initialAuthVersion)return;
       if(!user){
         currentUser=null;
