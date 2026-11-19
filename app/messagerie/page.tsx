@@ -261,7 +261,18 @@ export default function MessagesPage(){
     if(sendError)setError(sendError.message);
     else{
       setNewBody("");
-      if(created)setMessages(current=>current.some(m=>m.id===created.id)?current:[...current,created as Message]);
+      if(created){
+        setMessages(current=>current.some(m=>m.id===created.id)?current:[...current,created as Message]);
+        // Email delivery is deliberately best-effort: it must never undo a sent message.
+        try{
+          const {error:emailError}=await supabase.functions.invoke("send-message-notification-email",{
+            body:{messageId:created.id}
+          });
+          if(emailError)console.warn("JEC Connect email notification was not delivered.",emailError.message);
+        }catch(emailError){
+          console.warn("JEC Connect email notification request failed.",emailError);
+        }
+      }
     }
     setSending(false);
   }
