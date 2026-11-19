@@ -385,12 +385,19 @@ export default function CommunityPage() {
     if (current?.reaction_type === type) {
       result = await supabase.from("jec_community_reactions").delete()
         .eq("post_id", post.id).eq("user_id", userId);
+    } else if (current) {
+      // Only reaction_type has UPDATE privilege. Avoid upsert because
+      // ON CONFLICT DO UPDATE can require table-level/key-column UPDATE privileges.
+      result = await supabase.from("jec_community_reactions")
+        .update({ reaction_type: type })
+        .eq("post_id", post.id)
+        .eq("user_id", userId);
     } else {
-      result = await supabase.from("jec_community_reactions").upsert({
+      result = await supabase.from("jec_community_reactions").insert({
         post_id: post.id,
         user_id: userId,
         reaction_type: type
-      }, { onConflict: "post_id,user_id" });
+      });
     }
     if (result.error) setError(result.error.message);
     else await loadFeed();
