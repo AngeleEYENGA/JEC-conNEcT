@@ -51,6 +51,15 @@ export default function SpiritualityPage() {
           </div>
         </section>
 
+        <section className="spiritual-calendar-promo">
+          <div>
+            <p className="eyebrow">{t("REPÈRES DE L'ANNÉE", "YEARLY HIGHLIGHTS")}</p>
+            <h2>{t("Le calendrier spirituel JEC 2026–2027", "The 2026–2027 JEC spiritual calendar")}</h2>
+            <p>{t("Temps liturgiques, fêtes chrétiennes et journées internationales, avec des pistes pour animer la vie de nos équipes.", "Liturgical seasons, Christian celebrations and international days, with ideas to animate our teams.")}</p>
+          </div>
+          <Link href="/spiritualite/calendrier" className="spiritual-cta">{t("Explorer le calendrier", "Explore the calendar")} →</Link>
+        </section>
+
         <section className="collab-section spiritual-section">
           <div className="collab-section-heading">
             <div>
