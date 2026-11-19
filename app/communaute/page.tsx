@@ -557,6 +557,7 @@ export default function CommunityPage() {
             {!own && <button type="button" className="community-text-action" onClick={() => { setReportTarget({ postId: post.id, commentId: null }); setReportReason("other"); }}>{en ? "Report" : "Signaler"}</button>}
           </div>
         </div>
+        {post.shared_post_id && <div className="community-reshare-label">🔁 {en ? "Reshared by" : "Repartagé par"} {authorLabel}</div>}
 
         {editingPostId === post.id ? (
           <form className="community-edit-form" onSubmit={event => void savePostEdit(event, post.id)}>
