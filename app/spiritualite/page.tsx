@@ -60,6 +60,15 @@ export default function SpiritualityPage() {
           <Link href="/spiritualite/calendrier" className="spiritual-cta">{t("Explorer le calendrier", "Explore the calendar")} →</Link>
         </section>
 
+        <section className="spiritual-calendar-promo spiritual-builder-promo">
+          <div>
+            <p className="eyebrow">{t("ANIMER UNE RENCONTRE", "FACILITATE A GATHERING")}</p>
+            <h2>{t("Préparer un temps spi avec son équipe", "Prepare a spiritual gathering with your team")}</h2>
+            <p>{t("Construis ton déroulé, choisis une méditation, adapte les questions et imprime une fiche prête à animer.", "Build your agenda, choose a reflection, adapt the questions and print a ready-to-use session sheet.")}</p>
+          </div>
+          <Link href="/spiritualite/preparer" className="spiritual-cta">{t("Préparer un temps spi", "Prepare a gathering")} →</Link>
+        </section>
+
         <section className="collab-section spiritual-section">
           <div className="collab-section-heading">
             <div>
