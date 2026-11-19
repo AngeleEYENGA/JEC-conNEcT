@@ -3,11 +3,16 @@
 ## Objectif
 Créer un fil communautaire global, distinct des fils privés des Workspaces. Il permet aux membres JEC vérifiés de partager des nouvelles, des idées et leur humeur, puis d'interagir avec les publications des autres membres.
 
-## Périmètre de la première version
+## Périmètre fonctionnel
 - Fil d'actualité global réservé aux membres JEC vérifiés et aux administrateurs.
-- Publication de textes (1 à 5 000 caractères) avec humeur facultative.
-- Humeurs proposées : joie, gratitude, espoir, réflexion, fatigue, préoccupation, motivation et célébration.
+- Publication de textes (jusqu'à 5 000 caractères) avec humeur facultative.
+- Pièces jointes : images JPEG/PNG/WebP/GIF, vidéos MP4/WebM et audios MP3/M4A/AAC/WAV/OGG/WebM.
+- Limites d'envoi : 5 fichiers au maximum par publication, 20 Mo par fichier et 50 Mo cumulés par publication.
+- Prévisualisation des médias avant publication, galerie d'images, lecteur vidéo et lecteur audio.
 - Une réaction par membre et par publication : j'aime, amour, soutien, célébration ou prière.
+- Le bouton « J'aime » est mis en avant ; les autres réactions restent disponibles.
+- Repartage d'une publication originale avec commentaire facultatif ; la publication d'origine est affichée dans la carte de repartage.
+- Notification interne à l'auteur lorsqu'un autre membre repartage sa publication.
 - Commentaires (1 à 2 000 caractères).
 - Modification et suppression de ses propres publications ; suppression de ses propres commentaires.
 - Signalement de publications ou commentaires.
@@ -27,9 +32,19 @@ Créer un fil communautaire global, distinct des fils privés des Workspaces. Il
 ## Modération et règles communautaires
 La page rappelle les règles de bienveillance, de respect, de confidentialité et de signalement. Les responsables JEC devront valider une charte de modération avant l'ouverture à grande échelle : critères de retrait, délais de traitement, recours, conservation des signalements et personnes habilitées.
 
+## Stockage et sécurité des médias
+- Les médias sont conservés dans le bucket privé Supabase Storage `jec-community-media`.
+- Les objets sont isolés par chemin `user_id/post_id/` ; les politiques Storage contrôlent les uploads, lectures et suppressions.
+- Les métadonnées sont conservées dans `jec_community_media`, protégée par RLS.
+- L'interface crée des URL signées temporaires (1 heure) ; aucun lien public permanent n'est généré.
+- Les membres vérifiés et administrateurs peuvent lire les médias des publications publiées. Les fichiers privés ne sont pas exposés aux visiteurs anonymes.
+- La suppression d'une publication tente également de supprimer ses objets Storage.
+- Les GIF animés sont acceptés. Les animations d'interface respectent la préférence système « réduire les animations ».
+
 ## Limites connues / prochaines évolutions
-- La première version est textuelle : la publication de photos et de vidéos nécessitera un chantier séparé de stockage, validation des types/tailles, génération d'URL signées ou publiques selon la décision de confidentialité, et politique de suppression.
-- Les fils par fédération, commission ou groupe local, les mentions, hashtags, réponses imbriquées et classement avancé ne sont pas inclus dans ce premier lot.
+- Les GIF, photos, vidéos et audios sont acceptés ; les formats vidéo sont limités à MP4/WebM, et aucun transcodage ou compression automatique n'est effectué.
+- Les fils par fédération, commission ou groupe local, les mentions, hashtags, réponses imbriquées et classement avancé ne sont pas inclus dans ce lot.
+- Les commentaires restent textuels dans cette version ; les pièces jointes aux commentaires ne sont pas incluses.
 - Les notifications push système (mobile, tablette, ordinateur) et les e-mails transactionnels/de confirmation sont reportés aux perspectives de la présentation, après tests de délivrabilité et choix de financement.
 - Les SMS via Twilio sont également reportés aux perspectives, sous réserve de financement.
 
@@ -42,3 +57,16 @@ La page rappelle les règles de bienveillance, de respect, de confidentialité e
 6. Un administrateur peut consulter la file de signalements et masquer un contenu.
 7. Un compte en attente et un visiteur ne peuvent pas accéder au fil.
 8. Les espaces de travail et conversations privées restent isolés du fil communautaire global.
+
+
+## Évolution médias et repartage — 20 novembre 2026
+- Migration Supabase appliquée : `20261119215121_jec_community_media_and_shares_20261120`.
+- Bucket privé : `jec-community-media`, taille maximale Storage 50 Mo par objet.
+- Table de métadonnées : `jec_community_media`, RLS activée et accès anonyme absent.
+- Upload de 5 fichiers maximum par post, 20 Mo chacun, 50 Mo cumulés côté interface.
+- Formats : JPEG, PNG, WebP, GIF, MP4, WebM, MP3, M4A, AAC, WAV et OGG.
+- URLs signées temporaires d'une heure pour afficher les fichiers sans rendre le bucket public.
+- Repartage via `shared_post_id`, commentaire facultatif et notification interne à l'auteur de l'original.
+- Réactions existantes conservées et bouton J'aime visuellement priorisé.
+- Animations de cartes, réactions et fenêtres ; prise en compte de `prefers-reduced-motion`.
+- Vérifications SQL : bucket privé, RLS sur la table médias, politiques SELECT/INSERT/DELETE sur les métadonnées et SELECT/INSERT/DELETE Storage. Le parcours authentifié d'envoi et de repartage reste à tester avec un compte membre vérifié.
