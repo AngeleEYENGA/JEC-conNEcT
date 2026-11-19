@@ -263,14 +263,42 @@ export default function MessagesPage(){
       setNewBody("");
       if(created){
         setMessages(current=>current.some(m=>m.id===created.id)?current:[...current,created as Message]);
-        // Email delivery is deliberately best-effort: it must never undo a sent message.
+        setNotice(en?"Message sent.":"Message envoyé.");
+        // Email delivery is best-effort: an email error must never undo a sent message.
         try{
-          const {error:emailError}=await supabase.functions.invoke("send-message-notification-email",{
+          const {data:emailResult,error:emailError}=await supabase.functions.invoke("send-message-notification-email",{
             body:{messageId:created.id}
           });
-          if(emailError)console.warn("JEC Connect email notification was not delivered.",emailError.message);
+          if(emailError){
+            console.warn("JEC Connect email notification request failed.",emailError.message);
+            setNotice(en
+              ?"Message sent, but the email notification could not be triggered."
+              :"Message envoyé, mais la notification par e-mail n'a pas pu être déclenchée.");
+          }else{
+            const delivery=emailResult as {sent?:number;skipped?:number;failed?:number}|null;
+            if((delivery?.failed??0)>0){
+              setNotice(en
+                ?"Message sent, but the email could not be delivered. The issue has been recorded."
+                :"Message envoyé, mais l'e-mail n'a pas pu être distribué. L'incident a été enregistré.");
+            }else if((delivery?.sent??0)>0){
+              setNotice(en
+                ?"Message sent. Email notification sent."
+                :"Message envoyé. Notification par e-mail envoyée.");
+            }else if((delivery?.skipped??0)>0){
+              setNotice(en
+                ?"Message sent. Email notification was already processed or skipped."
+                :"Message envoyé. Notification déjà traitée ou ignorée.");
+            }else{
+              setNotice(en
+                ?"Message sent. No eligible email recipient was found."
+                :"Message envoyé. Aucun destinataire e-mail éligible n'a été trouvé.");
+            }
+          }
         }catch(emailError){
           console.warn("JEC Connect email notification request failed.",emailError);
+          setNotice(en
+            ?"Message sent, but the email notification could not be triggered."
+            :"Message envoyé, mais la notification par e-mail n'a pas pu être déclenchée.");
         }
       }
     }
