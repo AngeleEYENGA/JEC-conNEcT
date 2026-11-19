@@ -37,7 +37,7 @@ La page rappelle les règles de bienveillance, de respect, de confidentialité e
 - Les objets sont isolés par chemin `user_id/post_id/` ; les politiques Storage contrôlent les uploads, lectures et suppressions.
 - Les métadonnées sont conservées dans `jec_community_media`, protégée par RLS.
 - L'interface crée des URL signées temporaires (1 heure) ; aucun lien public permanent n'est généré.
-- Les membres vérifiés et administrateurs peuvent lire les médias des publications publiées. Les fichiers privés ne sont pas exposés aux visiteurs anonymes.
+- Les membres vérifiés et administrateurs peuvent lire les médias des publications publiées ; la politique Storage vérifie aussi l'existence de la pièce jointe et la visibilité de la publication. Les fichiers privés ne sont pas exposés aux visiteurs anonymes.
 - La suppression d'une publication tente également de supprimer ses objets Storage.
 - Les GIF animés sont acceptés. Les animations d'interface respectent la préférence système « réduire les animations ».
 
@@ -60,7 +60,7 @@ La page rappelle les règles de bienveillance, de respect, de confidentialité e
 
 
 ## Évolution médias et repartage — 20 novembre 2026
-- Migration Supabase appliquée : `20261119215121_jec_community_media_and_shares_20261120`.
+- Migrations Supabase appliquées : `20261119215121_jec_community_media_and_shares_20261120` et `20261119220552_jec_community_media_read_scope_20261120`.
 - Bucket privé : `jec-community-media`, taille maximale Storage 50 Mo par objet.
 - Table de métadonnées : `jec_community_media`, RLS activée et accès anonyme absent.
 - Upload de 5 fichiers maximum par post, 20 Mo chacun, 50 Mo cumulés côté interface.
