@@ -249,12 +249,26 @@ export default function Home() {
   const canAccessMemberNavigation = Boolean(
     identity && (identity.membershipStatus === "verified" || identity.isAdmin)
   );
+  // Keep Community discoverable to every visitor. Its contents remain protected
+  // by the route proxy and database RLS; the link guides unauthorized users to sign-in/account.
   const visibleNav = canAccessMemberNavigation
     ? nav
-    : nav.filter(([fr]) => !privateNavItems.has(fr) || fr === "Workspace");
+    : nav.filter(([fr]) => !privateNavItems.has(fr) || fr === "Workspace" || fr === "Communauté");
   const workspaceNavHref = canAccessMemberNavigation
     ? "/workspace"
     : identity ? "/compte" : "/login?next=%2Fworkspace";
+  const communityNavHref = canAccessMemberNavigation
+    ? "/communaute"
+    : identity ? "/compte" : "/login?next=%2Fcommunaute";
+  const communityNavTitle = !authResolved
+    ? t("Vérification de la connexion…", "Checking sign-in…")
+    : canAccessMemberNavigation
+      ? t("Ouvrir la communauté JEC", "Open the JEC community")
+      : identity?.membershipStatus === "rejected"
+        ? t("Adhésion non validée — consulter mon compte", "Membership not approved — view your account")
+        : identity
+          ? t("Adhésion JEC à confirmer — consulter mon compte", "JEC membership pending — view your account")
+          : t("Connecte-toi pour accéder à la communauté", "Sign in to access the community");
   const workspaceNavTitle = !authResolved
     ? t("Vérification de la connexion…", "Checking sign-in…")
     : canAccessMemberNavigation
@@ -341,6 +355,12 @@ export default function Home() {
             !authResolved
               ? <span className="nav-item nav-item-loading" aria-disabled="true" title={workspaceNavTitle}><span className="nav-icon">{icon}</span><span>{en?english:fr}</span></span>
               : <Link href={workspaceNavHref} className={canAccessMemberNavigation?"nav-item":"nav-item nav-item-locked"} title={workspaceNavTitle} aria-label={workspaceNavTitle}>
+                  <span className="nav-icon">{canAccessMemberNavigation?icon:"🔒"}</span><span>{en?english:fr}</span>
+                </Link>
+          ) : fr==="Communauté" ? (
+            !authResolved
+              ? <span className="nav-item nav-item-loading" aria-disabled="true" title={communityNavTitle}><span className="nav-icon">{icon}</span><span>{en?english:fr}</span></span>
+              : <Link href={communityNavHref} className={canAccessMemberNavigation?"nav-item":"nav-item nav-item-locked"} title={communityNavTitle} aria-label={communityNavTitle}>
                   <span className="nav-icon">{canAccessMemberNavigation?icon:"🔒"}</span><span>{en?english:fr}</span>
                 </Link>
           ) : fr==="Spiritualité" ? (
