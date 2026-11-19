@@ -214,8 +214,8 @@ export default function CommunityPage() {
       const {data:signedRows,error:signedError} = await supabase.storage
         .from(COMMUNITY_MEDIA_BUCKET).createSignedUrls(mediaRows.map(item => item.storage_path),3600);
       if (signedError) setError(en ? "Some media could not be loaded." : "Certains médias n'ont pas pu être chargés.");
-      (signedRows ?? []).forEach(item => {
-        if (item.path && item.signedUrl) signedByPath.set(item.path,item.signedUrl);
+      ((signedRows ?? []) as Array<{path:string | null;signedUrl:string | null}>).forEach((item:{path:string | null;signedUrl:string | null}) => {
+        if (typeof item.path==="string" && typeof item.signedUrl==="string") signedByPath.set(item.path,item.signedUrl);
       });
     }
 
