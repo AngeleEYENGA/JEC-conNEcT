@@ -10,7 +10,11 @@ type ReactionType = "like" | "love" | "support" | "celebrate" | "pray";
 type Profile = { user_id: string; first_name: string | null; last_name: string | null; display_name: string | null; avatar_url: string | null };
 type Reaction = { post_id: string; user_id: string; reaction_type: ReactionType };
 type Comment = { id: string; post_id: string; author_id: string; body: string; status: string; created_at: string };
-type Post = { id: string; author_id: string; body: string; mood: Mood | null; status: string; created_at: string; updated_at: string; reactions: Reaction[]; comments: Comment[] };
+type BasePost = { id: string; author_id: string; body: string; mood: Mood | null; status: string; created_at: string; updated_at: string; shared_post_id: string | null };
+type MediaRow = { id: string; post_id: string; owner_id: string; storage_path: string; file_name: string; mime_type: string; file_size: number; position: number };
+type MediaAsset = MediaRow & { signedUrl: string | null };
+type SharedPost = BasePost & { media: MediaAsset[] };
+type Post = BasePost & { reactions: Reaction[]; comments: Comment[]; media: MediaAsset[]; sharedPost: SharedPost | null };
 type Report = { id: string; post_id: string | null; comment_id: string | null; reporter_id: string; reason: string; details: string; status: string; created_at: string; target_body: string };
 
 const moods: Array<{ value: Mood; emoji: string; fr: string; en: string }> = [
@@ -31,6 +35,38 @@ const reactions: Array<{ value: ReactionType; emoji: string; fr: string; en: str
   { value: "celebrate", emoji: "🎉", fr: "Bravo", en: "Celebrate" },
   { value: "pray", emoji: "🙏", fr: "Prière", en: "Prayer" }
 ];
+
+const COMMUNITY_MEDIA_BUCKET = "jec-community-media";
+const MAX_MEDIA_FILES = 5;
+const MAX_MEDIA_FILE_SIZE = 20 * 1024 * 1024;
+const MAX_MEDIA_TOTAL_SIZE = 50 * 1024 * 1024;
+const allowedMediaTypes = new Set([
+  "image/jpeg","image/png","image/webp","image/gif",
+  "video/mp4","video/webm",
+  "audio/mpeg","audio/mp4","audio/aac","audio/wav","audio/ogg","audio/webm"
+]);
+
+function getMediaMimeType(file: File): string | null {
+  if (allowedMediaTypes.has(file.type)) return file.type;
+  const extension = file.name.split(".").pop()?.toLowerCase() ?? "";
+  const byExtension: Record<string,string> = {
+    jpg:"image/jpeg",jpeg:"image/jpeg",png:"image/png",webp:"image/webp",gif:"image/gif",
+    mp4:"video/mp4",webm:"video/webm",mp3:"audio/mpeg",m4a:"audio/mp4",aac:"audio/aac",
+    wav:"audio/wav",ogg:"audio/ogg"
+  };
+  return byExtension[extension] ?? null;
+}
+
+function formatMediaSize(bytes: number, en: boolean) {
+  return bytes < 1024 * 1024
+    ? Math.max(1,Math.round(bytes / 1024)) + " KB"
+    : (bytes / (1024 * 1024)).toFixed(1) + (en ? " MB" : " Mo");
+}
+
+function safeMediaFileName(value: string) {
+  return value.normalize("NFKD").replace(/[\u0300-\u036f]/g,"")
+    .replace(/[^a-zA-Z0-9._-]+/g,"_").slice(-180) || "community-media";
+}
 
 const reportReasons = [
   { value: "spam", fr: "Spam ou publicité", en: "Spam or advertising" },
@@ -83,8 +119,19 @@ export default function CommunityPage() {
   const [editingPostId, setEditingPostId] = useState<string | null>(null);
   const [editBody, setEditBody] = useState("");
   const [search, setSearch] = useState("");
+  const [mediaFiles, setMediaFiles] = useState<File[]>([]);
+  const [mediaPreviews, setMediaPreviews] = useState<string[]>([]);
+  const [uploadLabel, setUploadLabel] = useState("");
+  const [shareTarget, setShareTarget] = useState<Post | null>(null);
+  const [shareComment, setShareComment] = useState("");
 
   const profileById = useMemo(() => new Map(profiles.map(profile => [profile.user_id, profile])), [profiles]);
+
+  useEffect(() => {
+    const urls = mediaFiles.map(file => URL.createObjectURL(file));
+    setMediaPreviews(urls);
+    return () => urls.forEach(url => URL.revokeObjectURL(url));
+  }, [mediaFiles]);
 
   const loadFeed = useCallback(async () => {
     if (!supabase) {
@@ -116,7 +163,7 @@ export default function CommunityPage() {
 
     const { data: postRows, error: postError } = await supabase
       .from("jec_community_posts")
-      .select("id,author_id,body,mood,status,created_at,updated_at")
+      .select("id,author_id,body,mood,status,created_at,updated_at,shared_post_id")
       .order("created_at", { ascending: false })
       .limit(60);
     if (postError) {
@@ -125,7 +172,7 @@ export default function CommunityPage() {
       return;
     }
 
-    const basePosts = (postRows ?? []) as Array<Omit<Post, "reactions" | "comments">>;
+    const basePosts = (postRows ?? []) as BasePost[];
     const postIds = basePosts.map(post => post.id);
     if (!postIds.length) {
       setPosts([]);
@@ -135,43 +182,78 @@ export default function CommunityPage() {
       return;
     }
 
-    const [reactionResult, commentResult] = await Promise.all([
-      supabase.from("jec_community_reactions")
-        .select("post_id,user_id,reaction_type")
-        .in("post_id", postIds),
+    const sharedIds = [...new Set(basePosts.map(post => post.shared_post_id).filter((id): id is string => Boolean(id)))];
+    const allContentIds = [...new Set([...postIds,...sharedIds])];
+    const [reactionResult, commentResult, sharedResult, mediaResult] = await Promise.all([
+      supabase.from("jec_community_reactions").select("post_id,user_id,reaction_type").in("post_id", postIds),
       supabase.from("jec_community_comments")
         .select("id,post_id,author_id,body,status,created_at")
-        .in("post_id", postIds)
-        .eq("status", "published")
-        .order("created_at", { ascending: true })
-        .limit(600)
+        .in("post_id", postIds).eq("status", "published")
+        .order("created_at", { ascending: true }).limit(600),
+      sharedIds.length
+        ? supabase.from("jec_community_posts")
+            .select("id,author_id,body,mood,status,created_at,updated_at,shared_post_id")
+            .in("id",sharedIds).eq("status","published")
+        : Promise.resolve({data:[] as BasePost[],error:null}),
+      supabase.from("jec_community_media")
+        .select("id,post_id,owner_id,storage_path,file_name,mime_type,file_size,position")
+        .in("post_id",allContentIds).order("position",{ascending:true})
     ]);
 
     if (reactionResult.error) setError(reactionResult.error.message);
     if (commentResult.error) setError(commentResult.error.message);
+    if (sharedResult.error) setError(sharedResult.error.message);
+    if (mediaResult.error) setError(mediaResult.error.message);
 
     const reactionRows = (reactionResult.data ?? []) as Reaction[];
     const commentRows = (commentResult.data ?? []) as Comment[];
+    const originalRows = (sharedResult.data ?? []) as BasePost[];
+    const mediaRows = (mediaResult.data ?? []) as MediaRow[];
+    const signedByPath = new Map<string,string>();
+    for(let offset=0;offset<mediaRows.length;offset+=100) {
+      const chunk=mediaRows.slice(offset,offset+100);
+      const {data:signedRows,error:signedError} = await supabase.storage
+        .from(COMMUNITY_MEDIA_BUCKET).createSignedUrls(chunk.map(item => item.storage_path),3600);
+      if (signedError) setError(en ? "Some media could not be loaded." : "Certains médias n'ont pas pu être chargés.");
+      ((signedRows ?? []) as Array<{path:string | null;signedUrl:string | null}>).forEach((item:{path:string | null;signedUrl:string | null}) => {
+        if (typeof item.path==="string" && typeof item.signedUrl==="string") signedByPath.set(item.path,item.signedUrl);
+      });
+    }
+
+    const mediaByPostId = new Map<string,MediaAsset[]>();
+    mediaRows.forEach(item => {
+      const list=mediaByPostId.get(item.post_id) ?? [];
+      list.push({...item,signedUrl:signedByPath.get(item.storage_path) ?? null});
+      mediaByPostId.set(item.post_id,list);
+    });
+
     const profileIds = [...new Set([
       ...basePosts.map(post => post.author_id),
+      ...originalRows.map(post => post.author_id),
       ...commentRows.map(comment => comment.author_id)
     ])];
-
     let profileRows: Profile[] = [];
     if (profileIds.length) {
       const { data, error: profileError } = await supabase
-        .from("jec_profiles")
-        .select("user_id,first_name,last_name,display_name,avatar_url")
+        .from("jec_profiles").select("user_id,first_name,last_name,display_name,avatar_url")
         .in("user_id", profileIds);
       if (profileError) setError(profileError.message);
       profileRows = (data ?? []) as Profile[];
     }
     setProfiles(profileRows);
 
+    const sharedById = new Map<string,SharedPost>(
+      originalRows.map(post => [
+        post.id,
+        {...post,media:mediaByPostId.get(post.id) ?? []}
+      ] as [string,SharedPost])
+    );
     const hydrated = basePosts.map(post => ({
       ...post,
       reactions: reactionRows.filter(reaction => reaction.post_id === post.id),
-      comments: commentRows.filter(comment => comment.post_id === post.id)
+      comments: commentRows.filter(comment => comment.post_id === post.id),
+      media: mediaByPostId.get(post.id) ?? [],
+      sharedPost: post.shared_post_id ? sharedById.get(post.shared_post_id) ?? null : null
     })) as Post[];
     setPosts(hydrated);
 
@@ -216,30 +298,83 @@ export default function CommunityPage() {
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "jec_community_posts" }, () => { void loadFeed(); })
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "jec_community_comments" }, () => { void loadFeed(); })
       .on("postgres_changes", { event: "*", schema: "public", table: "jec_community_reactions" }, () => { void loadFeed(); })
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "jec_community_media" }, () => { void loadFeed(); })
       .subscribe();
     return () => { void supabase.removeChannel(channel); };
   }, [supabase, userId, loadFeed]);
 
   async function createPost(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!supabase || !userId || !body.trim()) return;
-    setBusy(true);
-    setError("");
-    setNotice("");
-    const { error: createError } = await supabase.from("jec_community_posts").insert({
-      author_id: userId,
-      body: body.trim(),
-      mood: mood || null,
-      status: "published"
+    if (!supabase || !userId || (!body.trim() && mediaFiles.length===0)) return;
+    setBusy(true); setError(""); setNotice("");
+    const postId=crypto.randomUUID();
+    const uploadedPaths:string[]=[];
+    const mediaRowsToInsert:Array<Omit<MediaRow,"id">>=[];
+    for (const [index,file] of mediaFiles.entries()) {
+      const mimeType=getMediaMimeType(file);
+      if (!mimeType) {
+        setError(en ? "Unsupported media type." : "Type de média non pris en charge.");
+        if(uploadedPaths.length) await supabase.storage.from(COMMUNITY_MEDIA_BUCKET).remove(uploadedPaths);
+        setBusy(false); setUploadLabel(""); return;
+      }
+      setUploadLabel(en ? `Uploading media ${index+1}/${mediaFiles.length}…` : `Envoi du média ${index+1}/${mediaFiles.length}…`);
+      const path=`${userId}/${postId}/${crypto.randomUUID()}-${safeMediaFileName(file.name)}`;
+      const {error:uploadError}=await supabase.storage.from(COMMUNITY_MEDIA_BUCKET).upload(path,file,{
+        cacheControl:"3600",contentType:mimeType,upsert:false
+      });
+      if(uploadError) {
+        if(uploadedPaths.length) await supabase.storage.from(COMMUNITY_MEDIA_BUCKET).remove(uploadedPaths);
+        setError((en ? "Media upload failed: " : "Échec de l'envoi du média : ")+uploadError.message);
+        setBusy(false); setUploadLabel(""); return;
+      }
+      uploadedPaths.push(path);
+      mediaRowsToInsert.push({
+        post_id:postId,owner_id:userId,storage_path:path,
+        file_name:file.name.slice(0,255),mime_type:mimeType,file_size:file.size,position:index
+      });
+    }
+
+    setUploadLabel(en ? "Publishing…" : "Publication…");
+    const {error:createError}=await supabase.from("jec_community_posts").insert({
+      id:postId,author_id:userId,body:body.trim(),mood:mood||null,status:"published",shared_post_id:null
     });
-    if (createError) setError(createError.message);
-    else {
-      setBody("");
-      setMood("");
+    if(createError) {
+      if(uploadedPaths.length) await supabase.storage.from(COMMUNITY_MEDIA_BUCKET).remove(uploadedPaths);
+      setError(createError.message);
+    } else {
+      if(mediaRowsToInsert.length) {
+        const {error:mediaError}=await supabase.from("jec_community_media").insert(mediaRowsToInsert);
+        if(mediaError) {
+          if(uploadedPaths.length) await supabase.storage.from(COMMUNITY_MEDIA_BUCKET).remove(uploadedPaths);
+          await supabase.from("jec_community_posts").delete().eq("id",postId);
+          setError(mediaError.message); setBusy(false); setUploadLabel(""); return;
+        }
+      }
+      setBody(""); setMood(""); setMediaFiles([]);
       setNotice(en ? "Your post has been published." : "Ta publication a été publiée.");
       await loadFeed();
     }
+    setBusy(false); setUploadLabel("");
+  }
+
+  async function resharePost() {
+    if(!supabase || !userId || !shareTarget) return;
+    setBusy(true); setError("");
+    const {error:shareError}=await supabase.from("jec_community_posts").insert({
+      id:crypto.randomUUID(),author_id:userId,body:shareComment.trim(),mood:null,
+      status:"published",shared_post_id:shareTarget.shared_post_id ?? shareTarget.id
+    });
+    if(shareError) setError(shareError.message);
+    else {
+      setShareTarget(null); setShareComment("");
+      setNotice(en ? "Post reshared with the community." : "Publication repartagée avec la communauté.");
+      await loadFeed();
+    }
     setBusy(false);
+  }
+
+  async function removeQueuedMedia(index:number) {
+    setMediaFiles(current=>current.filter((_,currentIndex)=>currentIndex!==index));
   }
 
   async function toggleReaction(post: Post, type: ReactionType) {
@@ -251,9 +386,8 @@ export default function CommunityPage() {
       result = await supabase.from("jec_community_reactions").delete()
         .eq("post_id", post.id).eq("user_id", userId);
     } else if (current) {
-      // UPDATE is intentionally limited to reaction_type at the database level.
-      // Do not use upsert here: ON CONFLICT DO UPDATE also requires privileges
-      // on the key columns and a table-level UPDATE privilege.
+      // Only reaction_type has UPDATE privilege. Avoid upsert because
+      // ON CONFLICT DO UPDATE can require table-level/key-column UPDATE privileges.
       result = await supabase.from("jec_community_reactions")
         .update({ reaction_type: type })
         .eq("post_id", post.id)
@@ -292,9 +426,15 @@ export default function CommunityPage() {
 
   async function deletePost(postId: string) {
     if (!supabase || !window.confirm(en ? "Delete this post and its comments?" : "Supprimer cette publication et ses commentaires ?")) return;
+    const target=posts.find(post=>post.id===postId);
+    const paths=target?.media.map(item=>item.storage_path) ?? [];
     const { error: deleteError } = await supabase.from("jec_community_posts").delete().eq("id", postId);
     if (deleteError) setError(deleteError.message);
     else {
+      if(paths.length) {
+        const {error:storageError}=await supabase.storage.from(COMMUNITY_MEDIA_BUCKET).remove(paths);
+        if(storageError) setError(en ? "Post deleted, but some stored media could not be removed." : "Publication supprimée, mais certains fichiers n'ont pas pu être effacés.");
+      }
       setNotice(en ? "Post deleted." : "Publication supprimée.");
       await loadFeed();
     }
@@ -377,8 +517,33 @@ export default function CommunityPage() {
     if (!isAdmin && post.status !== "published" && post.author_id !== userId) return false;
     if (activeTab === "mine" && post.author_id !== userId) return false;
     const author = profileName(profileById.get(post.author_id), en ? "JEC member" : "Membre JEC");
-    return (author + " " + post.body).toLowerCase().includes(search.toLowerCase());
+    const originalBody=post.sharedPost?.body ?? "";
+    return (author + " " + post.body + " " + originalBody).toLowerCase().includes(search.toLowerCase());
   });
+
+  function renderMedia(media:MediaAsset[], compact=false) {
+    if(!media.length) return null;
+    return <div className={compact ? "community-media-grid compact" : "community-media-grid"}>
+      {media.map(item=>{
+        if(!item.signedUrl) return <div className="community-media-unavailable" key={item.id}>{en ? "Media temporarily unavailable" : "Média temporairement indisponible"}</div>;
+        if(item.mime_type.startsWith("image/")) return (
+          <a className="community-media-item image" href={item.signedUrl} target="_blank" rel="noreferrer" key={item.id}>
+            <img src={item.signedUrl} alt={item.file_name} loading="lazy"/>
+          </a>
+        );
+        if(item.mime_type.startsWith("video/")) return (
+          <div className="community-media-item video" key={item.id}>
+            <video src={item.signedUrl} controls playsInline preload="metadata" aria-label={item.file_name}/>
+          </div>
+        );
+        return (
+          <div className="community-media-audio" key={item.id}>
+            <span>♫</span><div><strong>{item.file_name}</strong><audio src={item.signedUrl} controls preload="metadata"/></div>
+          </div>
+        );
+      })}
+    </div>;
+  }
 
   function renderPost(post: Post) {
     const author = profileById.get(post.author_id);
@@ -386,7 +551,7 @@ export default function CommunityPage() {
     const own = post.author_id === userId;
     const moodText = moodLabel(post.mood, en);
     return (
-      <article className={"community-post-card" + (post.status !== "published" ? " is-moderated" : "")} key={post.id}>
+      <article className={"community-post-card community-card-enter" + (post.status !== "published" ? " is-moderated" : "")} key={post.id}>
         <div className="community-post-header">
           <div className="community-avatar">
             {author?.avatar_url ? <img src={author.avatar_url} alt="" /> : initials(authorLabel)}
@@ -403,14 +568,36 @@ export default function CommunityPage() {
             {!own && <button type="button" className="community-text-action" onClick={() => { setReportTarget({ postId: post.id, commentId: null }); setReportReason("other"); }}>{en ? "Report" : "Signaler"}</button>}
           </div>
         </div>
+        {post.shared_post_id && <div className="community-reshare-label">🔁 {en ? "Reshared by" : "Repartagé par"} {authorLabel}</div>}
 
         {editingPostId === post.id ? (
           <form className="community-edit-form" onSubmit={event => void savePostEdit(event, post.id)}>
             <textarea value={editBody} onChange={event => setEditBody(event.target.value)} rows={4} maxLength={5000} required />
             <div><button type="button" className="community-secondary-button" onClick={() => setEditingPostId(null)}>{en ? "Cancel" : "Annuler"}</button><button className="community-primary-button" disabled={busy || !editBody.trim()}>{en ? "Save changes" : "Enregistrer"}</button></div>
           </form>
+        ) : post.shared_post_id ? (
+          <div className="community-reshare-content">
+            {post.body && <p className="community-post-body community-reshare-comment">{post.body}</p>}
+            {post.sharedPost ? (
+              <div className="community-shared-original">
+                <div className="community-shared-author">
+                  <div className="community-comment-avatar">
+                    {profileById.get(post.sharedPost.author_id)?.avatar_url
+                      ? <img src={profileById.get(post.sharedPost.author_id)?.avatar_url ?? ""} alt=""/>
+                      : initials(profileName(profileById.get(post.sharedPost.author_id),en ? "JEC member" : "Membre JEC"))}
+                  </div>
+                  <div><strong>{profileName(profileById.get(post.sharedPost.author_id),en ? "JEC member" : "Membre JEC")}</strong><time>{formatDate(post.sharedPost.created_at,en)}</time></div>
+                </div>
+                {post.sharedPost.body && <p className="community-post-body">{post.sharedPost.body}</p>}
+                {renderMedia(post.sharedPost.media,true)}
+              </div>
+            ) : <p className="community-media-unavailable">{en ? "The original post is no longer available." : "La publication d'origine n'est plus disponible."}</p>}
+          </div>
         ) : (
-          <p className="community-post-body">{post.body}</p>
+          <>
+            {post.body && <p className="community-post-body">{post.body}</p>}
+            {renderMedia(post.media)}
+          </>
         )}
 
         {post.status === "published" && (
@@ -420,7 +607,7 @@ export default function CommunityPage() {
                 const count = post.reactions.filter(reaction => reaction.reaction_type === option.value).length;
                 const active = post.reactions.some(reaction => reaction.user_id === userId && reaction.reaction_type === option.value);
                 return (
-                  <button key={option.value} type="button" className={active ? "community-reaction active" : "community-reaction"} onClick={() => void toggleReaction(post, option.value)} aria-pressed={active}>
+                  <button key={option.value} type="button" className={"community-reaction" + (option.value==="like" ? " community-reaction-primary" : "") + (active ? " active" : "")} onClick={() => void toggleReaction(post, option.value)} aria-pressed={active}>
                     <span>{option.emoji}</span><small>{en ? option.en : option.fr}</small>{count > 0 && <b>{count}</b>}
                   </button>
                 );
@@ -431,6 +618,9 @@ export default function CommunityPage() {
                 <span>💬</span> {post.comments.length} {en ? "comments" : "commentaire(s)"}
               </button>
               <span>{post.reactions.length} {en ? "reactions" : "réaction(s)"}</span>
+              {post.status==="published" && !post.shared_post_id && <button type="button" className="community-text-action community-share-action" onClick={() => {setShareTarget(post);setShareComment("");}}>
+                <span>🔁</span> {en ? "Reshare" : "Repartager"}
+              </button>}
             </div>
             {openComments === post.id && (
               <div className="community-comments">
@@ -492,12 +682,47 @@ export default function CommunityPage() {
           {notice && <p className="community-alert success">{notice}</p>}
 
           <form className="community-composer" onSubmit={createPost}>
-            <div className="community-composer-heading"><div className="community-composer-icon">✎</div><div><strong>{en ? "What would you like to share?" : "Qu'as-tu envie de partager ?"}</strong><span>{en ? "A thought, a feeling, a small or big moment…" : "Une pensée, une humeur, un petit ou grand moment…"}</span></div></div>
-            <textarea rows={4} value={body} onChange={event => setBody(event.target.value)} maxLength={5000} placeholder={en ? "Tell the community what's happening…" : "Raconte à la communauté ce qui se passe…"} required />
+            <div className="community-composer-heading"><div className="community-composer-icon">✎</div><div><strong>{en ? "What would you like to share?" : "Qu'as-tu envie de partager ?"}</strong><span>{en ? "A thought, a feeling, a photo, a short video or audio…" : "Une pensée, une humeur, une photo, une courte vidéo ou un audio…"}</span></div></div>
+            <textarea rows={4} value={body} onChange={event => setBody(event.target.value)} maxLength={5000} placeholder={en ? "Tell the community what's happening…" : "Raconte à la communauté ce qui se passe…"} />
+            <div className="community-media-picker-row">
+              <label className="community-media-picker">
+                <input type="file" accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,audio/mpeg,audio/mp4,audio/aac,audio/wav,audio/ogg,audio/webm" multiple
+                  onChange={event=>{
+                    const picked=Array.from(event.target.files ?? []);
+                    event.target.value="";
+                    if(!picked.length) return;
+                    const accepted:File[]=[];
+                    for(const file of picked){
+                      const mime=getMediaMimeType(file);
+                      if(!mime){setError(en ? "Choose an image, video or audio file." : "Choisis un fichier image, vidéo ou audio.");continue;}
+                      if(file.size>MAX_MEDIA_FILE_SIZE){setError(en ? "Each file must be 20 MB or smaller." : "Chaque fichier doit faire 20 Mo maximum.");continue;}
+                      accepted.push(file);
+                    }
+                    setMediaFiles(current=>{
+                      const next=[...current,...accepted];
+                      if(next.length>MAX_MEDIA_FILES){setError(en ? "You can attach up to 5 files." : "Tu peux joindre jusqu'à 5 fichiers.");return current;}
+                      if(next.reduce((sum,file)=>sum+file.size,0)>MAX_MEDIA_TOTAL_SIZE){setError(en ? "The total media size must not exceed 50 MB." : "Le poids total des médias ne doit pas dépasser 50 Mo.");return current;}
+                      return next;
+                    });
+                  }}/>
+                <span aria-hidden="true">＋</span><strong>{en ? "Add photos, videos or audio" : "Ajouter des photos, vidéos ou audios"}</strong>
+              </label>
+              <small>{en ? "Choose files from your device · GIF supported · 5 files max" : "Choisis des fichiers sur ton appareil · GIF accepté · 5 fichiers max"}</small>
+            </div>
+            {mediaFiles.length>0 && <div className="community-media-preview-list">
+              {mediaFiles.map((file,index)=>{
+                const mime=getMediaMimeType(file) ?? "";
+                return <div className="community-media-preview" key={file.name+"-"+file.size+"-"+index}>
+                  {mime.startsWith("image/") ? <img src={mediaPreviews[index]} alt={file.name}/> : mime.startsWith("video/") ? <video src={mediaPreviews[index]} muted controls playsInline/> : <div className="community-audio-preview"><span>♫</span><strong>{file.name}</strong></div>}
+                  <div className="community-media-preview-meta"><strong>{file.name}</strong><small>{formatMediaSize(file.size,en)}</small></div>
+                  <button type="button" onClick={()=>void removeQueuedMedia(index)} aria-label={en ? "Remove media" : "Retirer le média"}>×</button>
+                </div>;
+              })}
+            </div>}
             <div className="community-composer-bottom">
               <label className="community-mood-select"><span>😊 {en ? "My mood" : "Mon humeur"}</span><select value={mood} onChange={event => setMood(event.target.value as Mood | "")}><option value="">{en ? "Choose (optional)" : "Choisir (facultatif)"}</option>{moods.map(item => <option value={item.value} key={item.value}>{item.emoji} {en ? item.en : item.fr}</option>)}</select></label>
               <span className="community-char-count">{body.length}/5000</span>
-              <button className="community-primary-button" disabled={busy || !body.trim()}>{busy ? (en ? "Publishing…" : "Publication…") : (en ? "Publish" : "Publier")} <span>↗</span></button>
+              <button className="community-primary-button" disabled={busy || (!body.trim() && mediaFiles.length===0)}>{busy ? (uploadLabel || (en ? "Publishing…" : "Publication…")) : (en ? "Publish" : "Publier")} <span>↗</span></button>
             </div>
             <p className="community-privacy-note">🔒 {en ? "Visible only to verified JEC members. Be kind and protect everyone's privacy." : "Visible uniquement aux membres JEC vérifiés. Restons bienveillants et protégeons la vie privée de chacun."}</p>
           </form>
@@ -548,6 +773,17 @@ export default function CommunityPage() {
           <p className="community-sidebar-note">{en ? "The feed is private to verified JEC members. Public pages remain available to visitors." : "Le fil est privé et réservé aux membres JEC vérifiés. Les pages publiques restent accessibles aux visiteurs."}</p>
         </aside>
       </div>
+
+      {shareTarget && <div className="community-modal-backdrop" role="presentation" onMouseDown={event => { if (event.target===event.currentTarget) setShareTarget(null); }}>
+        <section className="community-share-modal" role="dialog" aria-modal="true" aria-labelledby="community-share-title">
+          <button type="button" className="community-modal-close" onClick={()=>setShareTarget(null)} aria-label={en ? "Close" : "Fermer"}>×</button>
+          <span className="community-eyebrow">{en ? "SPREAD THE WORD" : "FAIRE CIRCULER"}</span>
+          <h2 id="community-share-title">{en ? "Reshare this post" : "Repartager cette publication"}</h2>
+          <p>{en ? "Add a thought to introduce this post to the community (optional)." : "Ajoute un mot pour accompagner cette publication (facultatif)."}</p>
+          <textarea rows={4} maxLength={5000} value={shareComment} onChange={event=>setShareComment(event.target.value)} placeholder={en ? "Why are you sharing it?" : "Pourquoi souhaites-tu la partager ?"} />
+          <div><button type="button" className="community-secondary-button" onClick={()=>setShareTarget(null)}>{en ? "Cancel" : "Annuler"}</button><button type="button" className="community-primary-button" disabled={busy} onClick={()=>void resharePost()}>{en ? "Reshare" : "Repartager"} ↗</button></div>
+        </section>
+      </div>}
 
       {reportTarget && <div className="community-modal-backdrop" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) setReportTarget(null); }}>
         <section className="community-report-modal" role="dialog" aria-modal="true" aria-labelledby="community-report-title">
