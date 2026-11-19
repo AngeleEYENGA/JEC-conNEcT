@@ -77,6 +77,10 @@ const rightsLabels: Record<RightsStatus, { fr: string; en: string }> = {
   unknown: { fr: "Droits inconnus", en: "Rights unknown" }
 };
 
+function tArchiveSpirituality(en: boolean) {
+  return en ? "Spiritual resources" : "Ressources spirituelles";
+}
+
 function formatDate(value: string | null, en: boolean) {
   if (!value) return "";
   const date = new Date(value + (value.length === 10 ? "T00:00:00" : ""));
@@ -424,10 +428,10 @@ export default function ArchivesPage() {
           {loading ? <p className="muted">{en ? "Loading archive catalogue…" : "Chargement du catalogue…"}</p>
             : visibleItems.length ? visibleItems.map((item)=>(
               <article className="archive-record-card" key={item.id}>
-                <div className="archive-record-icon">{collectionMeta[item.collection_key]?.icon??"✧"}</div>
+                <div className="archive-record-icon">{item.tags?.includes("jec-spirituality")?"✧":(collectionMeta[item.collection_key]?.icon??"✧")}</div>
                 <div className="archive-record-main">
                   <div className="archive-record-meta">
-                    <span>{en?collectionMeta[item.collection_key]?.en:collectionMeta[item.collection_key]?.fr}</span>
+                    <span>{item.tags?.includes("jec-spirituality")?tArchiveSpirituality(en):(en?collectionMeta[item.collection_key]?.en:collectionMeta[item.collection_key]?.fr)}</span>
                     {item.status!=="approved"&&<b className={"archive-status "+item.status}>{item.status==="review"?(en?"Awaiting review":"À valider"):(item.status==="draft"?(en?"Draft":"Brouillon"):(en?"Archived":"Archivée"))}</b>}
                     {item.visibility_scope==="public"&&item.status==="approved"&&<b className="archive-public-badge">{en?"PUBLIC":"PUBLIC"}</b>}
                   </div>
@@ -443,7 +447,7 @@ export default function ArchivesPage() {
                   </div>
                   {(item.source_label||item.source_reference)&&<div className="archive-provenance"><strong>{en?"Provenance":"Provenance"}</strong><span>{[item.source_label,item.source_reference].filter(Boolean).join(" · ")}</span></div>}
                   {item.source_url&&<a className="archive-source-link" href={item.source_url} target="_blank" rel="noreferrer">{en?"Open original source":"Consulter la source d’origine"} ↗</a>}
-                  {item.tags?.length>0&&<div className="archive-tags">{item.tags.map((tag)=><span key={tag}>{tag}</span>)}</div>}
+                  {item.tags?.some((tag)=>tag!=="jec-spirituality"&&!tag.startsWith("spiritual-type:"))&&<div className="archive-tags">{item.tags.filter((tag)=>tag!=="jec-spirituality"&&!tag.startsWith("spiritual-type:")).map((tag)=><span key={tag}>{tag}</span>)}</div>}
                   {item.files?.length>0&&<div className="archive-attachments"><strong>{en?"Digital attachments":"Pièces numériques"}</strong>{item.files.slice().sort((a,b)=>a.sort_order-b.sort_order).map((file)=><button type="button" key={file.id} onClick={()=>void openArchiveFile(file)}><span>▤</span>{file.file_name}<small>{formatSize(file.file_size,en)}</small>↗</button>)}</div>}
                   {isAdmin&&item.status==="review"&&<div className="archive-review-panel">
                     <div className="archive-review-fields">
