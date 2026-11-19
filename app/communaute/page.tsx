@@ -10,7 +10,11 @@ type ReactionType = "like" | "love" | "support" | "celebrate" | "pray";
 type Profile = { user_id: string; first_name: string | null; last_name: string | null; display_name: string | null; avatar_url: string | null };
 type Reaction = { post_id: string; user_id: string; reaction_type: ReactionType };
 type Comment = { id: string; post_id: string; author_id: string; body: string; status: string; created_at: string };
-type Post = { id: string; author_id: string; body: string; mood: Mood | null; status: string; created_at: string; updated_at: string; reactions: Reaction[]; comments: Comment[] };
+type BasePost = { id: string; author_id: string; body: string; mood: Mood | null; status: string; created_at: string; updated_at: string; shared_post_id: string | null };
+type MediaRow = { id: string; post_id: string; owner_id: string; storage_path: string; file_name: string; mime_type: string; file_size: number; position: number };
+type MediaAsset = MediaRow & { signedUrl: string | null };
+type SharedPost = BasePost & { media: MediaAsset[] };
+type Post = BasePost & { reactions: Reaction[]; comments: Comment[]; media: MediaAsset[]; sharedPost: SharedPost | null };
 type Report = { id: string; post_id: string | null; comment_id: string | null; reporter_id: string; reason: string; details: string; status: string; created_at: string; target_body: string };
 
 const moods: Array<{ value: Mood; emoji: string; fr: string; en: string }> = [
@@ -31,6 +35,38 @@ const reactions: Array<{ value: ReactionType; emoji: string; fr: string; en: str
   { value: "celebrate", emoji: "🎉", fr: "Bravo", en: "Celebrate" },
   { value: "pray", emoji: "🙏", fr: "Prière", en: "Prayer" }
 ];
+
+const COMMUNITY_MEDIA_BUCKET = "jec-community-media";
+const MAX_MEDIA_FILES = 5;
+const MAX_MEDIA_FILE_SIZE = 20 * 1024 * 1024;
+const MAX_MEDIA_TOTAL_SIZE = 50 * 1024 * 1024;
+const allowedMediaTypes = new Set([
+  "image/jpeg","image/png","image/webp","image/gif",
+  "video/mp4","video/webm",
+  "audio/mpeg","audio/mp4","audio/aac","audio/wav","audio/ogg","audio/webm"
+]);
+
+function getMediaMimeType(file: File): string | null {
+  if (allowedMediaTypes.has(file.type)) return file.type;
+  const extension = file.name.split(".").pop()?.toLowerCase() ?? "";
+  const byExtension: Record<string,string> = {
+    jpg:"image/jpeg",jpeg:"image/jpeg",png:"image/png",webp:"image/webp",gif:"image/gif",
+    mp4:"video/mp4",webm:"video/webm",mp3:"audio/mpeg",m4a:"audio/mp4",aac:"audio/aac",
+    wav:"audio/wav",ogg:"audio/ogg"
+  };
+  return byExtension[extension] ?? null;
+}
+
+function formatMediaSize(bytes: number, en: boolean) {
+  return bytes < 1024 * 1024
+    ? Math.max(1,Math.round(bytes / 1024)) + " KB"
+    : (bytes / (1024 * 1024)).toFixed(1) + (en ? " MB" : " Mo");
+}
+
+function safeMediaFileName(value: string) {
+  return value.normalize("NFKD").replace(/[\\u0300-\\u036f]/g,"")
+    .replace(/[^a-zA-Z0-9._-]+/g,"_").slice(-180) || "community-media";
+}
 
 const reportReasons = [
   { value: "spam", fr: "Spam ou publicité", en: "Spam or advertising" },
@@ -83,8 +119,19 @@ export default function CommunityPage() {
   const [editingPostId, setEditingPostId] = useState<string | null>(null);
   const [editBody, setEditBody] = useState("");
   const [search, setSearch] = useState("");
+  const [mediaFiles, setMediaFiles] = useState<File[]>([]);
+  const [mediaPreviews, setMediaPreviews] = useState<string[]>([]);
+  const [uploadLabel, setUploadLabel] = useState("");
+  const [shareTarget, setShareTarget] = useState<Post | null>(null);
+  const [shareComment, setShareComment] = useState("");
 
   const profileById = useMemo(() => new Map(profiles.map(profile => [profile.user_id, profile])), [profiles]);
+
+  useEffect(() => {
+    const urls = mediaFiles.map(file => URL.createObjectURL(file));
+    setMediaPreviews(urls);
+    return () => urls.forEach(url => URL.revokeObjectURL(url));
+  }, [mediaFiles]);
 
   const loadFeed = useCallback(async () => {
     if (!supabase) {
@@ -116,7 +163,7 @@ export default function CommunityPage() {
 
     const { data: postRows, error: postError } = await supabase
       .from("jec_community_posts")
-      .select("id,author_id,body,mood,status,created_at,updated_at")
+      .select("id,author_id,body,mood,status,created_at,updated_at,shared_post_id")
       .order("created_at", { ascending: false })
       .limit(60);
     if (postError) {
@@ -125,7 +172,7 @@ export default function CommunityPage() {
       return;
     }
 
-    const basePosts = (postRows ?? []) as Array<Omit<Post, "reactions" | "comments">>;
+    const basePosts = (postRows ?? []) as BasePost[];
     const postIds = basePosts.map(post => post.id);
     if (!postIds.length) {
       setPosts([]);
@@ -135,43 +182,74 @@ export default function CommunityPage() {
       return;
     }
 
-    const [reactionResult, commentResult] = await Promise.all([
-      supabase.from("jec_community_reactions")
-        .select("post_id,user_id,reaction_type")
-        .in("post_id", postIds),
+    const sharedIds = [...new Set(basePosts.map(post => post.shared_post_id).filter((id): id is string => Boolean(id)))];
+    const allContentIds = [...new Set([...postIds,...sharedIds])];
+    const [reactionResult, commentResult, sharedResult, mediaResult] = await Promise.all([
+      supabase.from("jec_community_reactions").select("post_id,user_id,reaction_type").in("post_id", postIds),
       supabase.from("jec_community_comments")
         .select("id,post_id,author_id,body,status,created_at")
-        .in("post_id", postIds)
-        .eq("status", "published")
-        .order("created_at", { ascending: true })
-        .limit(600)
+        .in("post_id", postIds).eq("status", "published")
+        .order("created_at", { ascending: true }).limit(600),
+      sharedIds.length
+        ? supabase.from("jec_community_posts")
+            .select("id,author_id,body,mood,status,created_at,updated_at,shared_post_id")
+            .in("id",sharedIds).eq("status","published")
+        : Promise.resolve({data:[] as BasePost[],error:null}),
+      supabase.from("jec_community_media")
+        .select("id,post_id,owner_id,storage_path,file_name,mime_type,file_size,position")
+        .in("post_id",allContentIds).order("position",{ascending:true})
     ]);
 
     if (reactionResult.error) setError(reactionResult.error.message);
     if (commentResult.error) setError(commentResult.error.message);
+    if (sharedResult.error) setError(sharedResult.error.message);
+    if (mediaResult.error) setError(mediaResult.error.message);
 
     const reactionRows = (reactionResult.data ?? []) as Reaction[];
     const commentRows = (commentResult.data ?? []) as Comment[];
+    const originalRows = (sharedResult.data ?? []) as BasePost[];
+    const mediaRows = (mediaResult.data ?? []) as MediaRow[];
+    const signedByPath = new Map<string,string>();
+    if (mediaRows.length) {
+      const {data:signedRows,error:signedError} = await supabase.storage
+        .from(COMMUNITY_MEDIA_BUCKET).createSignedUrls(mediaRows.map(item => item.storage_path),3600);
+      if (signedError) setError(en ? "Some media could not be loaded." : "Certains médias n'ont pas pu être chargés.");
+      (signedRows ?? []).forEach(item => {
+        if (item.path && item.signedUrl) signedByPath.set(item.path,item.signedUrl);
+      });
+    }
+
+    const mediaByPostId = new Map<string,MediaAsset[]>();
+    mediaRows.forEach(item => {
+      const list=mediaByPostId.get(item.post_id) ?? [];
+      list.push({...item,signedUrl:signedByPath.get(item.storage_path) ?? null});
+      mediaByPostId.set(item.post_id,list);
+    });
+
     const profileIds = [...new Set([
       ...basePosts.map(post => post.author_id),
+      ...originalRows.map(post => post.author_id),
       ...commentRows.map(comment => comment.author_id)
     ])];
-
     let profileRows: Profile[] = [];
     if (profileIds.length) {
       const { data, error: profileError } = await supabase
-        .from("jec_profiles")
-        .select("user_id,first_name,last_name,display_name,avatar_url")
+        .from("jec_profiles").select("user_id,first_name,last_name,display_name,avatar_url")
         .in("user_id", profileIds);
       if (profileError) setError(profileError.message);
       profileRows = (data ?? []) as Profile[];
     }
     setProfiles(profileRows);
 
+    const sharedById = new Map<string,SharedPost>(originalRows.map(post=>[
+      post.id,{...post,media:mediaByPostId.get(post.id) ?? []}
+    ]));
     const hydrated = basePosts.map(post => ({
       ...post,
       reactions: reactionRows.filter(reaction => reaction.post_id === post.id),
-      comments: commentRows.filter(comment => comment.post_id === post.id)
+      comments: commentRows.filter(comment => comment.post_id === post.id),
+      media: mediaByPostId.get(post.id) ?? [],
+      sharedPost: post.shared_post_id ? sharedById.get(post.shared_post_id) ?? null : null
     })) as Post[];
     setPosts(hydrated);
 
@@ -216,30 +294,83 @@ export default function CommunityPage() {
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "jec_community_posts" }, () => { void loadFeed(); })
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "jec_community_comments" }, () => { void loadFeed(); })
       .on("postgres_changes", { event: "*", schema: "public", table: "jec_community_reactions" }, () => { void loadFeed(); })
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "jec_community_media" }, () => { void loadFeed(); })
       .subscribe();
     return () => { void supabase.removeChannel(channel); };
   }, [supabase, userId, loadFeed]);
 
   async function createPost(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!supabase || !userId || !body.trim()) return;
-    setBusy(true);
-    setError("");
-    setNotice("");
-    const { error: createError } = await supabase.from("jec_community_posts").insert({
-      author_id: userId,
-      body: body.trim(),
-      mood: mood || null,
-      status: "published"
+    if (!supabase || !userId || (!body.trim() && mediaFiles.length===0)) return;
+    setBusy(true); setError(""); setNotice("");
+    const postId=crypto.randomUUID();
+    const uploadedPaths:string[]=[];
+    const mediaRowsToInsert:Array<Omit<MediaRow,"id">>=[];
+    for (const [index,file] of mediaFiles.entries()) {
+      const mimeType=getMediaMimeType(file);
+      if (!mimeType) {
+        setError(en ? "Unsupported media type." : "Type de média non pris en charge.");
+        if(uploadedPaths.length) await supabase.storage.from(COMMUNITY_MEDIA_BUCKET).remove(uploadedPaths);
+        setBusy(false); setUploadLabel(""); return;
+      }
+      setUploadLabel(en ? `Uploading media ${index+1}/${mediaFiles.length}…` : `Envoi du média ${index+1}/${mediaFiles.length}…`);
+      const path=`${userId}/${postId}/${crypto.randomUUID()}-${safeMediaFileName(file.name)}`;
+      const {error:uploadError}=await supabase.storage.from(COMMUNITY_MEDIA_BUCKET).upload(path,file,{
+        cacheControl:"3600",contentType:mimeType,upsert:false
+      });
+      if(uploadError) {
+        if(uploadedPaths.length) await supabase.storage.from(COMMUNITY_MEDIA_BUCKET).remove(uploadedPaths);
+        setError((en ? "Media upload failed: " : "Échec de l'envoi du média : ")+uploadError.message);
+        setBusy(false); setUploadLabel(""); return;
+      }
+      uploadedPaths.push(path);
+      mediaRowsToInsert.push({
+        post_id:postId,owner_id:userId,storage_path:path,
+        file_name:file.name.slice(0,255),mime_type:mimeType,file_size:file.size,position:index
+      });
+    }
+
+    setUploadLabel(en ? "Publishing…" : "Publication…");
+    const {error:createError}=await supabase.from("jec_community_posts").insert({
+      id:postId,author_id:userId,body:body.trim(),mood:mood||null,status:"published",shared_post_id:null
     });
-    if (createError) setError(createError.message);
-    else {
-      setBody("");
-      setMood("");
+    if(createError) {
+      if(uploadedPaths.length) await supabase.storage.from(COMMUNITY_MEDIA_BUCKET).remove(uploadedPaths);
+      setError(createError.message);
+    } else {
+      if(mediaRowsToInsert.length) {
+        const {error:mediaError}=await supabase.from("jec_community_media").insert(mediaRowsToInsert);
+        if(mediaError) {
+          if(uploadedPaths.length) await supabase.storage.from(COMMUNITY_MEDIA_BUCKET).remove(uploadedPaths);
+          await supabase.from("jec_community_posts").delete().eq("id",postId);
+          setError(mediaError.message); setBusy(false); setUploadLabel(""); return;
+        }
+      }
+      setBody(""); setMood(""); setMediaFiles([]);
       setNotice(en ? "Your post has been published." : "Ta publication a été publiée.");
       await loadFeed();
     }
+    setBusy(false); setUploadLabel("");
+  }
+
+  async function resharePost() {
+    if(!supabase || !userId || !shareTarget) return;
+    setBusy(true); setError("");
+    const {error:shareError}=await supabase.from("jec_community_posts").insert({
+      id:crypto.randomUUID(),author_id:userId,body:shareComment.trim(),mood:null,
+      status:"published",shared_post_id:shareTarget.shared_post_id ?? shareTarget.id
+    });
+    if(shareError) setError(shareError.message);
+    else {
+      setShareTarget(null); setShareComment("");
+      setNotice(en ? "Post reshared with the community." : "Publication repartagée avec la communauté.");
+      await loadFeed();
+    }
     setBusy(false);
+  }
+
+  async function removeQueuedMedia(index:number) {
+    setMediaFiles(current=>current.filter((_,currentIndex)=>currentIndex!==index));
   }
 
   async function toggleReaction(post: Post, type: ReactionType) {
@@ -284,9 +415,15 @@ export default function CommunityPage() {
 
   async function deletePost(postId: string) {
     if (!supabase || !window.confirm(en ? "Delete this post and its comments?" : "Supprimer cette publication et ses commentaires ?")) return;
+    const target=posts.find(post=>post.id===postId);
+    const paths=target?.media.map(item=>item.storage_path) ?? [];
     const { error: deleteError } = await supabase.from("jec_community_posts").delete().eq("id", postId);
     if (deleteError) setError(deleteError.message);
     else {
+      if(paths.length) {
+        const {error:storageError}=await supabase.storage.from(COMMUNITY_MEDIA_BUCKET).remove(paths);
+        if(storageError) setError(en ? "Post deleted, but some stored media could not be removed." : "Publication supprimée, mais certains fichiers n'ont pas pu être effacés.");
+      }
       setNotice(en ? "Post deleted." : "Publication supprimée.");
       await loadFeed();
     }
@@ -369,7 +506,8 @@ export default function CommunityPage() {
     if (!isAdmin && post.status !== "published" && post.author_id !== userId) return false;
     if (activeTab === "mine" && post.author_id !== userId) return false;
     const author = profileName(profileById.get(post.author_id), en ? "JEC member" : "Membre JEC");
-    return (author + " " + post.body).toLowerCase().includes(search.toLowerCase());
+    const originalBody=post.sharedPost?.body ?? "";
+    return (author + " " + post.body + " " + originalBody).toLowerCase().includes(search.toLowerCase());
   });
 
   function renderPost(post: Post) {
