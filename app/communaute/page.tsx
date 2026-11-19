@@ -458,8 +458,11 @@ export default function CommunityPage() {
       <header className="community-header">
         <Link href="/" className="brand-lockup"><span className="brand-mark"><span>JEC</span><i aria-hidden="true">✝</i></span><span>conNEcT</span></Link>
         <div className="community-header-actions">
-          <Link href="/messagerie">{en ? "Messages" : "Messagerie"}</Link>
-          <Link href="/workspace">{en ? "Workspace" : "Workspace"}</Link>
+          <nav className="member-area-nav" aria-label={en ? "Member navigation" : "Navigation membre"}>
+            <Link href="/workspace">{en ? "Workspace" : "Workspace"}</Link>
+            <Link href="/communaute" aria-current="page">{en ? "Community" : "Communauté"}</Link>
+            <Link href="/messagerie">{en ? "Messages" : "Messagerie"}</Link>
+          </nav>
           <LanguageSwitcher />
           <Link href="/" className="community-back-link">{en ? "Portal" : "Portail JEC"}</Link>
         </div>
