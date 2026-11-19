@@ -114,40 +114,62 @@ export default function Home() {
     id:string; email:string; displayName:string; avatarUrl:string|null;
     membershipStatus:"pending"|"verified"|"rejected"; isAdmin:boolean;
   }|null>(null);
+  const [authResolved,setAuthResolved]=useState(false);
 
   useEffect(()=>{
     const supabase=getSupabaseBrowserClient();
-    if(!supabase) return;
+    if(!supabase){setIdentity(null);setAuthResolved(true);return;}
+
     let mounted=true;
     let currentUser:{id:string;email?:string;user_metadata?:Record<string,unknown>}|null=null;
     let membershipChannel:ReturnType<typeof supabase.channel>|null=null;
+    let authEventVersion=0;
+    let identityRequestVersion=0;
 
     const loadIdentity=async(user:{id:string;email?:string;user_metadata?:Record<string,unknown>})=>{
-      const [profileResult,membershipResult,adminResult]=await Promise.all([
-        supabase.from("jec_profiles").select("first_name,last_name,display_name,avatar_url").eq("user_id",user.id).maybeSingle(),
-        supabase.from("jec_memberships").select("membership_status").eq("user_id",user.id).maybeSingle(),
-        supabase.rpc("is_jec_admin")
-      ]);
-      if(!mounted) return;
-      const p=profileResult.data;
-      const meta=user.user_metadata??{};
-      const fallback=typeof meta.full_name==="string"?meta.full_name:typeof meta.name==="string"?meta.name:"";
-      const display=typeof p?.display_name==="string"&&p.display_name.trim()?p.display_name:(fallback||user.email||"Compte JEC");
-      setIdentity({
-        id:user.id,
-        email:user.email??"",
-        displayName:display,
-        avatarUrl:typeof p?.avatar_url==="string"?p.avatar_url:(typeof meta.avatar_url==="string"?meta.avatar_url:null),
-        membershipStatus:membershipResult.data?.membership_status==="verified"?"verified":membershipResult.data?.membership_status==="rejected"?"rejected":"pending",
-        isAdmin:adminResult.data===true
-      });
+      const requestVersion=++identityRequestVersion;
+      try{
+        const [profileResult,membershipResult,adminResult]=await Promise.all([
+          supabase.from("jec_profiles").select("first_name,last_name,display_name,avatar_url").eq("user_id",user.id).maybeSingle(),
+          supabase.from("jec_memberships").select("membership_status").eq("user_id",user.id).maybeSingle(),
+          supabase.rpc("is_jec_admin")
+        ]);
+        if(!mounted||currentUser?.id!==user.id||requestVersion!==identityRequestVersion)return;
+
+        const p=profileResult.data;
+        const meta=user.user_metadata??{};
+        const fallback=typeof meta.full_name==="string"?meta.full_name:typeof meta.name==="string"?meta.name:"";
+        const display=typeof p?.display_name==="string"&&p.display_name.trim()?p.display_name:(fallback||user.email||"Compte JEC");
+        setIdentity({
+          id:user.id,
+          email:user.email??"",
+          displayName:display,
+          avatarUrl:typeof p?.avatar_url==="string"?p.avatar_url:(typeof meta.avatar_url==="string"?meta.avatar_url:null),
+          membershipStatus:membershipResult.data?.membership_status==="verified"?"verified":membershipResult.data?.membership_status==="rejected"?"rejected":"pending",
+          isAdmin:adminResult.data===true&&!adminResult.error
+        });
+        setAuthResolved(true);
+      }catch{
+        if(!mounted||currentUser?.id!==user.id||requestVersion!==identityRequestVersion)return;
+        const meta=user.user_metadata??{};
+        const fallback=typeof meta.full_name==="string"?meta.full_name:typeof meta.name==="string"?meta.name:"";
+        setIdentity({
+          id:user.id,
+          email:user.email??"",
+          displayName:fallback||user.email||"Compte JEC",
+          avatarUrl:typeof meta.avatar_url==="string"?meta.avatar_url:null,
+          membershipStatus:"pending",
+          isAdmin:false
+        });
+        setAuthResolved(true);
+      }
     };
 
     const watchMembership=(user:{id:string;email?:string;user_metadata?:Record<string,unknown>})=>{
       if(membershipChannel) void supabase.removeChannel(membershipChannel);
       membershipChannel=supabase.channel("jec-membership-status:"+user.id)
         .on("postgres_changes",{event:"*",schema:"public",table:"jec_memberships",filter:"user_id=eq."+user.id},()=>{
-          void loadIdentity(user);
+          if(currentUser?.id===user.id) void loadIdentity(user);
         })
         .subscribe();
     };
@@ -156,28 +178,44 @@ export default function Home() {
       if(!document.hidden&&currentUser) void loadIdentity(currentUser);
     };
 
-    void supabase.auth.getUser().then(({data}:{data:{user:{id:string;email?:string;user_metadata?:Record<string,unknown>}|null}})=>{
-      if(data.user){
-        currentUser=data.user;
-        void loadIdentity(data.user);
-        watchMembership(data.user);
-      }else if(mounted){
-        currentUser=null;
-        setIdentity(null);
-      }
-    });
-
-    const {data:{subscription}}=supabase.auth.onAuthStateChange((_event:string,session:{user:{id:string;email?:string;user_metadata?:Record<string,unknown>}}|null)=>{
+    // Subscribe before reading the initial session so a sign-in/sign-out occurring
+    // during page hydration cannot be overwritten by an older getUser() response.
+    const {data:{subscription}}=supabase.auth.onAuthStateChange((_event,session)=>{
+      authEventVersion+=1;
       if(!session?.user){
+        identityRequestVersion+=1;
         currentUser=null;
         setIdentity(null);
+        setAuthResolved(true);
         if(membershipChannel){void supabase.removeChannel(membershipChannel);membershipChannel=null;}
         return;
       }
       const user=session.user;
+      const changedUser=currentUser?.id!==user.id;
       currentUser=user;
-      Promise.resolve().then(()=>loadIdentity(user));
+      if(changedUser){setIdentity(null);setAuthResolved(false);}
+      void Promise.resolve().then(()=>loadIdentity(user));
+      if(changedUser||!membershipChannel) watchMembership(user);
+    });
+
+    const initialAuthVersion=authEventVersion;
+    void supabase.auth.getUser().then(({data:{user}})=>{
+      if(!mounted||authEventVersion!==initialAuthVersion)return;
+      if(!user){
+        currentUser=null;
+        setIdentity(null);
+        setAuthResolved(true);
+        return;
+      }
+      currentUser=user;
+      setAuthResolved(false);
+      void loadIdentity(user);
       watchMembership(user);
+    }).catch(()=>{
+      if(!mounted||authEventVersion!==initialAuthVersion)return;
+      currentUser=null;
+      setIdentity(null);
+      setAuthResolved(true);
     });
 
     window.addEventListener("focus",refreshOnReturn);
@@ -211,7 +249,19 @@ export default function Home() {
   );
   const visibleNav = canAccessMemberNavigation
     ? nav
-    : nav.filter(([fr]) => !privateNavItems.has(fr));
+    : nav.filter(([fr]) => !privateNavItems.has(fr) || fr === "Workspace");
+  const workspaceNavHref = canAccessMemberNavigation
+    ? "/workspace"
+    : identity ? "/compte" : "/login?next=%2Fworkspace";
+  const workspaceNavTitle = !authResolved
+    ? t("Vérification de la connexion…", "Checking sign-in…")
+    : canAccessMemberNavigation
+      ? t("Ouvrir mes espaces de travail", "Open my workspaces")
+      : identity?.membershipStatus === "rejected"
+        ? t("Adhésion non validée — consulter mon compte", "Membership not approved — view your account")
+        : identity
+          ? t("Adhésion JEC à confirmer — consulter mon compte", "JEC membership pending — view your account")
+          : t("Connecte-toi pour accéder au Workspace", "Sign in to access Workspace");
 
   function NewsCard({item}:{item:typeof news[number]}) {
     return <article className="post-card verified-news-card">
@@ -282,12 +332,29 @@ export default function Home() {
     <aside className="sidebar">
       <Link href="/" className="brand-lockup side-brand"><div className="brand-mark"><span>JEC</span><i aria-hidden="true">✝</i></div><span>conNEcT</span></Link>
       <div className="workspace-switch"><div className="workspace-avatar">J</div><div><strong>JEC France</strong><small>{t("Portail public","Public portal")}</small></div><span className="chevron">⌄</span></div>
-      <nav className="main-nav">{visibleNav.map(([fr,english,icon,group])=><div key={fr}>{group&&<p className="nav-group">{t(group==="ESPACE PUBLIC"?"ESPACE PUBLIC":group==="COLLABORATION"?"COLLABORATION":"PATRIMOINE",group==="ESPACE PUBLIC"?"PUBLIC SPACE":group==="COLLABORATION"?"COLLABORATION":"HERITAGE")}</p>}{(fr==="Spiritualité")?<Link href="/spiritualite" className="nav-item"><span className="nav-icon">{icon}</span><span>{en?english:fr}</span></Link>:(["Workspace","Messagerie","Réunions","Décisions & votes","Projets","Documents","Partenaires","Archives JEC"].includes(fr))?<Link href={fr==="Workspace"?"/workspace":fr==="Messagerie"?"/messagerie":fr==="Réunions"?"/reunions":fr==="Décisions & votes"?"/decisions":fr==="Projets"?"/projets":fr==="Partenaires"?"/partenaires":fr==="Archives JEC"?"/archives":"/documents"} className="nav-item"><span className="nav-icon">{icon}</span><span>{en?english:fr}</span></Link>:<button onClick={()=>setActive(fr)} className={active===fr?"nav-item active":"nav-item"}><span className={fr==="JEC AI"?"nav-icon sparkle":"nav-icon"}>{icon}</span><span>{en?english:fr}</span></button>}</div>)}</nav>
+      <nav className="main-nav">
+        {visibleNav.map(([fr,english,icon,group])=><div key={fr}>
+          {group&&<p className="nav-group">{t(group==="ESPACE PUBLIC"?"ESPACE PUBLIC":group==="COLLABORATION"?"COLLABORATION":"PATRIMOINE",group==="ESPACE PUBLIC"?"PUBLIC SPACE":group==="COLLABORATION"?"COLLABORATION":"HERITAGE")}</p>}
+          {fr==="Workspace" ? (
+            !authResolved
+              ? <span className="nav-item nav-item-loading" aria-disabled="true" title={workspaceNavTitle}><span className="nav-icon">{icon}</span><span>{en?english:fr}</span></span>
+              : <Link href={workspaceNavHref} className={canAccessMemberNavigation?"nav-item":"nav-item nav-item-locked"} title={workspaceNavTitle} aria-label={workspaceNavTitle}>
+                  <span className="nav-icon">{canAccessMemberNavigation?icon:"🔒"}</span><span>{en?english:fr}</span>
+                </Link>
+          ) : fr==="Spiritualité" ? (
+            <Link href="/spiritualite" className="nav-item"><span className="nav-icon">{icon}</span><span>{en?english:fr}</span></Link>
+          ) : (["Messagerie","Réunions","Décisions & votes","Projets","Documents","Partenaires","Archives JEC"].includes(fr)) ? (
+            <Link href={fr==="Messagerie"?"/messagerie":fr==="Réunions"?"/reunions":fr==="Décisions & votes"?"/decisions":fr==="Projets"?"/projets":fr==="Partenaires"?"/partenaires":fr==="Archives JEC"?"/archives":"/documents"} className="nav-item"><span className="nav-icon">{icon}</span><span>{en?english:fr}</span></Link>
+          ) : (
+            <button onClick={()=>setActive(fr)} className={active===fr?"nav-item active":"nav-item"}><span className={fr==="JEC AI"?"nav-icon sparkle":"nav-icon"}>{icon}</span><span>{en?english:fr}</span></button>
+          )}
+        </div>)}
+      </nav>
       {identity?.isAdmin&&<div className="admin-nav-group"><p className="nav-group">{t("ADMINISTRATION","ADMINISTRATION")}</p><Link href="/gestion" className="nav-item admin-nav-link"><span className="nav-icon">⚙</span><span>{t("Espace administrateur","Administrator area")}</span></Link></div>}
       <div className="sidebar-bottom"><div className="help-card"><div className="help-icon">✧</div><strong>{t("Sources vérifiables","Verifiable sources")}</strong><p>{t("Les faits publics renvoient à leurs publications d'origine.","Public facts link to their original publications.")}</p><button onClick={()=>setActive("Actualités JEC")}>{t("Voir les sources →","Browse sources →")}</button></div>{identity?<div className="profile-mini profile-mini-auth"><Link href="/compte" className="profile-avatar-link"><div className="avatar user">{identity.avatarUrl?<img src={identity.avatarUrl} alt=""/>:identity.displayName.trim().split(/\s+/).slice(0,2).map(x=>x[0]).join("").toUpperCase()}</div></Link><Link href="/compte" className="profile-identity"><strong>{identity.displayName}</strong><small>{identity.isAdmin?t("Administrateur JEC-conNEcT","JEC-conNEcT administrator"):identity.membershipStatus==="verified"?t("Membre JEC vérifié","Verified JEC member"):identity.membershipStatus==="rejected"?t("Adhésion non validée","Membership not approved"):t("Compte connecté · adhésion à confirmer","Signed in · membership pending")}</small></Link><button className="profile-signout" onClick={signOut} title={t("Se déconnecter","Sign out")} aria-label={t("Se déconnecter","Sign out")}>↪</button></div>:<div className="profile-mini"><div className="avatar user">VP</div><div><strong>{t("Visiteur","Visitor")}</strong><small>{t("Aperçu public · non connecté","Public preview · signed out")}</small></div><Link className="profile-signin" href="/login">{t("Connexion","Sign in")}</Link></div>}</div>
     </aside>
     <main className="main-area">
-      <header className="topbar"><div className="breadcrumb">JEC France <span>/</span> <strong>{en?(nav.find(item=>item[0]===active)?.[1]??active):active}</strong></div><div className="top-actions"><label className="search-box"><span>⌕</span><input value={search} onChange={e=>setSearch(e.target.value)} placeholder={t("Rechercher dans les sources publiques","Search public sources")}/><kbd>⌘ K</kbd></label><PWAInstallButton/><LanguageSwitcher/>{identity?.isAdmin&&<Link className="admin-top-link" href="/gestion">{t("Administration","Administration")}</Link>}<Link className="top-login" href={identity?"/compte":"/login"}>{identity?t("Mon compte","My account"):t("Connexion","Sign in")}</Link></div></header>
+      <header className="topbar"><div className="breadcrumb">JEC France <span>/</span> <strong>{en?(nav.find(item=>item[0]===active)?.[1]??active):active}</strong></div><div className="top-actions"><label className="search-box"><span>⌕</span><input value={search} onChange={e=>setSearch(e.target.value)} placeholder={t("Rechercher dans les sources publiques","Search public sources")}/><kbd>⌘ K</kbd></label><PWAInstallButton/><LanguageSwitcher/>{identity?.isAdmin&&<Link className="admin-top-link" href="/gestion">{t("Administration","Administration")}</Link>}<Link className="top-login" href={authResolved?(identity?"/compte":"/login")} aria-disabled={!authResolved} title={!authResolved?t("Vérification de la connexion…","Checking sign-in…"):undefined}>{!authResolved?t("Vérification…","Checking…"):identity?t("Mon compte","My account"):t("Connexion","Sign in")}</Link></div></header>
       <div className="page-content">
         {identity?.membershipStatus==="pending"&&<p className="auth-config-note">Ton compte est connecté, mais ton adhésion JEC attend encore une validation. Une fois vérifié, l'administrateur devra aussi t'inviter dans les espaces de travail concernés.</p>}
         {identity?.membershipStatus==="rejected"&&<p className="alert error">Ton adhésion JEC n'a pas été validée. Contacte l'équipe responsable pour obtenir des précisions.</p>}
