@@ -705,9 +705,9 @@ export default function CommunityPage() {
                       return next;
                     });
                   }}/>
-                <span>＋</span><strong>{en ? "Add media" : "Ajouter un média"}</strong>
+                <span aria-hidden="true">＋</span><strong>{en ? "Add photos, videos or audio" : "Ajouter des photos, vidéos ou audios"}</strong>
               </label>
-              <small>{en ? "Photos · GIFs · Videos · Audio" : "Photos · GIF · Vidéos · Audio"} · 5 {en ? "files max" : "fichiers max"}</small>
+              <small>{en ? "Choose files from your device · GIF supported · 5 files max" : "Choisis des fichiers sur ton appareil · GIF accepté · 5 fichiers max"}</small>
             </div>
             {mediaFiles.length>0 && <div className="community-media-preview-list">
               {mediaFiles.map((file,index)=>{
