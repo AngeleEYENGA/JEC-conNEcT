@@ -298,7 +298,7 @@ La PR d'envoi d'e-mails via Google SMTP (#17) a été fermée sans fusion après
 
 - Branche de travail : `feat/jec-community-media-sharing-20261120`.
 - Bucket privé `jec-community-media` créé sur Supabase ; aucune exposition anonyme.
-- Table `jec_community_media` et politiques RLS/Storage appliquées via les migrations `20261119215121_jec_community_media_and_shares_20261120`, `20261119220552_jec_community_media_read_scope_20261120` et `20261119221704_jec_community_reaction_update_scope`.
+- Table `jec_community_media` et politiques RLS/Storage appliquées via les migrations `20261119215121_jec_community_media_and_shares_20261120`, `20261119220552_jec_community_media_read_scope_20261120` et `20261119221704_jec_community_reaction_update_scope`, `20261119223455_jec_community_reshare_rls_recursion_fix`, `20261119223951_jec_community_media_20mb_per_file_limit` et `20261119224024_jec_community_media_50mb_post_limit`.
 - Publication avec jusqu'à 5 images, GIF animés, vidéos ou fichiers audio ; 20 Mo par fichier et 50 Mo par publication.
 - Affichage par URL signée de 1 heure, lecteurs natifs audio/vidéo et galerie responsive.
 - Repartage d'une publication originale, avec commentaire facultatif et notification interne.
@@ -312,3 +312,15 @@ La PR d'envoi d'e-mails via Google SMTP (#17) a été fermée sans fusion après
 - Le client utilise désormais INSERT / UPDATE(reaction_type) / DELETE selon la réaction déjà présente.
 - La politique RLS UPDATE vérifie que la ligne appartient au membre et que la publication cible reste publiée.
 - Vérification des privilèges : INSERT/SELECT/DELETE autorisés au rôle authentifié ; UPDATE global refusé ; UPDATE de `reaction_type` autorisé ; aucune mise à jour de `post_id` ou `user_id` ; aucune lecture anonyme.
+
+
+## QA de la Communauté — 19 novembre 2026
+
+- Repartage : correction de la récursion RLS avec la fonction privée `private.jec_can_reshare_community_post(uuid)`, vérifiant l'identité, le rôle, la publication d'origine et l'absence de repartage imbriqué.
+- Test transactionnel du flux de repartage sous le rôle `authenticated` réussi.
+- Test transactionnel à deux membres : notification interne à l'auteur d'origine vérifiée.
+- Média : test transactionnel des politiques RLS sur `jec_community_media` et `storage.objects` réussi pour un membre vérifié.
+- Limite par fichier désormais imposée par Supabase Storage à 20 MiB, et par la table metadata.
+- Limite cumulée de 50 MiB par publication imposée par un trigger ; maximum cinq pièces jointes assuré par les positions 0 à 4 et leur unicité.
+- Les tests de base sont réalisés avec des transactions annulées : aucun post, média, repartage ou notification de test n'est conservé.
+- Reste à effectuer : test manuel du vrai transfert d'un fichier via l'interface du navigateur et de sa lecture via URL signée temporaire, puis test de bout en bout du repartage sur la prévisualisation. Aucune mise en production de la PR #19 n'est encore effectuée.
