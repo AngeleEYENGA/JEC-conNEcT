@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import type { AuthChangeEvent, Session, User } from "@supabase/supabase-js";
 import { useLanguage } from "@/components/language-provider";
@@ -35,6 +35,9 @@ export default function NotificationCenter() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  const sessionUserId = useRef("");
+  const loadRequestId = useRef(0);
+
   const unreadCount = useMemo(
     () => items.filter(item => !item.read_at).length,
     [items]
@@ -45,11 +48,23 @@ export default function NotificationCenter() {
     if (!supabase) return;
     let mounted = true;
 
-    const { data: authListener } = supabase.auth.onAuthStateChange((_event: AuthChangeEvent, session: Session | null) => {
-      const nextId = session?.user?.id ?? "";
+    const applySessionUser = (nextId: string) => {
+      if (sessionUserId.current !== nextId) {
+        sessionUserId.current = nextId;
+        loadRequestId.current += 1;
+        setItems([]);
+        setOpen(false);
+        setLoading(false);
+        if (!nextId) setError("");
+      }
       setUserId(nextId);
-      if (!nextId) setItems([]);
-    });
+    };
+
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      (_event: AuthChangeEvent, session: Session | null) => {
+        applySessionUser(session?.user?.id ?? "");
+      }
+    );
 
     void (async () => {
       const authResult = await supabase.auth.getUser() as {
@@ -58,7 +73,7 @@ export default function NotificationCenter() {
       };
       if (!mounted) return;
       if (authResult.error) setError(authResult.error.message);
-      setUserId(authResult.data.user?.id ?? "");
+      applySessionUser(authResult.data.user?.id ?? "");
     })();
 
     return () => {
@@ -71,21 +86,34 @@ export default function NotificationCenter() {
     if (!userId) return;
     const supabase = getSupabaseBrowserClient();
     if (!supabase) return;
-    setLoading(true);
-    const { data, error: queryError } = await supabase
-      .from("jec_user_notifications")
-      .select("id,recipient_id,event_type,title_fr,title_en,body_fr,body_en,target_path,read_at,created_at")
-      .eq("recipient_id", userId)
-      .order("created_at", { ascending: false })
-      .limit(30);
 
-    if (queryError) setError(queryError.message);
-    else {
-      setError("");
-      setItems((data ?? []) as UserNotification[]);
+    const requestId = ++loadRequestId.current;
+    setLoading(true);
+
+    try {
+      const { data, error: queryError } = await supabase
+        .from("jec_user_notifications")
+        .select("id,recipient_id,event_type,title_fr,title_en,body_fr,body_en,target_path,read_at,created_at")
+        .eq("recipient_id", userId)
+        .order("created_at", { ascending: false })
+        .limit(30);
+
+      // Ignore a response that belongs to a session which has since changed.
+      if (sessionUserId.current !== userId || requestId !== loadRequestId.current) return;
+
+      if (queryError) setError(queryError.message);
+      else {
+        setError("");
+        setItems((data ?? []) as UserNotification[]);
+      }
+    } catch (loadError) {
+      if (sessionUserId.current === userId && requestId === loadRequestId.current) {
+        setError(loadError instanceof Error ? loadError.message : (en ? "Unable to load notifications." : "Impossible de charger les notifications."));
+      }
+    } finally {
+      if (requestId === loadRequestId.current) setLoading(false);
     }
-    setLoading(false);
-  }, [userId]);
+  }, [userId, en]);
 
   useEffect(() => {
     if (!userId) return;
@@ -106,21 +134,51 @@ export default function NotificationCenter() {
           filter: "recipient_id=eq." + userId
         },
         (payload: { new: UserNotification }) => {
-          const incoming = payload.new as UserNotification;
-          if (!active) return;
+          const incoming = payload.new;
+          if (!active || incoming.recipient_id !== userId) return;
           setItems(current => [
             incoming,
             ...current.filter(item => item.id !== incoming.id)
-          ].slice(0, 30));
+          ].sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at)).slice(0, 30));
         }
       )
-      .subscribe();
+      .subscribe((status, subscriptionError) => {
+        if (!active) return;
+
+        if (status === "SUBSCRIBED") {
+          setError("");
+          // Reconcile anything created while the channel was connecting.
+          void loadNotifications();
+        } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+          // The list still refreshes on focus and periodically if Realtime drops.
+          setError(
+            en
+              ? "Live updates are temporarily unavailable. Notifications will still refresh automatically."
+              : "Les mises à jour en direct sont momentanément indisponibles. Les notifications continueront à s’actualiser automatiquement."
+          );
+          if (subscriptionError) {
+            console.warn("JEC notification Realtime subscription:", subscriptionError);
+          }
+          void loadNotifications();
+        }
+      });
+
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === "visible") void loadNotifications();
+    };
+
+    window.addEventListener("focus", refreshWhenVisible);
+    document.addEventListener("visibilitychange", refreshWhenVisible);
+    const refreshInterval = window.setInterval(refreshWhenVisible, 30_000);
 
     return () => {
       active = false;
+      window.clearInterval(refreshInterval);
+      window.removeEventListener("focus", refreshWhenVisible);
+      document.removeEventListener("visibilitychange", refreshWhenVisible);
       void supabase.removeChannel(channel);
     };
-  }, [userId, loadNotifications]);
+  }, [userId, loadNotifications, en]);
 
   const markAsRead = useCallback(async (notificationId: string) => {
     if (!userId) return;
@@ -167,7 +225,11 @@ export default function NotificationCenter() {
         aria-label={en ? "Notifications" : "Notifications"}
         aria-haspopup="dialog"
         aria-expanded={open}
-        onClick={() => setOpen(value => !value)}
+        onClick={() => {
+          const nextOpen = !open;
+          setOpen(nextOpen);
+          if (nextOpen) void loadNotifications();
+        }}
       >
         <span className="notification-glyph" aria-hidden="true">♧</span>
         {unreadCount > 0 && <span className="global-notification-count">{unreadCount > 99 ? "99+" : unreadCount}</span>}
