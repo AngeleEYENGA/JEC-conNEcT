@@ -60,7 +60,7 @@ La page rappelle les règles de bienveillance, de respect, de confidentialité e
 
 
 ## Évolution médias et repartage — 20 novembre 2026
-- Migrations Supabase appliquées : `20261119215121_jec_community_media_and_shares_20261120` et `20261119220552_jec_community_media_read_scope_20261120`.
+- Migrations Supabase appliquées : `20261119215121_jec_community_media_and_shares_20261120`, `20261119220552_jec_community_media_read_scope_20261120` et `20261119221704_jec_community_reaction_update_scope`.
 - Bucket privé : `jec-community-media`, taille maximale Storage 50 Mo par objet.
 - Table de métadonnées : `jec_community_media`, RLS activée et accès anonyme absent.
 - Upload de 5 fichiers maximum par post, 20 Mo chacun, 50 Mo cumulés côté interface.
@@ -70,3 +70,10 @@ La page rappelle les règles de bienveillance, de respect, de confidentialité e
 - Réactions existantes conservées et bouton J'aime visuellement priorisé.
 - Animations de cartes, réactions et fenêtres ; prise en compte de `prefers-reduced-motion`.
 - Vérifications SQL : bucket privé, RLS sur la table médias, politiques SELECT/INSERT/DELETE sur les métadonnées et SELECT/INSERT/DELETE Storage. Le parcours authentifié d'envoi et de repartage reste à tester avec un compte membre vérifié.
+
+
+## Correctif des réactions — 19 novembre 2026
+- Cause : le client utilisait `upsert` pour changer une réaction, alors que le rôle `authenticated` ne possède qu'un droit de mise à jour limité à la colonne `reaction_type`.
+- Correctif frontend : insertion si aucune réaction n'existe ; mise à jour de `reaction_type` si le membre a déjà réagi ; suppression si le même choix est recliqué. Aucun `upsert` n'est utilisé.
+- Politique RLS UPDATE renforcée : uniquement la réaction du membre connecté, et uniquement sur une publication encore publiée.
+- Les privilèges restent limités : pas de droit UPDATE global sur la table, ni sur les colonnes `post_id` et `user_id`.
