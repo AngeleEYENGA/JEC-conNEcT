@@ -142,7 +142,7 @@ export default function NotificationCenter() {
           ].sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at)).slice(0, 30));
         }
       )
-      .subscribe((status, subscriptionError) => {
+      .subscribe((status: string, subscriptionError?: Error) => {
         if (!active) return;
 
         if (status === "SUBSCRIBED") {
