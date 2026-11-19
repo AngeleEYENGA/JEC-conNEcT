@@ -244,3 +244,14 @@ Le schéma de collaboration existait déjà dans Supabase ; cette itération a r
 - Contrôle final Supabase : RLS active sur les huit nouvelles tables phase 2 ; aucune lecture par `anon`. L'advisor santé ne signale aucun problème. L'unique alerte sécurité restante concerne la protection contre les mots de passe compromis désactivée.
 - Déploiement Vercel du socle phase 2 et de l'intégrité des périmètres validé READY ; les routes de liste et de détail projet/réunion/appel répondent en HTTP 200.
 - Le scénario SQL de salle d'appel a été testé avec deux participants dans une transaction annulée. Le test de média (micro, caméra, audio bidirectionnel et réseau) nécessite encore deux vrais navigateurs.
+
+## Mise à jour — 19 novembre 2026 : affichage conditionnel du Workspace
+
+- Le portail public conserve une entrée « Workspace » identifiable, mais verrouillée tant que la session n'est pas établie ou que le compte ne dispose pas d'une adhésion JEC vérifiée.
+- Visiteur non connecté : l'entrée est verrouillée et conduit à la connexion avec un retour vers `/workspace`.
+- Compte connecté avec adhésion en attente ou rejetée : l'entrée conduit à `/compte`, où le statut peut être consulté ; elle ne donne pas accès aux espaces.
+- Membre JEC vérifié ou administrateur : l'entrée ouvre `/workspace`. La liste ne présente que les espaces auxquels le compte a accès ; les invitations restent séparées des espaces actifs.
+- Le chargement initial de session est maintenant suivi explicitement. Les réponses asynchrones obsolètes ne peuvent plus rétablir l'identité d'un ancien compte après une déconnexion ou un changement de session.
+- Le contrôle côté serveur dans `proxy.ts` reste obligatoire : l'affichage du menu n'est jamais utilisé comme mesure de sécurité.
+- Vérification Vercel sur la branche de revue : build `READY` au commit `c4bd39bc92dc8cfb31730bc72565cfbc36338632`. Les routes publiques `/spiritualite` et `/spiritualite/calendrier` répondent en HTTP 200 ; un accès anonyme à `/workspace` est redirigé vers le parcours de connexion.
+- La production n'a pas été modifiée. Les tests avec de vrais comptes restent à compléter dans le navigateur : visiteur, compte en attente, membre vérifié sans affectation, membre invité/actif dans un espace et administrateur.
