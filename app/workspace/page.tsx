@@ -106,7 +106,15 @@ export default function WorkspaceIndexPage(){
   return <main className="collab-page">
     <header className="account-header">
       <Link href="/" className="brand-lockup"><span className="brand-mark"><span>JEC</span><i aria-hidden="true">✝</i></span><span>conNEcT</span></Link>
-      <div><LanguageSwitcher/><Link href="/" className="back-link-inline">{en?"Back to portal":"Retour au portail"}</Link></div>
+      <div className="member-header-actions">
+        <nav className="member-area-nav" aria-label={en ? "Member navigation" : "Navigation membre"}>
+          <Link href="/workspace" aria-current="page">{en ? "Workspace" : "Workspace"}</Link>
+          <Link href="/communaute">{en ? "Community" : "Communauté"}</Link>
+          <Link href="/messagerie">{en ? "Messages" : "Messagerie"}</Link>
+        </nav>
+        <LanguageSwitcher/>
+        <Link href="/" className="back-link-inline">{en?"Back to portal":"Retour au portail"}</Link>
+      </div>
     </header>
     <div className="collab-content">
       <p className="eyebrow">{en?"COLLABORATION":"COLLABORATION"}</p>

@@ -277,3 +277,16 @@ Le schéma de collaboration existait déjà dans Supabase ; cette itération a r
 - Les anciens fichiers aux préfixes provisoires `202611160002` et `202611160003` ont été retirés de la branche de stabilisation.
 - Cette opération est exclusivement une correction de l'historique source Git. Les migrations sont déjà appliquées dans Supabase ; aucune commande DDL ni migration distante n'a été exécutée pendant cette réconciliation.
 - Contrôle du dépôt : les trois fichiers présents suivent désormais le même ordre chronologique et les mêmes versions que l'historique Supabase. La PR #15 reste ouverte en brouillon ; aucun merge ni nouveau déploiement Vercel n'a été déclenché.
+
+## Mise à jour — 19 novembre 2026 : espace Communauté
+
+| Chantier | État | Commentaire |
+|---|---|---|
+| Fil communautaire global | Première version intégrée à la branche de travail | Publication de textes et d'humeurs, réactions, commentaires, signalements et file de modération. Séparé des fils privés des Workspaces. |
+| Protection des contenus | En place au niveau base / route | Route `/communaute` protégée ; RLS active sur les quatre tables communautaires ; membres vérifiés et administrateurs seulement. |
+| Notifications liées à la communauté | En place dans le centre interne | Une notification interne est créée pour l'auteur lors d'un nouveau commentaire ou d'une réaction d'un autre membre. |
+| Photos / vidéos | À développer | La première version est textuelle. Le stockage de médias et ses règles de confidentialité restent à cadrer. |
+| Push / e-mails transactionnels | Perspectives | Notifications push système et e-mails de nouveau message / confirmation reportés à une étape ultérieure. Aucun envoi e-mail n'est annoncé comme opérationnel. |
+| SMS Twilio | Perspectives avec financement | À chiffrer et à financer avant intégration. |
+
+La PR d'envoi d'e-mails via Google SMTP (#17) a été fermée sans fusion après un test non concluant. Les notifications internes déjà présentes restent prioritaires. Voir `COMMUNAUTE_SOCIALE.md` pour les critères d'acceptation et les limites de cette première version.

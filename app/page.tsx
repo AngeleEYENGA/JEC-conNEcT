@@ -79,6 +79,7 @@ const nav = [
   ["Spiritualité","Spirituality","✧",""],
   ["Workspace","Workspace","⌘","COLLABORATION"],
   ["Messagerie","Messages","▤",""],
+  ["Communauté","Community","◎",""],
   ["Réunions","Meetings","▣",""],
   ["Décisions & votes","Decisions & votes","◉",""],
   ["Projets","Projects","◫",""],
@@ -92,6 +93,7 @@ const nav = [
 const privateNavItems = new Set([
   "Workspace",
   "Messagerie",
+  "Communauté",
   "Réunions",
   "Décisions & votes",
   "Projets",
@@ -247,12 +249,26 @@ export default function Home() {
   const canAccessMemberNavigation = Boolean(
     identity && (identity.membershipStatus === "verified" || identity.isAdmin)
   );
+  // Keep Community discoverable to every visitor. Its contents remain protected
+  // by the route proxy and database RLS; the link guides unauthorized users to sign-in/account.
   const visibleNav = canAccessMemberNavigation
     ? nav
-    : nav.filter(([fr]) => !privateNavItems.has(fr) || fr === "Workspace");
+    : nav.filter(([fr]) => !privateNavItems.has(fr) || fr === "Workspace" || fr === "Communauté");
   const workspaceNavHref = canAccessMemberNavigation
     ? "/workspace"
     : identity ? "/compte" : "/login?next=%2Fworkspace";
+  const communityNavHref = canAccessMemberNavigation
+    ? "/communaute"
+    : identity ? "/compte" : "/login?next=%2Fcommunaute";
+  const communityNavTitle = !authResolved
+    ? t("Vérification de la connexion…", "Checking sign-in…")
+    : canAccessMemberNavigation
+      ? t("Ouvrir la communauté JEC", "Open the JEC community")
+      : identity?.membershipStatus === "rejected"
+        ? t("Adhésion non validée — consulter mon compte", "Membership not approved — view your account")
+        : identity
+          ? t("Adhésion JEC à confirmer — consulter mon compte", "JEC membership pending — view your account")
+          : t("Connecte-toi pour accéder à la communauté", "Sign in to access the community");
   const workspaceNavTitle = !authResolved
     ? t("Vérification de la connexion…", "Checking sign-in…")
     : canAccessMemberNavigation
@@ -341,10 +357,14 @@ export default function Home() {
               : <Link href={workspaceNavHref} className={canAccessMemberNavigation?"nav-item":"nav-item nav-item-locked"} title={workspaceNavTitle} aria-label={workspaceNavTitle}>
                   <span className="nav-icon">{canAccessMemberNavigation?icon:"🔒"}</span><span>{en?english:fr}</span>
                 </Link>
+          ) : fr==="Communauté" ? (
+            <Link href={communityNavHref} className={canAccessMemberNavigation?"nav-item":"nav-item nav-item-locked"} title={communityNavTitle} aria-label={communityNavTitle}>
+              <span className="nav-icon">{canAccessMemberNavigation?icon:"🔒"}</span><span>{en?english:fr}</span>
+            </Link>
           ) : fr==="Spiritualité" ? (
             <Link href="/spiritualite" className="nav-item"><span className="nav-icon">{icon}</span><span>{en?english:fr}</span></Link>
-          ) : (["Messagerie","Réunions","Décisions & votes","Projets","Documents","Partenaires","Archives JEC"].includes(fr)) ? (
-            <Link href={fr==="Messagerie"?"/messagerie":fr==="Réunions"?"/reunions":fr==="Décisions & votes"?"/decisions":fr==="Projets"?"/projets":fr==="Partenaires"?"/partenaires":fr==="Archives JEC"?"/archives":"/documents"} className="nav-item"><span className="nav-icon">{icon}</span><span>{en?english:fr}</span></Link>
+          ) : (["Messagerie","Communauté","Réunions","Décisions & votes","Projets","Documents","Partenaires","Archives JEC"].includes(fr)) ? (
+            <Link href={fr==="Messagerie"?"/messagerie":fr==="Communauté"?"/communaute":fr==="Réunions"?"/reunions":fr==="Décisions & votes"?"/decisions":fr==="Projets"?"/projets":fr==="Partenaires"?"/partenaires":fr==="Archives JEC"?"/archives":"/documents"} className="nav-item"><span className="nav-icon">{icon}</span><span>{en?english:fr}</span></Link>
           ) : (
             <button onClick={()=>setActive(fr)} className={active===fr?"nav-item active":"nav-item"}><span className={fr==="JEC AI"?"nav-icon sparkle":"nav-icon"}>{icon}</span><span>{en?english:fr}</span></button>
           )}
@@ -363,6 +383,7 @@ export default function Home() {
           <div className="content-grid"><section className="feed-column"><div className="section-heading"><div><p className="eyebrow">{t("PUBLICATIONS OFFICIELLES","OFFICIAL PUBLICATIONS")}</p><h2>{t("Les dernières actualités repérées","Latest verified news")}</h2></div><button className="text-button" onClick={()=>setActive("Actualités JEC")}>{t("Toutes les actualités ↗","All news ↗")}</button></div>{filteredNews.slice(0,3).map(item=><NewsCard key={item.url ?? item.detailPath ?? item.title} item={item}/>)}</section>
           <aside className="right-column"><section className="widget-card"><div className="widget-heading"><h3>{t("Repères historiques","Historical milestones")}</h3><button onClick={()=>setActive("Découvrir la JEC")}>{t("Explorer","Explore")}</button></div><div className="fact-item"><b>1929</b><div><strong>{t("Origines de la JEC en France","Origins of JEC in France")}</strong><small>{t("Premiers groupes autour de Louis Chaudron et Paul Vignaux.","First groups around Louis Chaudron and Paul Vignaux.")}</small></div></div><div className="fact-item"><b>1946</b><div><strong>{t("Coordination internationale","International coordination")}</strong><small>{t("Fondation de la JECI / IYCS.","Foundation of JECI / IYCS.")}</small></div></div><Link className="widget-link" href="/decouvrir#frise-chronologique">{t("Voir la frise chronologique →","Explore the timeline →")}</Link></section>
           <section className="widget-card"><div className="widget-heading"><h3>{t("Événement à suivre","Event to follow")}</h3><button onClick={()=>setActive("Agenda public")}>{t("Agenda","Calendar")}</button></div><div className="event-item"><div className="event-date"><b>2027</b><span>JUL–AUG</span></div><div><strong>{t("JMJ Séoul 2027","WYD Seoul 2027")}</strong><small>29 juillet – 8 août · Corée du Sud</small><SourceLink href="https://www.jmj2027.fr/">{t("Site officiel","Official website")}</SourceLink></div></div></section>
+          {canAccessMemberNavigation&&<section className="community-launch-card"><div className="community-launch-art"><img src="/images/jec-community-illustration.svg" alt=""/></div><div><p className="eyebrow">{t("VIE COMMUNAUTAIRE","COMMUNITY LIFE")}</p><h3>{t("La communauté JEC vit ici","The JEC community lives here")}</h3><p>{t("Partage tes nouvelles, tes idées et tes humeurs avec les autres membres.","Share your news, ideas and moods with other members.")}</p><Link href="/communaute" className="community-launch-link">{t("Rejoindre la communauté →","Join the community →")}</Link></div></section>}
           {canAccessMemberNavigation&&<><section className="ai-card"><div className="ai-spark">✧</div><p className="eyebrow">JEC CONNECT</p><h3>{t("Un espace à construire ensemble","A space to build together")}</h3><p>{t("JEC-conNEcT relie les espaces de travail, projets, tâches, réunions et échanges de ses membres. Les archives avancées et l’assistant IA viendront dans une prochaine phase.","JEC-conNEcT connects members’ workspaces, projects, tasks, meetings and conversations. Advanced archives and the AI assistant are planned for a later phase.")}</p><button onClick={()=>setActive("Workspace")}>{t("Découvrir les modules →","Explore modules →")}</button></section><p className="prototype-note">{t("Prototype de présentation · Contenus publics sourcés","Presentation prototype · Public sourced content")}<br/>{t("Les espaces privés sont accessibles aux membres autorisés selon les droits de chaque équipe.","Private workspaces are available to authorized members according to each team’s permissions.")}</p></>}</aside></div>
         </>:renderContent()}
       </div>
