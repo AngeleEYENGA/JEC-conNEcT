@@ -173,8 +173,8 @@ const events: CalendarEvent[] = [
   {
     date: "2027-02-11", dateFr: "Jeudi 11 février 2027", dateEn: "Thursday, 11 February 2027", month: "2027-02", type: "eglise",
     titleFr: "Journée mondiale du malade", titleEn: "World Day of the Sick",
-    contextFr: "En 2027, le message annoncé par le Saint-Siège met l'accent sur le rôle de la communauté auprès des personnes qui souffrent.",
-    contextEn: "For 2027, the Holy See's announced message highlights the community's role in caring for people who suffer.",
+    contextFr: "Journée annuelle de prière, d'attention et de solidarité avec les personnes malades et celles qui les accompagnent.",
+    contextEn: "An annual day of prayer, care and solidarity with people who are ill and those who accompany them.",
     reflectionFr: "Qui, dans notre entourage, vit avec la maladie, le handicap, la solitude ou l'épuisement ?",
     reflectionEn: "Who around us is living with illness, disability, loneliness or exhaustion?",
     actionFr: "Prendre des nouvelles d'une personne, proposer une aide concrète et respecter ses besoins.",
