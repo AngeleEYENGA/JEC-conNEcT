@@ -298,7 +298,7 @@ La PR d'envoi d'e-mails via Google SMTP (#17) a été fermée sans fusion après
 
 - Branche de travail : `feat/jec-community-media-sharing-20261120`.
 - Bucket privé `jec-community-media` créé sur Supabase ; aucune exposition anonyme.
-- Table `jec_community_media` et politiques RLS/Storage appliquées via la migration `20261119215121_jec_community_media_and_shares_20261120`.
+- Table `jec_community_media` et politiques RLS/Storage appliquées via les migrations `20261119215121_jec_community_media_and_shares_20261120` et `20261119220552_jec_community_media_read_scope_20261120`.
 - Publication avec jusqu'à 5 images, GIF animés, vidéos ou fichiers audio ; 20 Mo par fichier et 50 Mo par publication.
 - Affichage par URL signée de 1 heure, lecteurs natifs audio/vidéo et galerie responsive.
 - Repartage d'une publication originale, avec commentaire facultatif et notification interne.
