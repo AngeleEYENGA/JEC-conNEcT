@@ -180,7 +180,7 @@ export default function Home() {
 
     // Subscribe before reading the initial session so a sign-in/sign-out occurring
     // during page hydration cannot be overwritten by an older getUser() response.
-    const {data:{subscription}}=supabase.auth.onAuthStateChange((_event,session)=>{
+    const {data:{subscription}}=supabase.auth.onAuthStateChange((_event:string,session:{user:{id:string;email?:string;user_metadata?:Record<string,unknown>}}|null)=>{
       authEventVersion+=1;
       if(!session?.user){
         identityRequestVersion+=1;
@@ -199,7 +199,7 @@ export default function Home() {
     });
 
     const initialAuthVersion=authEventVersion;
-    void supabase.auth.getUser().then(({data:{user}})=>{
+    void supabase.auth.getUser().then(({data}:{data:{user:{id:string;email?:string;user_metadata?:Record<string,unknown>}|null}})=>{
       if(!mounted||authEventVersion!==initialAuthVersion)return;
       if(!user){
         currentUser=null;
