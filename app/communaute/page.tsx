@@ -210,9 +210,10 @@ export default function CommunityPage() {
     const originalRows = (sharedResult.data ?? []) as BasePost[];
     const mediaRows = (mediaResult.data ?? []) as MediaRow[];
     const signedByPath = new Map<string,string>();
-    if (mediaRows.length) {
+    for(let offset=0;offset<mediaRows.length;offset+=100) {
+      const chunk=mediaRows.slice(offset,offset+100);
       const {data:signedRows,error:signedError} = await supabase.storage
-        .from(COMMUNITY_MEDIA_BUCKET).createSignedUrls(mediaRows.map(item => item.storage_path),3600);
+        .from(COMMUNITY_MEDIA_BUCKET).createSignedUrls(chunk.map(item => item.storage_path),3600);
       if (signedError) setError(en ? "Some media could not be loaded." : "Certains médias n'ont pas pu être chargés.");
       ((signedRows ?? []) as Array<{path:string | null;signedUrl:string | null}>).forEach((item:{path:string | null;signedUrl:string | null}) => {
         if (typeof item.path==="string" && typeof item.signedUrl==="string") signedByPath.set(item.path,item.signedUrl);
