@@ -424,8 +424,8 @@ export default function SpiritualCalendarPage() {
               {filteredEvents.map((event) => (
                 <article className="spiritual-calendar-event" key={event.date + event.titleFr}>
                   <div className="spiritual-calendar-event-date">
-                    <span>{event.dateFr.split(" ")[1]}</span>
-                    <strong>{event.dateFr.split(" ")[2]}</strong>
+                    <span>{event.dateFr.split(" ")[2]}</span>
+                    <strong>{event.dateFr.split(" ")[1]}</strong>
                     <small>{event.dateFr.split(" ")[3]}</small>
                   </div>
                   <div className="spiritual-calendar-event-body">
