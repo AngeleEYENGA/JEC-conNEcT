@@ -64,7 +64,7 @@ function formatMediaSize(bytes: number, en: boolean) {
 }
 
 function safeMediaFileName(value: string) {
-  return value.normalize("NFKD").replace(/[\\u0300-\\u036f]/g,"")
+  return value.normalize("NFKD").replace(/[\u0300-\u036f]/g,"")
     .replace(/[^a-zA-Z0-9._-]+/g,"_").slice(-180) || "community-media";
 }
 
@@ -242,7 +242,7 @@ export default function CommunityPage() {
     setProfiles(profileRows);
 
     const sharedById = new Map<string,SharedPost>(originalRows.map(post=>[
-      post.id,{...post,media:mediaByPostId.get(post.id) ?? []}
+      post.id,{...post,media:mediaByPostId.get(post.id) ?? []} as SharedPost] as [string,SharedPost]
     ]));
     const hydrated = basePosts.map(post => ({
       ...post,
