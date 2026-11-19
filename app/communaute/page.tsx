@@ -250,12 +250,20 @@ export default function CommunityPage() {
     if (current?.reaction_type === type) {
       result = await supabase.from("jec_community_reactions").delete()
         .eq("post_id", post.id).eq("user_id", userId);
+    } else if (current) {
+      // UPDATE is intentionally limited to reaction_type at the database level.
+      // Do not use upsert here: ON CONFLICT DO UPDATE also requires privileges
+      // on the key columns and a table-level UPDATE privilege.
+      result = await supabase.from("jec_community_reactions")
+        .update({ reaction_type: type })
+        .eq("post_id", post.id)
+        .eq("user_id", userId);
     } else {
-      result = await supabase.from("jec_community_reactions").upsert({
+      result = await supabase.from("jec_community_reactions").insert({
         post_id: post.id,
         user_id: userId,
         reaction_type: type
-      }, { onConflict: "post_id,user_id" });
+      });
     }
     if (result.error) setError(result.error.message);
     else await loadFeed();
