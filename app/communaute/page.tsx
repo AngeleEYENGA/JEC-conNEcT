@@ -241,9 +241,12 @@ export default function CommunityPage() {
     }
     setProfiles(profileRows);
 
-    const sharedById = new Map<string,SharedPost>(originalRows.map(post=>[
-      post.id,{...post,media:mediaByPostId.get(post.id) ?? []} as SharedPost] as [string,SharedPost]
-    ]));
+    const sharedById = new Map<string,SharedPost>(
+      originalRows.map(post => [
+        post.id,
+        {...post,media:mediaByPostId.get(post.id) ?? []}
+      ] as [string,SharedPost])
+    );
     const hydrated = basePosts.map(post => ({
       ...post,
       reactions: reactionRows.filter(reaction => reaction.post_id === post.id),
