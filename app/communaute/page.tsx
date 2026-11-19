@@ -343,16 +343,17 @@ export default function CommunityPage() {
     if (!supabase || !isAdmin) return;
     setBusy(true);
     setError("");
+    let moderationFailed = false;
     if (action === "hide") {
       if (report.post_id) {
         const { error: hideError } = await supabase.from("jec_community_posts").update({ status: "hidden" }).eq("id", report.post_id);
-        if (hideError) setError(hideError.message);
+        if (hideError) { moderationFailed = true; setError(hideError.message); }
       } else if (report.comment_id) {
         const { error: hideError } = await supabase.from("jec_community_comments").update({ status: "hidden" }).eq("id", report.comment_id);
-        if (hideError) setError(hideError.message);
+        if (hideError) { moderationFailed = true; setError(hideError.message); }
       }
     }
-    if (!error) {
+    if (!moderationFailed) {
       const { error: reviewError } = await supabase.from("jec_community_reports").update({
         status: action === "hide" ? "resolved" : "dismissed",
         moderator_id: userId,
