@@ -87,10 +87,13 @@ export async function proxy(request: NextRequest) {
     const isAllowed = isAdminArea ? isPlatformAdmin : isVerifiedMember || isPlatformAdmin;
 
     if (!isAllowed) {
-      // Redirect to the public portal; the account page remains available to signed-in users.
-      const publicResponse = NextResponse.redirect(new URL("/", request.url));
-      response.cookies.getAll().forEach((cookie) => publicResponse.cookies.set(cookie));
-      return publicResponse;
+      // Do not silently send a signed-in person back to the public homepage.
+      // Show the membership status and the next step on their account page instead.
+      const accountUrl = new URL("/compte", request.url);
+      accountUrl.searchParams.set("access", "membership_required");
+      const accountResponse = NextResponse.redirect(accountUrl);
+      response.cookies.getAll().forEach((cookie) => accountResponse.cookies.set(cookie));
+      return accountResponse;
     }
   }
 
