@@ -60,7 +60,7 @@ La page rappelle les règles de bienveillance, de respect, de confidentialité e
 
 
 ## Évolution médias et repartage — 20 novembre 2026
-- Migrations Supabase appliquées : `20261119215121_jec_community_media_and_shares_20261120`, `20261119220552_jec_community_media_read_scope_20261120` et `20261119221704_jec_community_reaction_update_scope`.
+- Migrations Supabase appliquées : `20261119215121_jec_community_media_and_shares_20261120`, `20261119220552_jec_community_media_read_scope_20261120` et `20261119221704_jec_community_reaction_update_scope`, `20261119223455_jec_community_reshare_rls_recursion_fix`, `20261119223951_jec_community_media_20mb_per_file_limit` et `20261119224024_jec_community_media_50mb_post_limit`.
 - Bucket privé : `jec-community-media`, taille maximale Storage 50 Mo par objet.
 - Table de métadonnées : `jec_community_media`, RLS activée et accès anonyme absent.
 - Upload de 5 fichiers maximum par post, 20 Mo chacun, 50 Mo cumulés côté interface.
@@ -77,3 +77,12 @@ La page rappelle les règles de bienveillance, de respect, de confidentialité e
 - Correctif frontend : insertion si aucune réaction n'existe ; mise à jour de `reaction_type` si le membre a déjà réagi ; suppression si le même choix est recliqué. Aucun `upsert` n'est utilisé.
 - Politique RLS UPDATE renforcée : uniquement la réaction du membre connecté, et uniquement sur une publication encore publiée.
 - Les privilèges restent limités : pas de droit UPDATE global sur la table, ni sur les colonnes `post_id` et `user_id`.
+
+
+## Validation complémentaire — 19 novembre 2026
+- Correctif RLS du repartage : la vérification de la publication source passe par `private.jec_can_reshare_community_post(uuid)`, fonction non exposée qui vérifie `auth.uid()`, le statut publié et l'absence de repartage imbriqué. L'exécution est accordée uniquement à `authenticated`.
+- Test transactionnel sous le rôle `authenticated` d'un membre vérifié : insertion d'un repartage réussie ; la transaction est ensuite annulée.
+- Test transactionnel avec deux membres vérifiés : le repartage déclenche une notification `community_share` pour l'auteur original ; la transaction est ensuite annulée.
+- Test transactionnel des politiques média : lecture des métadonnées et de l'objet Storage réussie pour un média rattaché à une publication publiée ; la transaction est ensuite annulée.
+- Limites serveur : Storage bloque les fichiers au-delà de 20 MiB ; un trigger refuse plus de 50 MiB de médias cumulés pour une publication. Les positions 0 à 4 et l'unicité `(post_id, position)` limitent à cinq pièces jointes.
+- Le transfert réel d'un fichier depuis le navigateur via l'API Storage et l'affichage de son URL signée restent à valider avec une session de membre dans la prévisualisation. Les tests SQL valident les droits et contraintes, pas le transfert binaire HTTP de bout en bout.
