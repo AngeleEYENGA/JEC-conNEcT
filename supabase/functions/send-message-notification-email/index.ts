@@ -257,10 +257,19 @@ Deno.serve(async (request: Request) => {
       await admin.from("jec_notification_email_deliveries")
         .update({ status: "sent", sent_at: new Date().toISOString(), error_code: null })
         .eq("id", delivery.id);
-    } catch {
+    } catch (smtpError) {
       failed += 1;
+      const failure = smtpError as { code?: unknown; responseCode?: unknown };
+      const smtpCode = typeof failure?.code === "string" && /^[A-Z0-9_]{2,40}$/.test(failure.code)
+        ? failure.code
+        : "UNKNOWN";
+      const responseCode = typeof failure?.responseCode === "number" && Number.isInteger(failure.responseCode)
+        ? failure.responseCode
+        : null;
+      // Never log credentials, recipient addresses, or message content.
+      console.error("[message-email] SMTP delivery failed", { code: smtpCode, responseCode });
       await admin.from("jec_notification_email_deliveries")
-        .update({ status: "failed", error_code: "smtp_delivery_failed" })
+        .update({ status: "failed", error_code: smtpCode === "UNKNOWN" ? "smtp_delivery_failed" : smtpCode })
         .eq("id", delivery.id);
     }
   }
