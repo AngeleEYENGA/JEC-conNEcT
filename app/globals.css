@@ -1666,3 +1666,57 @@
   .spiritual-agenda-item{padding:8px 10px}
   .spiritual-sheet-objective,.spiritual-sheet-context{background:#fff!important}
 }
+
+/* Moderated JEC spiritual community sharing */
+.spiritual-share-promo{margin:0 0 22px;background:linear-gradient(110deg,#f7f8f4,#f3f6f0);border-color:#e4eadf}
+.spiritual-sharing-rules{display:flex;align-items:flex-start;gap:13px;margin:18px 0;padding:16px 18px;border:1px solid #e7e1ed;border-radius:12px;background:#faf8fc}
+.spiritual-sharing-rule-icon{display:grid;place-items:center;flex:none;width:30px;height:30px;border-radius:10px;background:#eee8f5;color:#65458a;font-weight:900}
+.spiritual-sharing-rules strong{font:800 11px Manrope;color:#55416e}
+.spiritual-sharing-rules p{font-size:9px;line-height:1.7;color:#81798c;margin:5px 0 0}
+.spiritual-sharing-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.spiritual-sharing-card{display:flex;flex-direction:column;min-width:0;padding:16px;border:1px solid #eee9f4;border-radius:12px;background:#fff}
+.spiritual-sharing-card-head{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.spiritual-sharing-type{display:inline-flex;padding:5px 8px;border-radius:20px;background:#f2edf7;color:#70528d;font-size:8px;font-weight:800}
+.spiritual-sharing-type.prayer{background:#f7f2e9;color:#8b7047}
+.spiritual-sharing-type.intention{background:#eef5f8;color:#45758a}
+.spiritual-sharing-type.activity{background:#eef5ef;color:#557b61}
+.spiritual-sharing-card time{font-size:8px;color:#9891a0}
+.spiritual-sharing-card h3{font:800 14px/1.4 Manrope;color:#39334f;margin:10px 0 7px}
+.spiritual-sharing-card>p{font:400 10px/1.8 Manrope;color:#777083;white-space:pre-wrap;margin:0 0 13px}
+.spiritual-sharing-card-foot{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-top:auto;padding-top:10px;border-top:1px solid #f0edf3;color:#827b8e;font-size:8px}
+.spiritual-sharing-visibility{font-weight:800;color:#6d5587}
+.spiritual-sharing-empty{display:grid;justify-items:center;text-align:center;padding:30px 18px;border:1px dashed #ded6e8;border-radius:12px;background:#fcfbfd}
+.spiritual-sharing-empty>span{font-size:25px;color:#997db0}
+.spiritual-sharing-empty h3{font:800 13px Manrope;color:#534168;margin:10px 0 5px}
+.spiritual-sharing-empty p{max-width:550px;font-size:9px;line-height:1.7;color:#878091;margin:0}
+.spiritual-sharing-gate{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:17px;border:1px solid #eee9f4;border-radius:10px;background:#fcfbfd}
+.spiritual-sharing-gate p{font-size:10px;line-height:1.7;color:#777083;margin:0}
+.spiritual-sharing-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.spiritual-sharing-form-grid label{display:grid;gap:6px;min-width:0}
+.spiritual-sharing-form-grid label>span{font-size:9px;font-weight:800;color:#625a70}
+.spiritual-sharing-form-grid input,.spiritual-sharing-form-grid select,.spiritual-sharing-form-grid textarea{width:100%;min-width:0;padding:10px 11px;border:1px solid #e5e0eb;border-radius:8px;background:#fff;color:#39334f;font:500 11px Manrope,sans-serif;outline-color:#9675c1}
+.spiritual-sharing-form-grid textarea{resize:vertical;line-height:1.7}
+.spiritual-sharing-full{grid-column:1/-1}
+.spiritual-sharing-form-grid small{font-size:8px;color:#9992a1;text-align:right}
+.spiritual-sharing-safeguards{display:grid;gap:10px;margin:18px 0;padding:14px;border-radius:10px;background:#faf8fc}
+.spiritual-sharing-safeguards label{display:flex;align-items:flex-start;gap:10px;cursor:pointer}
+.spiritual-sharing-safeguards input{width:15px;height:15px;flex:none;margin:1px 0 0;accent-color:#70528d}
+.spiritual-sharing-safeguards span{font-size:9px;line-height:1.7;color:#716a7e}
+.spiritual-sharing-error,.spiritual-sharing-success{padding:10px 12px;border-radius:8px;font-size:9px;line-height:1.6}
+.spiritual-sharing-error{background:#fff1f0;color:#a33c35}
+.spiritual-sharing-success{background:#eef7ef;color:#42724d}
+.spiritual-sharing-note{max-width:360px;font-size:8px;line-height:1.6;color:#91899a}
+.spiritual-own-pending{display:grid;gap:8px}
+.spiritual-own-pending article{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 12px;border:1px solid #eee9f4;border-radius:9px;background:#fcfbfd}
+.spiritual-own-pending article strong{font:700 10px Manrope;color:#594b68}
+.spiritual-own-pending article small{margin-left:auto;font-size:8px;color:#918a9a}
+.spiritual-review-badge{padding:5px 7px;border-radius:20px;background:#f7f1e7;color:#8d7047;font-size:8px;font-weight:800}
+.spiritual-admin-review-link{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 18px;margin:18px 0;border:1px solid #e6deed;border-radius:11px;background:#faf7fc}
+.spiritual-admin-review-link strong{font:800 10px Manrope;color:#58416f}
+.spiritual-admin-review-link p{font-size:9px;color:#81798c;line-height:1.6;margin:5px 0 0}
+@media(max-width:760px){
+  .spiritual-sharing-list,.spiritual-sharing-form-grid{grid-template-columns:1fr}
+  .spiritual-sharing-full{grid-column:auto}
+  .spiritual-sharing-gate,.spiritual-admin-review-link{align-items:flex-start;flex-direction:column}
+  .spiritual-own-pending article small{margin-left:0}
+}
