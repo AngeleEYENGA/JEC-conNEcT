@@ -223,6 +223,7 @@ export default function NotificationCenter() {
         className="global-notification-trigger"
         type="button"
         aria-label={en ? "Notifications" : "Notifications"}
+        title={en ? "Open notifications" : "Ouvrir les notifications"}
         aria-haspopup="dialog"
         aria-expanded={open}
         onClick={() => {
@@ -231,7 +232,12 @@ export default function NotificationCenter() {
           if (nextOpen) void loadNotifications();
         }}
       >
-        <span className="notification-glyph" aria-hidden="true">♧</span>
+        <span className="notification-glyph" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="23" height="23" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9" />
+            <path d="M10 21h4" />
+          </svg>
+        </span>
         {unreadCount > 0 && <span className="global-notification-count">{unreadCount > 99 ? "99+" : unreadCount}</span>}
       </button>
 
