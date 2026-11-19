@@ -1615,3 +1615,54 @@
   .spiritual-calendar-event{padding:11px;gap:9px}
   .spiritual-calendar-event-date{width:50px}
 }
+
+/* Spiritual session preparation tool */
+.spiritual-privacy-note{display:grid;gap:4px;margin:18px 0;padding:13px 16px;border-left:3px solid #9a7ab9;border-radius:0 9px 9px 0;background:#f8f5fb}
+.spiritual-privacy-note strong{font:800 10px Manrope;color:#594371}
+.spiritual-privacy-note span{font-size:9px;line-height:1.65;color:#7e788b}
+.spiritual-builder-promo{margin:0 0 22px}
+.spiritual-builder-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.spiritual-builder-grid label,.spiritual-sheet-context label{display:grid;gap:6px;min-width:0}
+.spiritual-builder-grid label>span,.spiritual-sheet-context label>span{font-size:9px;font-weight:800;color:#625a70}
+.spiritual-builder-grid input,.spiritual-builder-grid select,.spiritual-builder-grid textarea,.spiritual-sheet-context textarea{width:100%;min-width:0;padding:10px 11px;border:1px solid #e5e0eb;border-radius:8px;background:#fff;color:#39334f;font:500 11px Manrope,sans-serif;outline-color:#9675c1}
+.spiritual-builder-grid textarea,.spiritual-sheet-context textarea{resize:vertical;line-height:1.6}
+.spiritual-builder-full{grid-column:1/-1}
+.spiritual-print-area{background:#fff}
+.spiritual-sheet-meta{display:flex;gap:8px 16px;flex-wrap:wrap;padding:0 0 14px;margin-bottom:16px;border-bottom:1px solid #eee9f4}
+.spiritual-sheet-meta span{font-size:9px;color:#777083}
+.spiritual-sheet-objective,.spiritual-sheet-context{padding:14px 15px;margin:12px 0;border:1px solid #eee9f4;border-radius:10px;background:#fcfbfd}
+.spiritual-sheet-objective>strong,.spiritual-sheet-context>strong{font:800 10px Manrope;color:#57416f}
+.spiritual-sheet-objective>p,.spiritual-sheet-context>p{font-size:10px;line-height:1.75;color:#777083;margin:6px 0 0;white-space:pre-wrap}
+.spiritual-sheet-objective ol{padding-left:18px;margin:8px 0 0}
+.spiritual-sheet-objective li{font-size:10px;line-height:1.7;color:#777083;margin:4px 0}
+.spiritual-sheet-context small{display:block;margin-top:8px;color:#91899a;font-size:8px;line-height:1.6}
+.spiritual-agenda{margin:18px 0}
+.spiritual-agenda h3{font:800 14px Manrope;color:#39334f;margin:0 0 10px}
+.spiritual-agenda-item{display:grid;grid-template-columns:48px 1fr;gap:11px;padding:11px 12px;border:1px solid #eee9f4;border-radius:9px;margin:7px 0;background:#fff}
+.spiritual-agenda-time{display:grid;place-items:center;align-self:start;min-height:33px;border-radius:8px;background:#f1ebf7;color:#65458a;font:800 11px Manrope}
+.spiritual-agenda-item strong{font:800 10px Manrope;color:#524067}
+.spiritual-agenda-item p{font-size:9px;line-height:1.65;color:#7d7689;margin:4px 0 0}
+.spiritual-agenda-total{text-align:right;font-size:9px;font-weight:800;color:#604778;margin-top:9px}
+.spiritual-prep-checks{display:grid;gap:10px}
+.spiritual-prep-checks label{display:flex;align-items:flex-start;gap:10px;padding:11px 12px;border:1px solid #eee9f4;border-radius:9px;background:#fcfbfd;cursor:pointer}
+.spiritual-prep-checks input{width:15px;height:15px;flex:none;margin:1px 0 0;accent-color:#70528d}
+.spiritual-prep-checks span{font-size:10px;line-height:1.65;color:#716a7e}
+.spiritual-builder-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:18px}
+@media(max-width:760px){
+  .spiritual-builder-grid{grid-template-columns:1fr}
+  .spiritual-builder-full{grid-column:auto}
+  .spiritual-builder-actions{align-items:flex-start;flex-direction:column}
+}
+@media print{
+  @page{size:A4;margin:14mm}
+  html,body{background:#fff!important}
+  .no-print{display:none!important}
+  .collab-page.spirituality-page{min-height:0!important;background:#fff!important;color:#24212b!important}
+  .spiritual-content{width:100%!important;max-width:none!important;padding:0!important;margin:0!important}
+  .spiritual-content>*:not(.spiritual-print-area){display:none!important}
+  .spiritual-print-area{display:block!important;margin:0!important;padding:0!important;border:0!important;box-shadow:none!important;background:#fff!important}
+  .spiritual-print-area .collab-section-heading h2{font-size:20pt!important}
+  .spiritual-agenda-item,.spiritual-sheet-objective,.spiritual-sheet-context{break-inside:avoid}
+  .spiritual-agenda-item{padding:8px 10px}
+  .spiritual-sheet-objective,.spiritual-sheet-context{background:#fff!important}
+}
