@@ -108,6 +108,8 @@ export default function EditorialWatchPage() {
   const supabase = useMemo(() => getSupabaseBrowserClient(), []);
   const [checking, setChecking] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [userEmail, setUserEmail] = useState("");
+  const [adminCheckError, setAdminCheckError] = useState("");
   const [scanning, setScanning] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -134,8 +136,10 @@ export default function EditorialWatchPage() {
         window.location.href = "/login?next=%2Fgestion%2Fveille";
         return;
       }
+      setUserEmail(user.email ?? "");
       const { data: admin, error: adminError } = await supabase.rpc("is_jec_admin");
       if (!active) return;
+      setAdminCheckError(adminError?.message ?? "");
       setIsAdmin(!adminError && admin === true);
       setChecking(false);
     }
