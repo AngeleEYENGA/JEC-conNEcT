@@ -140,9 +140,51 @@ export default function Home() {
   const {lang}=useLanguage();
   const en=lang==="en";
   const t=(fr:string,english:string)=>en?english:fr;
+  const heroSlides=[
+    {
+      eyebrow:t("LA JEC EN MOUVEMENT","YCS IN MOTION"),
+      title:t("Grandir ensemble. Agir pour transformer le monde.","Grow together. Act to transform the world."),
+      description:t("Un mouvement de jeunes qui apprennent à lire leur réalité, à dialoguer et à construire des réponses collectives.","A youth movement learning to understand its reality, share ideas and build collective responses."),
+      image:"/images/jec-community-illustration.svg",
+      imageAlt:t("Des jeunes de la JEC échangent autour d’une table","Young people from YCS sharing ideas around a table"),
+      action:t("Découvrir la JEC","Discover YCS")
+    },
+    {
+      eyebrow:t("PRENDRE SOIN DE SOI ET DES AUTRES","CARE FOR OURSELVES AND OTHERS"),
+      title:news[0].title,
+      description:news[0].summary,
+      image:news[0].image,
+      imageAlt:t("Illustration sur le mieux-être et le vivre ensemble","Illustration about well-being and living together"),
+      action:t("Lire les actualités","Explore the news")
+    },
+    {
+      eyebrow:t("APPRENDRE ET PARTAGER","LEARN AND SHARE"),
+      title:news[1].title,
+      description:news[1].summary,
+      image:news[1].image,
+      imageAlt:t("Illustration d’étudiants qui apprennent ensemble","Illustration of students learning together"),
+      action:t("Explorer les ressources","Explore resources")
+    },
+    {
+      eyebrow:t("S’ENGAGER ET SE FORMER","LEAD AND LEARN"),
+      title:news[2].title,
+      description:news[2].summary,
+      image:news[2].image,
+      imageAlt:t("Illustration de responsables qui dialoguent","Illustration of youth leaders in conversation"),
+      action:t("Voir les actualités","View the news")
+    }
+  ];
   const [active,setActive]=useState("Vue d'ensemble");
   const [search,setSearch]=useState("");
   const [publicContent,setPublicContent]=useState<PublicContentRecord[]|null>(null);
+  const [heroIndex,setHeroIndex]=useState(0);
+  const [heroPaused,setHeroPaused]=useState(false);
+
+  useEffect(()=>{
+    if(heroPaused || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const timer=window.setInterval(()=>setHeroIndex(current=>(current+1)%heroSlides.length),6500);
+    return ()=>window.clearInterval(timer);
+  },[heroPaused]);
 
   useEffect(()=>{
     const supabase=getSupabaseBrowserClient();
@@ -353,6 +395,7 @@ export default function Home() {
         <div className="post-author"><strong>{item.publisher}</strong><small>{item.sourceKind==="booklet"?(en?"Source document · event dates":"Document source · dates de l’événement"):t("Publication publique vérifiée","Verified public publication")} · {item.date}</small></div>
         <span className="verified-pill">{t("Source","Source")}</span>
       </div>
+      <div className="verified-news-thumb"><img src={item.image} alt="" loading="lazy"/></div>
       <span className="post-tag violet">{en?item.categoryEn:item.category}</span>
       <h3 className="verified-news-title">{en?item.titleEn:item.title}</h3>
       <p className="post-text">{en?item.summaryEn:item.summary}</p>
@@ -459,7 +502,54 @@ export default function Home() {
         {identity?.membershipStatus==="pending"&&<p className="auth-config-note">Ton compte est connecté, mais ton adhésion JEC attend encore une validation. Une fois vérifié, l'administrateur devra aussi t'inviter dans les espaces de travail concernés.</p>}
         {identity?.membershipStatus==="rejected"&&<p className="alert error">Ton adhésion JEC n'a pas été validée. Contacte l'équipe responsable pour obtenir des précisions.</p>}
         {active==="Vue d'ensemble"?<>
-          <section className="welcome-banner"><div className="welcome-copy"><p className="eyebrow light">{t("UN MOUVEMENT DE JEUNES, PAR LES JEUNES ET POUR LES JEUNES","A MOVEMENT OF YOUNG PEOPLE, BY YOUNG PEOPLE, FOR YOUNG PEOPLE")}</p><h1>{identity?(identity.displayName.includes("@")?t("Bienvenue dans ton espace JEC-conNEcT.","Welcome to your JEC-conNEcT space."):(en?"Welcome, "+identity.displayName.split(" ")[0]+".":"Bienvenue, "+identity.displayName.split(" ")[0]+".")):t("La JEC, son histoire et son actualité.","JEC: its story and its news.")}</h1><p>{t("Un espace pour découvrir le mouvement, retrouver les informations publiques et préparer une communauté mieux connectée.","Discover the movement, explore verified public information and build a more connected community.")}</p><div className="welcome-actions"><button className="white-button" onClick={()=>setActive("Découvrir la JEC")}>{t("Découvrir la JEC","Discover JEC")}</button><button className="outline-light" onClick={()=>setActive("Actualités JEC")}>{t("Voir les actualités →","Explore news →")}</button></div></div><div className="banner-art"><img className="home-community-image" src="/images/jec-community-illustration.svg" alt={t("Des jeunes échangent, apprennent et font de la musique ensemble","Young people learn, share ideas and make music together")}/><div className="orbit orbit-one"/><div className="orbit orbit-two"/><div className="orbit-core">JEC<br/><span>✝</span></div><div className="orbit-dot dot-one"/><div className="orbit-dot dot-two"/><div className="orbit-dot dot-three"/></div></section>
+          <section
+            className="welcome-banner welcome-carousel"
+            aria-roledescription="carousel"
+            aria-label={t("À la découverte de la JEC","Discover the YCS")}
+            onMouseEnter={()=>setHeroPaused(true)}
+            onMouseLeave={()=>setHeroPaused(false)}
+            onFocusCapture={()=>setHeroPaused(true)}
+            onBlurCapture={()=>setHeroPaused(false)}
+          >
+            {heroSlides.map((slide,index)=><article
+              key={slide.eyebrow}
+              className={"welcome-slide welcome-slide--"+(index+1)+(heroIndex===index?" is-active":"")}
+              aria-hidden={heroIndex!==index}
+            >
+              <div className="welcome-slide-copy">
+                <p className="eyebrow light">{slide.eyebrow}</p>
+                <h1>{identity
+                  ? (index===0 && !identity.displayName.includes("@")
+                    ? (en?"Welcome, "+identity.displayName.split(" ")[0]+".":"Bienvenue, "+identity.displayName.split(" ")[0]+".")
+                    : slide.title)
+                  : slide.title}</h1>
+                <p>{slide.description}</p>
+                <div className="welcome-actions">
+                  <button className="white-button" onClick={()=>setActive(index===0?"Découvrir la JEC":"Actualités JEC")}>{slide.action}</button>
+                  <button className="outline-light" onClick={()=>setActive("Agenda public")}>{t("Explorer l’agenda →","Explore the calendar →")}</button>
+                </div>
+              </div>
+              <div className="welcome-slide-visual">
+                <div className="welcome-visual-glow"/>
+                <img src={slide.image} alt={slide.imageAlt} loading={index===0?"eager":"lazy"}/>
+                <div className="welcome-visual-stamp"><span>✝</span><b>JEC</b><small>{t("Voir · Juger · Agir","See · Judge · Act")}</small></div>
+              </div>
+            </article>)}
+            <div className="welcome-carousel-controls">
+              <button type="button" className="welcome-carousel-arrow" aria-label={t("Diapositive précédente","Previous slide")} onClick={()=>setHeroIndex(current=>(current-1+heroSlides.length)%heroSlides.length)}>‹</button>
+              <div className="welcome-carousel-dots">
+                {heroSlides.map((slide,index)=><button key={slide.eyebrow} type="button" className={heroIndex===index?"is-active":""} aria-label={t("Afficher la diapositive ","Show slide ")+(index+1)} aria-pressed={heroIndex===index} onClick={()=>setHeroIndex(index)}/>)}
+              </div>
+              <span className="welcome-carousel-count">{String(heroIndex+1).padStart(2,"0")} / {String(heroSlides.length).padStart(2,"0")}</span>
+              <button type="button" className="welcome-carousel-arrow" aria-label={t("Diapositive suivante","Next slide")} onClick={()=>setHeroIndex(current=>(current+1)%heroSlides.length)}>›</button>
+            </div>
+            <div className="welcome-carousel-progress"><span style={{transform:"scaleX("+(heroIndex+1)/heroSlides.length+")"}}/></div>
+          </section>
+          <div className="home-quick-links">
+            <button onClick={()=>setActive("Découvrir la JEC")}><span className="home-quick-icon">✳</span><span><b>{t("Notre démarche","Our approach")}</b><small>{t("Voir · Juger · Agir","See · Judge · Act")}</small></span><i>↗</i></button>
+            <button onClick={()=>setActive("Actualités JEC")}><span className="home-quick-icon peach">◉</span><span><b>{t("La vie du mouvement","Movement life")}</b><small>{t("Actualités et initiatives","News and initiatives")}</small></span><i>↗</i></button>
+            <button onClick={()=>setActive("Agenda public")}><span className="home-quick-icon mint">▣</span><span><b>{t("Les rendez-vous JEC","YCS calendar")}</b><small>{t("Événements et rencontres","Events and gatherings")}</small></span><i>↗</i></button>
+          </div>
           <div className="content-grid"><section className="feed-column"><div className="section-heading"><div><p className="eyebrow">{t("PUBLICATIONS OFFICIELLES","OFFICIAL PUBLICATIONS")}</p><h2>{t("Les dernières actualités repérées","Latest verified news")}</h2></div><button className="text-button" onClick={()=>setActive("Actualités JEC")}>{t("Toutes les actualités ↗","All news ↗")}</button></div>{filteredNews.slice(0,3).map(item=><NewsCard key={item.url ?? item.detailPath ?? item.title} item={item}/>)}</section>
           <aside className="right-column"><section className="widget-card"><div className="widget-heading"><h3>{t("Repères historiques","Historical milestones")}</h3><button onClick={()=>setActive("Découvrir la JEC")}>{t("Explorer","Explore")}</button></div><div className="fact-item"><b>1929</b><div><strong>{t("Origines de la JEC en France","Origins of JEC in France")}</strong><small>{t("Premiers groupes autour de Louis Chaudron et Paul Vignaux.","First groups around Louis Chaudron and Paul Vignaux.")}</small></div></div><div className="fact-item"><b>1946</b><div><strong>{t("Coordination internationale","International coordination")}</strong><small>{t("Fondation de la JECI / IYCS.","Foundation of JECI / IYCS.")}</small></div></div><Link className="widget-link" href="/decouvrir#frise-chronologique">{t("Voir la frise chronologique →","Explore the timeline →")}</Link></section>
           <section className="widget-card"><div className="widget-heading"><h3>{t("Événement à suivre","Event to follow")}</h3><button onClick={()=>setActive("Agenda public")}>{t("Agenda","Calendar")}</button></div>{publicContent===null?<div className="event-item"><div className="event-date"><b>2027</b><span>JUL–AUG</span></div><div><strong>{t("JMJ Séoul 2027","WYD Seoul 2027")}</strong><small>29 juillet – 8 août · Corée du Sud</small><SourceLink href="https://www.jmj2027.fr/">{t("Site officiel","Official website")}</SourceLink></div></div>:featuredEvent?<div className="event-item"><div className="event-date"><b>{formatAgendaDate(featuredEvent.starts_on||featuredEvent.content_date,en)}</b>{featuredEvent.ends_on&&featuredEvent.ends_on!==featuredEvent.starts_on?<span>{formatAgendaDate(featuredEvent.ends_on,en)}</span>:null}</div><div><strong>{en?(featuredEvent.title_en||featuredEvent.title):featuredEvent.title}</strong><small>{new Date((featuredEvent.starts_on||featuredEvent.content_date)+"T12:00:00").getFullYear()} · {en?(featuredEvent.category_en||featuredEvent.category||"JEC event"):(featuredEvent.category||"Événement JEC")}</small>{featuredEvent.source_url?<SourceLink href={featuredEvent.source_url}>{t("Source officielle","Official source")}</SourceLink>:null}{featuredEvent.detail_path?<Link className="source-link" href={featuredEvent.detail_path}>{t("Consulter le dossier","View event details")} →</Link>:null}</div></div>:<div className="event-item"><div className="event-date"><b>—</b></div><div><strong>{t("Aucun événement à venir publié","No upcoming event published")}</strong><small>{t("Consulte l’agenda public pour retrouver les événements archivés.","Visit the public calendar to explore past events.")}</small></div></div>}</section>
