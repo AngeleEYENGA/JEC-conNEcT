@@ -304,22 +304,39 @@ export default function EditorialWatchPage() {
         <div><LanguageSwitcher /><Link href="/gestion" className="back-link-inline">{en ? "Back to administration" : "Retour à l’administration"}</Link></div>
       </header>
       <div className="admin-content">
-        <p className="eyebrow">JEC AI · {en ? "EDITORIAL WATCH" : "VEILLE ÉDITORIALE"}</p>
-        <h1>{en ? "Editorial assistant" : "Assistant éditorial"}</h1>
+        <div className="directory-section-heading" style={{ alignItems: "flex-end", flexWrap: "wrap", marginBottom: "12px" }}>
+          <div>
+            <p className="eyebrow">JEC AI · {en ? "EDITORIAL WATCH" : "VEILLE ÉDITORIALE"}</p>
+            <h1>{en ? "Editorial assistant" : "Assistant éditorial"}</h1>
+          </div>
+          <button
+            className="primary-button"
+            type="button"
+            onClick={scanSources}
+            disabled={checking || !isAdmin || scanning}
+            title={!isAdmin ? (en ? "Sign in with the JEC administrator account to scan sources." : "Connecte-toi avec le compte administrateur JEC pour lancer la veille.") : undefined}
+            style={{ minHeight: "44px", padding: "12px 18px", fontSize: "12px", whiteSpace: "nowrap" }}
+          >
+            {scanning ? (en ? "Scanning sources…" : "Analyse des sources…") : (en ? "🔎 Scan sources" : "🔎 Scanner les sources")}
+          </button>
+        </div>
         <p className="public-content-intro">{en
-          ? "Scan official JEC sources, prepare bilingual proposals with the local Ollama assistant, then review and save as unpublished drafts."
-          : "Repère les publications de sources JEC vérifiées, prépare des propositions bilingues avec Ollama, puis vérifie-les et enregistre-les en brouillon non publié."}</p>
+          ? "Step 1 — Scan official JEC sources. Then select an article to prepare a bilingual draft with the local Ollama assistant."
+          : "Étape 1 — Scanne les sources officielles de la JEC. Sélectionne ensuite un article pour préparer un brouillon bilingue avec Ollama."}</p>
         <p className="account-next-actions"><Link href="/gestion/contenus">{en ? "Open public content management →" : "Ouvrir la gestion des contenus publics →"}</Link></p>
 
-        {checking ? <p className="muted">{en ? "Checking permissions…" : "Vérification des permissions…"}</p>
-          : !isAdmin ? <section className="admin-locked"><h2>{en ? "Administrator access required" : "Accès administrateur requis"}</h2><p>{en ? "Only a JEC Connect administrator can use the editorial assistant." : "Seul un administrateur JEC Connect peut utiliser l’assistant éditorial."}</p></section>
+        {checking ? <p className="muted">{en ? "Checking administrator access…" : "Vérification de l’accès administrateur…"}</p>
+          : !isAdmin ? <section className="admin-locked">
+              <h2>{en ? "Administrator access required" : "Accès administrateur requis"}</h2>
+              <p>{en ? "The scan button is visible above but remains disabled until the connected account is recognised as a JEC administrator." : "Le bouton de veille est visible juste au-dessus, mais reste désactivé tant que le compte connecté n’est pas reconnu comme administrateur JEC."}</p>
+              <p><strong>{en ? "Connected account: " : "Compte connecté : "}</strong>{userEmail || (en ? "unknown" : "inconnu")}</p>
+              {adminCheckError ? <p><strong>{en ? "Permission check error: " : "Erreur de vérification des droits : "}</strong>{adminCheckError}</p> : <p>{en ? "The configured administrator account is abessangel@gmail.com. Sign in with this account on this preview domain." : "Le compte administrateur configuré est abessangel@gmail.com. Connecte-toi avec cette adresse sur ce domaine de prévisualisation."}</p>}
+            </section>
           : <>
             <section className="admin-section">
               <div className="directory-section-heading">
                 <div><p className="eyebrow">{en ? "VERIFIED SOURCES" : "SOURCES VÉRIFIÉES"}</p><h2>{en ? "Official JEC publications" : "Publications officielles JEC"}</h2></div>
-                <button className="primary-button" type="button" onClick={scanSources} disabled={scanning}>
-                  {scanning ? (en ? "Scanning…" : "Analyse…") : (en ? "Scan sources" : "Scanner les sources")}
-                </button>
+
               </div>
               <p className="admin-help">{en
                 ? "Initial connectors use the public WordPress feeds of JEC France and JECI-MIEC. Unavailable sources are reported separately."
