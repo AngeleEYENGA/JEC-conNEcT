@@ -26,6 +26,16 @@ const tabs:Record<Tab,{fr:string;en:string;icon:string}>={
   members:{fr:"Membres",en:"Members",icon:"♙"}
 };
 
+const workspaceArtwork:Record<string,string>={
+  national_team:"/images/jec-community-illustration.svg",
+  federation:"/images/news-leaders.svg",
+  local_team:"/images/news-learning.svg",
+  commission:"/images/news-wellbeing.svg",
+  service:"/images/news-learning.svg",
+  project:"/images/news-leaders.svg",
+  temporary_group:"/images/jec-community-illustration.svg"
+};
+
 function formatDate(value:string,en:boolean,withTime=false){
   return new Date(value).toLocaleString(en?"en-GB":"fr-FR",withTime?{dateStyle:"medium",timeStyle:"short"}:{dateStyle:"medium"});
 }
@@ -303,10 +313,15 @@ export default function WorkspaceDetailPage(){
     </header>
     <div className="workspace-detail-content">
       {loading?<p className="muted">{en?"Loading workspace…":"Chargement de l'espace…"}</p>:!workspace?<div className="collab-empty"><h1>{en?"Workspace unavailable":"Espace indisponible"}</h1><p>{error}</p><Link href="/workspace" className="primary-button">{en?"Back to workspaces":"Retour aux espaces"}</Link></div>:<>
-        <div className="workspace-title-row">
-          <div><p className="eyebrow">{en?"PRIVATE WORKSPACE":"ESPACE PRIVÉ"}</p><h1>{workspace.name}</h1><p className="collab-lead">{workspace.description}</p></div>
-          <span className={"workspace-role-pill "+(manager?"manager":"member")}>{isAdmin?(en?"Administrator": "Administratrice"):myRole==="owner"?(en?"Owner":"Propriétaire"):myRole==="manager"?(en?"Manager":"Responsable"):(en?"Member":"Membre")}</span>
-        </div>
+        <section className="workspace-detail-hero">
+          <div className="workspace-detail-hero-copy">
+            <p className="eyebrow">{en?"PRIVATE TEAM SPACE":"ESPACE PRIVÉ D'ÉQUIPE"}</p>
+            <div className="workspace-detail-title-line"><h1>{workspace.name}</h1><span className={"workspace-role-pill "+(manager?"manager":"member")}>{isAdmin?(en?"Administrator": "Administratrice"):myRole==="owner"?(en?"Owner":"Propriétaire"):myRole==="manager"?(en?"Manager":"Responsable"):(en?"Member":"Membre")}</span></div>
+            <p className="collab-lead">{workspace.description|| (en?"A private place for your team to coordinate, share updates and move initiatives forward.":"Un espace privé pour coordonner l'équipe, partager les nouvelles et faire avancer les initiatives.")}</p>
+            <div className="workspace-detail-stats"><span><b>{roster.length}</b>{en?"members":"membres"}</span><span><b>{posts.length}</b>{en?"updates":"échanges"}</span><span><b>{projects.length}</b>{en?"projects":"projets"}</span><span><b>{meetings.length}</b>{en?"meetings":"réunions"}</span></div>
+          </div>
+          <div className="workspace-detail-hero-art"><img src={workspaceArtwork[workspace.workspace_type]||"/images/jec-community-illustration.svg"} alt={en?"Team members collaborating":"Des membres qui collaborent"}/><span>{en?"Together, we move forward":"Ensemble, on avance"}</span></div>
+        </section>
 
         {invitePending?<section className="collab-empty"><span>✉</span><h2>{en?"You have been invited":"Tu as reçu une invitation"}</h2><p>{en?"Accept this invitation to view the workspace feed, tasks, projects, meetings and documents.":"Accepte l'invitation pour accéder au fil d'échanges, aux tâches, projets, réunions et documents."}</p><button className="primary-button" disabled={busy} onClick={acceptInvitation}>{en?"Accept invitation":"Accepter l'invitation"}</button></section>:!canCollaborate?<div className="collab-empty"><h2>{en?"Access required":"Accès requis"}</h2><p>{en?"You are not an active member of this workspace.":"Tu n'es pas membre actif de cet espace."}</p></div>:<>
           <nav className="workspace-tabs">{(Object.keys(tabs) as Tab[]).map(tab=><button key={tab} onClick={()=>setActiveTab(tab)} className={activeTab===tab?"active":""}><span>{tabs[tab].icon}</span>{tabs[tab][en?"en":"fr"]}</button>)}</nav>
