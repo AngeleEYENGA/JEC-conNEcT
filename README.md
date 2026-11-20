@@ -52,3 +52,8 @@ L'icône navigateur dédiée à JEC-conNEcT est définie par app/icon.svg. Les i
 
 ## Audio : état de la persistance
 Le prototype enregistre déjà les fichiers audio dans IndexedDB sur l'appareil. Une intégration facultative au stockage privé Supabase est préparée dans le code et la migration `supabase/migrations/202611120001_create_jec_audio_library.sql`. La migration et la configuration Supabase ne sont pas encore activées ; la synchronisation entre appareils ne doit donc pas être considérée comme disponible.
+
+
+## Archives JEC — patrimoine numérique
+
+Le catalogue patrimonial est accessible sur [Archives JEC](/archives). Il est distinct des documents privés des workspaces. Les dépôts restent en attente jusqu'à validation éditoriale. La publication publique exige une provenance documentée et des droits de réutilisation vérifiés. Voir [docs/JEC_ARCHIVES.md](docs/JEC_ARCHIVES.md).

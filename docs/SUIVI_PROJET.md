@@ -244,3 +244,83 @@ Le schéma de collaboration existait déjà dans Supabase ; cette itération a r
 - Contrôle final Supabase : RLS active sur les huit nouvelles tables phase 2 ; aucune lecture par `anon`. L'advisor santé ne signale aucun problème. L'unique alerte sécurité restante concerne la protection contre les mots de passe compromis désactivée.
 - Déploiement Vercel du socle phase 2 et de l'intégrité des périmètres validé READY ; les routes de liste et de détail projet/réunion/appel répondent en HTTP 200.
 - Le scénario SQL de salle d'appel a été testé avec deux participants dans une transaction annulée. Le test de média (micro, caméra, audio bidirectionnel et réseau) nécessite encore deux vrais navigateurs.
+
+## Mise à jour — 19 novembre 2026 : affichage conditionnel du Workspace
+
+- Le portail public conserve une entrée « Workspace » identifiable, mais verrouillée tant que la session n'est pas établie ou que le compte ne dispose pas d'une adhésion JEC vérifiée.
+- Visiteur non connecté : l'entrée est verrouillée et conduit à la connexion avec un retour vers `/workspace`.
+- Compte connecté avec adhésion en attente ou rejetée : l'entrée conduit à `/compte`, où le statut peut être consulté ; elle ne donne pas accès aux espaces.
+- Membre JEC vérifié ou administrateur : l'entrée ouvre `/workspace`. La liste ne présente que les espaces auxquels le compte a accès ; les invitations restent séparées des espaces actifs.
+- Le chargement initial de session est maintenant suivi explicitement. Les réponses asynchrones obsolètes ne peuvent plus rétablir l'identité d'un ancien compte après une déconnexion ou un changement de session.
+- Le contrôle côté serveur dans `proxy.ts` reste obligatoire : l'affichage du menu n'est jamais utilisé comme mesure de sécurité.
+- Déploiement de production confirmé le 19 novembre 2026 : Vercel `READY`, déploiement `dpl_9v8PRiKUX1d2BphqpsA4kmLURSiW`, commit `c34e003656317d3c181a129c7a53c4771a673426` depuis `feat/jec-connect-stabilisation-20261117`. L'alias `jec-connect-ten.vercel.app` pointe vers ce déploiement.
+- Vérification HTTP sur le domaine officiel : `/`, `/spiritualite`, `/spiritualite/calendrier`, `/spiritualite/preparer`, `/spiritualite/partager`, `/archives`, `/decouvrir`, `/actualites/camp-garoua-2026` et `/chants` répondent en HTTP 200. Les routes privées `/workspace`, `/decisions`, `/partenaires` et `/documents` présentent le parcours de connexion à une requête anonyme ; ce contrôle ne remplace pas les tests avec des comptes réels.
+- Aucune migration Supabase supplémentaire n'a été appliquée lors de ce déploiement. La PR #15 reste ouverte en brouillon et n'est pas fusionnée. Attention : Vercel conserve `main` comme branche de production configurée ; ce déploiement manuel depuis la branche de stabilisation ne change pas ce réglage, et un futur déploiement automatique de `main` pourrait donc remplacer cette version.
+- Les tests navigateur de bout en bout restent à compléter avec de vrais comptes : visiteur, compte en attente, membre vérifié sans affectation, membre invité/actif dans un espace et administrateur. Les modules de décisions/votes et de partenaires doivent notamment être testés avec les rôles autorisés avant toute activation institutionnelle.
+
+
+## Audit de sécurité — gouvernance et scrutins (19 novembre 2026)
+
+- Les trois migrations de gouvernance sont présentes dans l'historique Supabase : création du module `20261116160330`, séparation des choix anonymes `20261116191345`, durcissement des privilèges `20261116191806`.
+- Vérification SQL en lecture seule : le rôle `anon` ne dispose d'aucun droit direct SELECT/INSERT sur les cinq tables de scrutin et ne peut exécuter aucune des cinq RPC de gouvernance. `authenticated` peut lire les seules métadonnées/options filtrées par RLS ; l'éligibilité, le registre de participation et les choix restent inaccessibles en lecture directe. Les opérations passent par les RPC contrôlées.
+- Les deux seules politiques de lecture sur les tables de gouvernance portent sur les bulletins et leurs options. Les trois tables internes (`jec_governance_eligible_voters`, `jec_governance_vote_submissions`, `jec_governance_vote_choices`) ont RLS activée sans politique, avec les privilèges directs révoqués : l'alerte Supabase `rls_enabled_no_policy` est informative et correspond à ce modèle volontaire.
+- L'advisor Sécurité signale un avertissement distinct : la protection Supabase Auth contre les mots de passe compromis est désactivée. À activer dans les paramètres Auth avant une exploitation institutionnelle ; aucun changement de configuration Auth n'a été fait ici.
+- Un seul scrutin est présent dans la base : `Sondage test`, en brouillon, avec trois choix et trois électeurs éligibles dans l'espace pilote. Il n'est pas ouvert ; il a été laissé intact. Aucun vote ni choix n'a été ajouté durant cet audit.
+- L'interface rappelle que les élections importantes doivent respecter les statuts et règles de contrôle du mouvement. Le module ne doit pas être présenté comme une procédure électorale statutaire validée avant cadrage par les responsables JEC.
+- Les tests de bout en bout avec des comptes réels et plusieurs appareils restent à réaliser. Aucune migration n'a été appliquée pendant cet audit.
+
+
+## Maintenance du 19 novembre 2026 — alignement des migrations de gouvernance
+
+- Les migrations de gouvernance dans Git ont été renommées pour correspondre exactement aux versions déjà enregistrées dans l'historique Supabase : `20261116160330_governance_ballots_consultations_elections_20261116.sql`, `20261116191345_harden_anonymous_governance_ballots.sql` et `20261116191806_harden_governance_table_privileges.sql`.
+- La migration fondatrice, auparavant disponible uniquement sur la branche de la PR #13, a été intégrée à la branche de stabilisation afin que le schéma du scrutin soit reproductible à partir de cette branche.
+- Les anciens fichiers aux préfixes provisoires `202611160002` et `202611160003` ont été retirés de la branche de stabilisation.
+- Cette opération est exclusivement une correction de l'historique source Git. Les migrations sont déjà appliquées dans Supabase ; aucune commande DDL ni migration distante n'a été exécutée pendant cette réconciliation.
+- Contrôle du dépôt : les trois fichiers présents suivent désormais le même ordre chronologique et les mêmes versions que l'historique Supabase. La PR #15 reste ouverte en brouillon ; aucun merge ni nouveau déploiement Vercel n'a été déclenché.
+
+## Mise à jour — 19 novembre 2026 : espace Communauté
+
+| Chantier | État | Commentaire |
+|---|---|---|
+| Fil communautaire global | Première version intégrée à la branche de travail | Publication de textes et d'humeurs, réactions, commentaires, signalements et file de modération. Séparé des fils privés des Workspaces. |
+| Protection des contenus | En place au niveau base / route | Route `/communaute` protégée ; RLS active sur les quatre tables communautaires ; membres vérifiés et administrateurs seulement. |
+| Notifications liées à la communauté | En place dans le centre interne | Une notification interne est créée pour l'auteur lors d'un nouveau commentaire ou d'une réaction d'un autre membre. |
+| Photos / GIF / vidéos / audio | Intégré à la branche de travail | Bucket privé Supabase, prévisualisation, URL signées temporaires, limites de taille, politiques RLS/Storage. Parcours authentifié encore à tester. |
+| Repartage | Intégré à la branche de travail | Repartage avec commentaire facultatif, affichage de l'original et notification interne à son auteur. |
+| Animations sociales | Intégrées à la branche de travail | Animation des cartes/réactions/modales et respect de la préférence de réduction des animations. |
+| Push / e-mails transactionnels | Perspectives | Notifications push système et e-mails de nouveau message / confirmation reportés à une étape ultérieure. Aucun envoi e-mail n'est annoncé comme opérationnel. |
+| SMS Twilio | Perspectives avec financement | À chiffrer et à financer avant intégration. |
+
+La PR d'envoi d'e-mails via Google SMTP (#17) a été fermée sans fusion après un test non concluant. Les notifications internes déjà présentes restent prioritaires. Voir `COMMUNAUTE_SOCIALE.md` pour les critères d'acceptation et les limites de cette première version.
+
+
+## Évolution Communauté — médias et repartage (20 novembre 2026)
+
+- Branche de travail : `feat/jec-community-media-sharing-20261120`.
+- Bucket privé `jec-community-media` créé sur Supabase ; aucune exposition anonyme.
+- Table `jec_community_media` et politiques RLS/Storage appliquées via les migrations `20261119215121_jec_community_media_and_shares_20261120`, `20261119220552_jec_community_media_read_scope_20261120` et `20261119221704_jec_community_reaction_update_scope`, `20261119223455_jec_community_reshare_rls_recursion_fix`, `20261119223951_jec_community_media_20mb_per_file_limit` et `20261119224024_jec_community_media_50mb_post_limit`.
+- Publication avec jusqu'à 5 images, GIF animés, vidéos ou fichiers audio ; 20 Mo par fichier et 50 Mo par publication.
+- Affichage par URL signée de 1 heure, lecteurs natifs audio/vidéo et galerie responsive.
+- Repartage d'une publication originale, avec commentaire facultatif et notification interne.
+- Bouton « J'aime » renforcé visuellement ; cinq types de réactions conservés.
+- Animations légères des cartes, boutons et fenêtres ; respect de `prefers-reduced-motion`.
+- Aucun déploiement de cette évolution en production n'a encore été effectué. Les tests d'upload et de repartage avec un membre vérifié restent requis avant fusion.
+
+
+## Correctif du bouton J'aime — 19 novembre 2026
+- L'erreur `permission denied for table jec_community_reactions` provenait de l'utilisation de `upsert`, incompatible avec les privilèges de mise à jour limités aux colonnes `reaction_type`.
+- Le client utilise désormais INSERT / UPDATE(reaction_type) / DELETE selon la réaction déjà présente.
+- La politique RLS UPDATE vérifie que la ligne appartient au membre et que la publication cible reste publiée.
+- Vérification des privilèges : INSERT/SELECT/DELETE autorisés au rôle authentifié ; UPDATE global refusé ; UPDATE de `reaction_type` autorisé ; aucune mise à jour de `post_id` ou `user_id` ; aucune lecture anonyme.
+
+
+## QA de la Communauté — 19 novembre 2026
+
+- Repartage : correction de la récursion RLS avec la fonction privée `private.jec_can_reshare_community_post(uuid)`, vérifiant l'identité, le rôle, la publication d'origine et l'absence de repartage imbriqué.
+- Test transactionnel du flux de repartage sous le rôle `authenticated` réussi.
+- Test transactionnel à deux membres : notification interne à l'auteur d'origine vérifiée.
+- Média : test transactionnel des politiques RLS sur `jec_community_media` et `storage.objects` réussi pour un membre vérifié.
+- Limite par fichier désormais imposée par Supabase Storage à 20 MiB, et par la table metadata.
+- Limite cumulée de 50 MiB par publication imposée par un trigger ; maximum cinq pièces jointes assuré par les positions 0 à 4 et leur unicité.
+- Les tests de base sont réalisés avec des transactions annulées : aucun post, média, repartage ou notification de test n'est conservé.
+- Reste à effectuer : test manuel du vrai transfert d'un fichier via l'interface du navigateur et de sa lecture via URL signée temporaire, puis test de bout en bout du repartage sur la prévisualisation. Aucune mise en production de la PR #19 n'est encore effectuée.

@@ -4,7 +4,19 @@ import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
+import { safeInternalPath } from "@/lib/auth/redirect";
 import { LanguageSwitcher, useLanguage } from "@/components/language-provider";
+
+function getSafeNextPath() {
+  const requested = new URLSearchParams(window.location.search).get("next");
+  return safeInternalPath(requested);
+}
+
+function getAuthCallbackUrl(nextPath: string) {
+  const callbackUrl = new URL("/auth/callback", window.location.origin);
+  callbackUrl.searchParams.set("next", nextPath);
+  return callbackUrl.toString();
+}
 
 export default function LoginPage() {
   const router = useRouter();
@@ -53,7 +65,7 @@ export default function LoginPage() {
     setLoading(true);
     const {error:authError}=await supabase.auth.signInWithOAuth({
       provider:"google",
-      options:{redirectTo:`${window.location.origin}/auth/callback`}
+      options:{redirectTo:getAuthCallbackUrl(getSafeNextPath())}
     });
     if(authError){setError(authErrorText(authError.message));setLoading(false);}
   }
@@ -66,27 +78,26 @@ export default function LoginPage() {
     if(mode==="signup") {
       const {data,error:authError}=await supabase.auth.signUp({
         email,password,
-        options:{emailRedirectTo:`${window.location.origin}/auth/callback`}
+        options:{emailRedirectTo:getAuthCallbackUrl(getSafeNextPath())}
       });
       if(authError){
         setError(authErrorText(authError.message));
       }else if(data.session){
-        router.push("/");
+        router.replace(getSafeNextPath());
       }else if(data.user && Array.isArray(data.user.identities) && data.user.identities.length===0){
         setError(en
-          ?"An account already exists for this address. Use the same sign-in method as before (for this account, Google). Repeating sign-up does not create a password or send a new confirmation email."
-          :"Un compte existe déjà pour cette adresse. Utilise la même méthode de connexion qu'auparavant (pour ce compte, Google). Refaire une inscription ne crée pas de mot de passe et ne déclenche pas un nouvel e-mail de confirmation.");
+          ?"An account already exists for this address. Sign in, or use “Forgot your password?” to set a password if the account was originally created with Google."
+          :"Un compte existe déjà pour cette adresse. Connecte-toi, ou utilise « Mot de passe oublié ? » pour définir un mot de passe si le compte a été créé initialement avec Google.");
         setMode("login");
       }else{
-        setSignupEmailBlocked(true);
         setMessage(en
-          ?"Your account record was created, but it is not active until the email is confirmed. The current Supabase test mailer only delivers to the project organisation's team addresses, so new JEC members outside that team will not receive this email. Do not sign up again. The platform administrator must configure custom SMTP, then resend the confirmation."
-          :"Le compte a bien été créé dans Supabase, mais il reste inactif tant que l’adresse e-mail n’est pas confirmée. Le serveur de test Supabase n’envoie qu’aux adresses de l’équipe de l’organisation du projet : les nouveaux jécistes extérieurs à cette équipe ne recevront donc pas ce mail. Ne recommence pas l’inscription. L’administrateur doit configurer un SMTP personnalisé, puis renvoyer la confirmation.");
+          ?"Your account record is ready. If email confirmation is enabled, check your inbox and spam folder for the activation link, then return here to sign in. If no email arrives, contact the JEC administrator."
+          :"Ton compte est enregistré. Si la confirmation par e-mail est activée, vérifie ta boîte de réception et tes courriers indésirables pour le lien d’activation, puis reviens te connecter. Si aucun e-mail n’arrive, contacte l’administration JEC.");
       }
     } else {
       const {error:authError}=await supabase.auth.signInWithPassword({email,password});
       if(authError)setError(authErrorText(authError.message));
-      else router.push("/");
+      else router.replace(getSafeNextPath());
     }
     setLoading(false);
   }
@@ -127,7 +138,7 @@ export default function LoginPage() {
             <span className="google-g">G</span> {en?"Continue with Google":"Continuer avec Google"}
           </button>
           {!configured && <p className="auth-config-note">{en?"Google and email sign-in are waiting for the public Supabase key and provider setup.":"La connexion Google et e-mail attendent la clé publique Supabase et la configuration du fournisseur."}</p>}
-          {mode==="signup"&&<p className="auth-config-note">{en?"Important: the built-in Supabase test mailer only sends to members of the project's organisation team. To let all JEC members sign up with their own email addresses, JEC-conNEcT needs a custom SMTP sender. Email confirmation remains enabled for account security.":"Important : le service e-mail de test intégré à Supabase n’envoie qu’aux membres de l’équipe de l’organisation du projet. Pour permettre à tous les jécistes de créer un compte avec leur propre adresse, JEC-conNEcT doit configurer un SMTP personnalisé. La confirmation e-mail reste activée pour protéger les comptes."}</p>}
+          {mode==="signup"&&<p className="auth-config-note">{en?"You can create an account with your email address and a password. If email confirmation is enabled, follow the activation link sent to your inbox before signing in.":"Tu peux créer un compte avec ton adresse e-mail et un mot de passe. Si la confirmation par e-mail est activée, suis le lien d’activation reçu avant de te connecter."}</p>}
           <div className="or-divider"><span/>{en?"or use your email address":"ou avec ton adresse e-mail"}<span/></div>
           <form onSubmit={submit} className="auth-form">
             <label>{en?"Email address":"Adresse e-mail"}<input type="email" autoComplete="email" required value={email} onChange={e=>setEmail(e.target.value)} placeholder="prenom@exemple.fr"/></label>
