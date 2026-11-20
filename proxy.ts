@@ -21,8 +21,82 @@ export async function proxy(request: NextRequest) {
     }
   });
 
-  // Refresh and validate the cookie-backed session on requests that pass through the proxy.
-  await supabase.auth.getClaims();
+  // Verify the cookie-backed session before rendering protected application routes.
+  // Database RLS and RPC authorization remain the source of truth for data access.
+  const { data: claimsData } = await supabase.auth.getClaims();
+  const claims = claimsData?.claims ?? null;
+  const pathname = request.nextUrl.pathname;
+  const matchesPath = (prefix: string) =>
+    pathname === prefix || pathname.startsWith(prefix + "/");
+
+  const requiresSignIn = [
+    "/compte",
+    "/communaute",
+    "/workspace",
+    "/messagerie",
+    "/reunions",
+    "/decisions",
+    "/projets",
+    "/documents",
+    "/gestion",
+    "/partenaires"
+  ].some(matchesPath);
+
+  if (requiresSignIn && !claims) {
+    const loginUrl = request.nextUrl.clone();
+    loginUrl.pathname = "/login";
+    loginUrl.search = "";
+    loginUrl.searchParams.set("next", pathname + request.nextUrl.search);
+
+    const redirectResponse = NextResponse.redirect(loginUrl);
+    response.cookies.getAll().forEach((cookie) => redirectResponse.cookies.set(cookie));
+    return redirectResponse;
+  }
+
+  // Do not rely on hidden navigation as an access-control mechanism.
+  // Collaboration routes require a verified JEC membership (or a platform admin).
+  const isMemberArea = [
+    "/communaute",
+    "/workspace",
+    "/messagerie",
+    "/reunions",
+    "/decisions",
+    "/projets",
+    "/documents",
+    "/partenaires"
+  ].some(matchesPath);
+  const isAdminArea = matchesPath("/gestion");
+
+  if ((isMemberArea || isAdminArea) && claims) {
+    const userId = typeof claims.sub === "string" ? claims.sub : null;
+    const [{ data: membershipRows, error: membershipError }, { data: adminFlag, error: adminError }] =
+      await Promise.all([
+        userId
+          ? supabase
+              .from("jec_memberships")
+              .select("user_id")
+              .eq("user_id", userId)
+              .eq("membership_status", "verified")
+              .limit(1)
+          : Promise.resolve({ data: null, error: new Error("Missing authenticated user id") }),
+        supabase.rpc("is_jec_admin")
+      ]);
+
+    const isVerifiedMember = !membershipError && Array.isArray(membershipRows) && membershipRows.length > 0;
+    const isPlatformAdmin = !adminError && adminFlag === true;
+    const isAllowed = isAdminArea ? isPlatformAdmin : isVerifiedMember || isPlatformAdmin;
+
+    if (!isAllowed) {
+      // Do not silently send a signed-in person back to the public homepage.
+      // Show the membership status and the next step on their account page instead.
+      const accountUrl = new URL("/compte", request.url);
+      accountUrl.searchParams.set("access", "membership_required");
+      const accountResponse = NextResponse.redirect(accountUrl);
+      response.cookies.getAll().forEach((cookie) => accountResponse.cookies.set(cookie));
+      return accountResponse;
+    }
+  }
+
   return response;
 }
 

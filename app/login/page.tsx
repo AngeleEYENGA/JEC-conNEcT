@@ -4,7 +4,19 @@ import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
+import { safeInternalPath } from "@/lib/auth/redirect";
 import { LanguageSwitcher, useLanguage } from "@/components/language-provider";
+
+function getSafeNextPath() {
+  const requested = new URLSearchParams(window.location.search).get("next");
+  return safeInternalPath(requested);
+}
+
+function getAuthCallbackUrl(nextPath: string) {
+  const callbackUrl = new URL("/auth/callback", window.location.origin);
+  callbackUrl.searchParams.set("next", nextPath);
+  return callbackUrl.toString();
+}
 
 export default function LoginPage() {
   const router = useRouter();
@@ -53,7 +65,7 @@ export default function LoginPage() {
     setLoading(true);
     const {error:authError}=await supabase.auth.signInWithOAuth({
       provider:"google",
-      options:{redirectTo:`${window.location.origin}/auth/callback`}
+      options:{redirectTo:getAuthCallbackUrl(getSafeNextPath())}
     });
     if(authError){setError(authErrorText(authError.message));setLoading(false);}
   }
@@ -66,12 +78,12 @@ export default function LoginPage() {
     if(mode==="signup") {
       const {data,error:authError}=await supabase.auth.signUp({
         email,password,
-        options:{emailRedirectTo:`${window.location.origin}/auth/callback`}
+        options:{emailRedirectTo:getAuthCallbackUrl(getSafeNextPath())}
       });
       if(authError){
         setError(authErrorText(authError.message));
       }else if(data.session){
-        router.push("/");
+        router.replace(getSafeNextPath());
       }else if(data.user && Array.isArray(data.user.identities) && data.user.identities.length===0){
         setError(en
           ?"An account already exists for this address. Sign in, or use “Forgot your password?” to set a password if the account was originally created with Google."
@@ -85,7 +97,7 @@ export default function LoginPage() {
     } else {
       const {error:authError}=await supabase.auth.signInWithPassword({email,password});
       if(authError)setError(authErrorText(authError.message));
-      else router.push("/");
+      else router.replace(getSafeNextPath());
     }
     setLoading(false);
   }
