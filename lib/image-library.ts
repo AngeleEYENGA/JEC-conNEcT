@@ -15,7 +15,7 @@ const pexelsLicense = "https://www.pexels.com/license/";
 
 export const jecPhotos = {
   community: {
-    src: "https://images.pexels.com/photos/9433169/pexels-photo-9433169.jpeg?cs=srgb&dl=pexels-gabby-k-9433169.jpg&fm=jpg",
+    src: "https://images.pexels.com/photos/9433169/pexels-photo-9433169.jpeg?auto=compress&cs=tinysrgb&w=1600",
     photographer: "Monstera Production",
     source: "Pexels",
     sourceUrl: "https://www.pexels.com/photo/group-of-people-doing-work-together-9433169/",
@@ -27,7 +27,7 @@ export const jecPhotos = {
     aspect: "landscape"
   },
   peerStudy: {
-    src: "https://images.pexels.com/photos/5965540/pexels-photo-5965540.jpeg?cs=srgb&dl=pexels-charlotte-may-5965540.jpg&fm=jpg",
+    src: "https://images.pexels.com/photos/5965540/pexels-photo-5965540.jpeg?auto=compress&cs=tinysrgb&w=1600",
     photographer: "Charlotte May",
     source: "Pexels",
     sourceUrl: "https://www.pexels.com/photo/positive-multiethnic-students-working-together-5965540/",
@@ -39,7 +39,7 @@ export const jecPhotos = {
     aspect: "landscape"
   },
   studentTeam: {
-    src: "https://images.pexels.com/photos/6140697/pexels-photo-6140697.jpeg?cs=srgb&dl=pexels-william-fortunato-6140697.jpg&fm=jpg",
+    src: "https://images.pexels.com/photos/6140697/pexels-photo-6140697.jpeg?auto=compress&cs=tinysrgb&w=1600",
     photographer: "William Fortunato",
     source: "Pexels",
     sourceUrl: "https://www.pexels.com/photo/positive-multiethnic-students-working-together-on-laptops-6140697/",
@@ -51,7 +51,7 @@ export const jecPhotos = {
     aspect: "landscape"
   },
   library: {
-    src: "https://images.pexels.com/photos/5940844/pexels-photo-5940844.jpeg?cs=srgb&dl=pexels-kampus-5940844.jpg&fm=jpg",
+    src: "https://images.pexels.com/photos/5940844/pexels-photo-5940844.jpeg?auto=compress&cs=tinysrgb&w=1600",
     photographer: "Kampus Production",
     source: "Pexels",
     sourceUrl: "https://www.pexels.com/photo/multiethnic-students-doing-research-together-in-library-5940844/",
@@ -63,7 +63,7 @@ export const jecPhotos = {
     aspect: "landscape"
   },
   studyGroup: {
-    src: "https://images.pexels.com/photos/6684552/pexels-photo-6684552.jpeg?cs=srgb&dl=pexels-andy-barbour-6684552.jpg&fm=jpg",
+    src: "https://images.pexels.com/photos/6684552/pexels-photo-6684552.jpeg?auto=compress&cs=tinysrgb&w=1600",
     photographer: "Andy Barbour",
     source: "Pexels",
     sourceUrl: "https://www.pexels.com/photo/group-of-students-working-together-6684552/",
