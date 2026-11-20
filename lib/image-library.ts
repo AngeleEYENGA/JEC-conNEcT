@@ -75,7 +75,7 @@ export const jecPhotos = {
     aspect: "landscape"
   },
   africanClassroom: {
-    src: "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a7/Students_in_classroom.jpg/1920px-Students_in_classroom.jpg",
+    src: "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a7/Students_in_classroom.jpg/1280px-Students_in_classroom.jpg",
     photographer: "Esthee2010",
     source: "Wikimedia Commons",
     sourceUrl: "https://commons.wikimedia.org/wiki/File:Students_in_classroom.jpg",
