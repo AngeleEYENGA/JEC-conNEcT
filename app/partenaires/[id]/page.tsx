@@ -7,10 +7,11 @@ import { LanguageSwitcher, useLanguage } from "@/components/language-provider";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
 type Partner={id:string;display_name:string;legal_name:string;partner_types:string[];geographic_scope:string;country_name:string|null;city:string|null;website_url:string|null;public_summary:string|null;relationship_status:string;verification_status:string;evidence_url:string|null;evidence_label:string|null;evidence_summary:string|null;visibility:string};
-type Engagement={id:string;title:string;engagement_type:string;engagement_status:string;summary:string|null;starts_on:string|null;ends_on:string|null;support_kind:string};
-type Opportunity={id:string;title:string;opportunity_type:string;opportunity_status:string;description:string|null;source_url:string|null;deadline:string|null};
-type Contact={id:string;full_name:string;role_title:string|null;email:string|null;phone:string|null;is_primary:boolean;consent_status:string};
+type Engagement={id:string;title:string;engagement_type:string;engagement_status:string;summary:string|null;starts_on:string|null;ends_on:string|null;support_kind:string;support_amount:number|null;currency_code:string|null};
+type Opportunity={id:string;title:string;opportunity_type:string;opportunity_status:string;description:string|null;source_url:string|null;deadline:string|null;expected_amount:number|null;currency_code:string|null};
+type Contact={id:string;full_name:string;role_title:string|null;email:string|null;phone:string|null;is_primary:boolean;consent_status:string;preferred_contact_method:string;notes:string|null};
 type DocumentRow={id:string;title:string;document_type:string;storage_path:string;document_status:string;valid_from:string|null;valid_until:string|null};
+type FollowUp={id:string;title:string;details:string|null;due_at:string;status:"todo"|"in_progress"|"done"|"cancelled";priority:"low"|"normal"|"high";assigned_to:string|null;created_at:string};
 type Activity={id:string;event_type:string;summary_fr:string;summary_en:string;created_at:string};
 type PartnerNote={id:string;note_type:string;content:string;created_by:string;created_at:string};
 
@@ -40,6 +41,7 @@ export default function PartnerDetailPage(){
  const [documents,setDocuments]=useState<DocumentRow[]>([]);
  const [activity,setActivity]=useState<Activity[]>([]);
  const [notes,setNotes]=useState<PartnerNote[]>([]);
+ const [followUps,setFollowUps]=useState<FollowUp[]>([]);
  const [canManage,setCanManage]=useState(false);
  const [canViewPrivate,setCanViewPrivate]=useState(false);
  const [loading,setLoading]=useState(true);
@@ -54,6 +56,33 @@ export default function PartnerDetailPage(){
  const [opportunityType,setOpportunityType]=useState("funding_call");
  const [opportunityDeadline,setOpportunityDeadline]=useState("");
  const [opportunityUrl,setOpportunityUrl]=useState("");
+ const [opportunityDescription,setOpportunityDescription]=useState("");
+ const [opportunityAmount,setOpportunityAmount]=useState("");
+ const [opportunityCurrency,setOpportunityCurrency]=useState("EUR");
+ const [engagementStartsOn,setEngagementStartsOn]=useState("");
+ const [engagementEndsOn,setEngagementEndsOn]=useState("");
+ const [engagementSupportKind,setEngagementSupportKind]=useState("non_financial");
+ const [engagementAmount,setEngagementAmount]=useState("");
+ const [engagementCurrency,setEngagementCurrency]=useState("EUR");
+ const [contactName,setContactName]=useState("");
+ const [contactRole,setContactRole]=useState("");
+ const [contactEmail,setContactEmail]=useState("");
+ const [contactPhone,setContactPhone]=useState("");
+ const [contactMethod,setContactMethod]=useState("email");
+ const [contactConsent,setContactConsent]=useState<"not_recorded"|"pending"|"granted"|"withdrawn">("not_recorded");
+ const [contactNotes,setContactNotes]=useState("");
+ const [contactPrimary,setContactPrimary]=useState(false);
+ const [documentFile,setDocumentFile]=useState<File|null>(null);
+ const [documentTitle,setDocumentTitle]=useState("");
+ const [documentType,setDocumentType]=useState("convention");
+ const [documentStatus,setDocumentStatus]=useState("under_review");
+ const [documentValidFrom,setDocumentValidFrom]=useState("");
+ const [documentValidUntil,setDocumentValidUntil]=useState("");
+ const [followUpTitle,setFollowUpTitle]=useState("");
+ const [followUpDetails,setFollowUpDetails]=useState("");
+ const [followUpDueAt,setFollowUpDueAt]=useState("");
+ const [followUpPriority,setFollowUpPriority]=useState<"low"|"normal"|"high">("normal");
+ const [followUpAssignMe,setFollowUpAssignMe]=useState(true);
 
  const load=useCallback(async()=>{
   const supabase=getSupabaseBrowserClient();if(!supabase){setError("Supabase n'est pas configuré.");setLoading(false);return;}
@@ -74,19 +103,20 @@ export default function PartnerDetailPage(){
   setCanViewPrivate(privateAccess);setCanManage(admin||["manager","editor"].includes(role??""));
   setPartner(partnerResult.data as Partner);
   if(privateAccess){
-   const [e,o,c,d,a,n]=await Promise.all([
-    supabase.from("jec_partner_engagements").select("id,title,engagement_type,engagement_status,summary,starts_on,ends_on,support_kind").eq("partner_id",partnerId).order("starts_on",{ascending:false}),
-    supabase.from("jec_partner_opportunities").select("id,title,opportunity_type,opportunity_status,description,source_url,deadline").eq("partner_id",partnerId).order("deadline",{ascending:true}),
-    supabase.from("jec_partner_contacts").select("id,full_name,role_title,email,phone,is_primary,consent_status").eq("partner_id",partnerId).order("is_primary",{ascending:false}),
+   const [e,o,c,d,a,n,f]=await Promise.all([
+    supabase.from("jec_partner_engagements").select("id,title,engagement_type,engagement_status,summary,starts_on,ends_on,support_kind,support_amount,currency_code").eq("partner_id",partnerId).order("starts_on",{ascending:false}),
+    supabase.from("jec_partner_opportunities").select("id,title,opportunity_type,opportunity_status,description,source_url,deadline,expected_amount,currency_code").eq("partner_id",partnerId).order("deadline",{ascending:true}),
+    supabase.from("jec_partner_contacts").select("id,full_name,role_title,email,phone,is_primary,consent_status,preferred_contact_method,notes").eq("partner_id",partnerId).order("is_primary",{ascending:false}),
     supabase.from("jec_partner_documents").select("id,title,document_type,storage_path,document_status,valid_from,valid_until").eq("partner_id",partnerId).order("created_at",{ascending:false}),
     supabase.from("jec_partner_activity").select("id,event_type,summary_fr,summary_en,created_at").eq("partner_id",partnerId).order("created_at",{ascending:false}).limit(30),
-    supabase.from("jec_partner_notes").select("id,note_type,content,created_by,created_at").eq("partner_id",partnerId).order("created_at",{ascending:false}).limit(30)
+    supabase.from("jec_partner_notes").select("id,note_type,content,created_by,created_at").eq("partner_id",partnerId).order("created_at",{ascending:false}).limit(30),
+    supabase.from("jec_partner_follow_ups").select("id,title,details,due_at,status,priority,assigned_to,created_at").eq("partner_id",partnerId).order("due_at",{ascending:true})
    ]);
-   if(e.error||o.error||c.error||d.error||a.error||n.error)setError((e.error||o.error||c.error||d.error||a.error||n.error)?.message??"");
+   if(e.error||o.error||c.error||d.error||a.error||n.error||f.error)setError((e.error||o.error||c.error||d.error||a.error||n.error||f.error)?.message??"");
    setEngagements((e.data??[]) as Engagement[]);setOpportunities((o.data??[]) as Opportunity[]);
-   setContacts((c.data??[]) as Contact[]);setDocuments((d.data??[]) as DocumentRow[]);setActivity((a.data??[]) as Activity[]);setNotes((n.data??[]) as PartnerNote[]);
+   setContacts((c.data??[]) as Contact[]);setDocuments((d.data??[]) as DocumentRow[]);setActivity((a.data??[]) as Activity[]);setNotes((n.data??[]) as PartnerNote[]);setFollowUps((f.data??[]) as FollowUp[]);
   }else{
-   setEngagements([]);setOpportunities([]);setContacts([]);setDocuments([]);setActivity([]);setNotes([]);
+   setEngagements([]);setOpportunities([]);setContacts([]);setDocuments([]);setActivity([]);setNotes([]);setFollowUps([]);
   }
   setLoading(false);
  },[partnerId,en]);
@@ -97,18 +127,103 @@ export default function PartnerDetailPage(){
   event.preventDefault();const supabase=getSupabaseBrowserClient();if(!supabase||!canManage)return;
   setBusy(true);setError("");setNotice("");
   const {data:{user}}=await supabase.auth.getUser();if(!user){setBusy(false);return;}
-  const {error:e}=await supabase.from("jec_partner_engagements").insert({partner_id:partnerId,title:engagementTitle.trim(),engagement_type:engagementType,summary:engagementSummary.trim()||null,engagement_status:"planned",support_kind:"non_financial",created_by:user.id});
-  if(e)setError(e.message);else{setEngagementTitle("");setEngagementSummary("");setNotice(en?"Engagement added.":"Relation ajoutée.");await load();}
+  if(engagementEndsOn&&engagementStartsOn&&engagementEndsOn<engagementStartsOn){setError(en?"The end date must be after the start date.":"La date de fin doit être postérieure à la date de début.");setBusy(false);return;}
+  const amount=engagementAmount.trim()?Number(engagementAmount):null;
+  if(engagementAmount.trim()&&(!Number.isFinite(amount)||Number(amount)<0)){setError(en?"Enter a valid non-negative amount.":"Saisis un montant positif valide.");setBusy(false);return;}
+  const {error:e}=await supabase.from("jec_partner_engagements").insert({partner_id:partnerId,title:engagementTitle.trim(),engagement_type:engagementType,summary:engagementSummary.trim()||null,engagement_status:"planned",support_kind:engagementSupportKind,starts_on:engagementStartsOn||null,ends_on:engagementEndsOn||null,support_amount:amount,currency_code:amount===null?null:engagementCurrency,created_by:user.id});
+  if(e)setError(e.message);else{setEngagementTitle("");setEngagementSummary("");setEngagementStartsOn("");setEngagementEndsOn("");setEngagementAmount("");setNotice(en?"Engagement added.":"Relation ajoutée.");await load();}
   setBusy(false);
  }
  async function createOpportunity(event:FormEvent<HTMLFormElement>){
   event.preventDefault();const supabase=getSupabaseBrowserClient();if(!supabase||!canManage)return;
   setBusy(true);setError("");setNotice("");
   const {data:{user}}=await supabase.auth.getUser();if(!user){setBusy(false);return;}
-  const {error:e}=await supabase.from("jec_partner_opportunities").insert({partner_id:partnerId,title:opportunityTitle.trim(),opportunity_type:opportunityType,deadline:opportunityDeadline||null,source_url:opportunityUrl.trim()||null,created_by:user.id,opportunity_status:"identified"});
-  if(e)setError(e.message);else{setOpportunityTitle("");setOpportunityDeadline("");setOpportunityUrl("");setNotice(en?"Opportunity added.":"Opportunité ajoutée.");await load();}
+  const amount=opportunityAmount.trim()?Number(opportunityAmount):null;
+  if(opportunityAmount.trim()&&(!Number.isFinite(amount)||Number(amount)<0)){setError(en?"Enter a valid non-negative amount.":"Saisis un montant positif valide.");setBusy(false);return;}
+  const {error:e}=await supabase.from("jec_partner_opportunities").insert({partner_id:partnerId,title:opportunityTitle.trim(),opportunity_type:opportunityType,deadline:opportunityDeadline||null,source_url:opportunityUrl.trim()||null,description:opportunityDescription.trim()||null,expected_amount:amount,currency_code:amount===null?null:opportunityCurrency,owner_id:user.id,created_by:user.id,opportunity_status:"identified"});
+  if(e)setError(e.message);else{setOpportunityTitle("");setOpportunityDeadline("");setOpportunityUrl("");setOpportunityDescription("");setOpportunityAmount("");setNotice(en?"Opportunity added.":"Opportunité ajoutée.");await load();}
   setBusy(false);
  }
+
+ async function createContact(event:FormEvent<HTMLFormElement>){
+  event.preventDefault();const supabase=getSupabaseBrowserClient();if(!supabase||!canManage)return;
+  setBusy(true);setError("");setNotice("");
+  const {data:{user}}=await supabase.auth.getUser();if(!user){setBusy(false);return;}
+  if(!contactEmail.trim()&&!contactPhone.trim()){setError(en?"Add an email address or a phone number.":"Ajoute une adresse e-mail ou un numéro de téléphone.");setBusy(false);return;}
+  if(contactPrimary){
+   const {error:resetError}=await supabase.from("jec_partner_contacts").update({is_primary:false}).eq("partner_id",partnerId).eq("is_primary",true);
+   if(resetError){setError(resetError.message);setBusy(false);return;}
+  }
+  const {error:e}=await supabase.from("jec_partner_contacts").insert({
+   partner_id:partnerId,full_name:contactName.trim(),role_title:contactRole.trim()||null,
+   email:contactEmail.trim()||null,phone:contactPhone.trim()||null,
+   preferred_contact_method:contactMethod,is_primary:contactPrimary,consent_status:contactConsent,
+   consent_recorded_at:contactConsent==="granted"?new Date().toISOString():null,
+   notes:contactNotes.trim()||null,created_by:user.id
+  });
+  if(e)setError(e.message);else{setContactName("");setContactRole("");setContactEmail("");setContactPhone("");setContactNotes("");setContactPrimary(false);setContactConsent("not_recorded");setNotice(en?"Contact saved.":"Contact enregistré.");await load();}
+  setBusy(false);
+ }
+
+ async function createDocument(event:FormEvent<HTMLFormElement>){
+  event.preventDefault();const supabase=getSupabaseBrowserClient();if(!supabase||!canManage||!documentFile)return;
+  setBusy(true);setError("");setNotice("");
+  const {data:{user}}=await supabase.auth.getUser();if(!user){setBusy(false);return;}
+  const allowedTypes=new Set(["application/pdf","application/msword","application/vnd.openxmlformats-officedocument.wordprocessingml.document","application/vnd.openxmlformats-officedocument.spreadsheetml.sheet","application/vnd.openxmlformats-officedocument.presentationml.presentation","text/plain","text/csv","image/png","image/jpeg","image/webp"]);
+  if(documentFile.size>20*1024*1024){setError(en?"The file exceeds the 20 MB limit.":"Le fichier dépasse la limite de 20 Mo.");setBusy(false);return;}
+  if(!allowedTypes.has(documentFile.type)){setError(en?"This file type is not allowed.":"Ce type de fichier n'est pas autorisé.");setBusy(false);return;}
+  if(documentValidUntil&&documentValidFrom&&documentValidUntil<documentValidFrom){setError(en?"The expiry date must be after the start date.":"La date de fin doit être postérieure à la date de début.");setBusy(false);return;}
+  const safeName=documentFile.name.normalize("NFKD").replace(/[^a-zA-Z0-9._-]+/g,"_").slice(-120);
+  const storagePath=partnerId+"/"+user.id+"/"+crypto.randomUUID()+"-"+safeName;
+  const {error:uploadError}=await supabase.storage.from("jec-partner-documents").upload(storagePath,documentFile,{contentType:documentFile.type,upsert:false});
+  if(uploadError){setError(uploadError.message);setBusy(false);return;}
+  const title=documentTitle.trim()||documentFile.name.replace(/\.[^.]+$/,"");
+  const {error:insertError}=await supabase.from("jec_partner_documents").insert({
+   partner_id:partnerId,title,document_type:documentType,storage_path:storagePath,
+   document_status:documentStatus,valid_from:documentValidFrom||null,valid_until:documentValidUntil||null,uploaded_by:user.id
+  });
+  if(insertError){
+   const {error:cleanupError}=await supabase.storage.from("jec-partner-documents").remove([storagePath]);
+   setError(cleanupError?insertError.message+" "+(en?"The uploaded file could not be cleaned up automatically.":"Le fichier importé n'a pas pu être supprimé automatiquement."):insertError.message);
+  }else{
+   setDocumentFile(null);setDocumentTitle("");setDocumentValidFrom("");setDocumentValidUntil("");
+   setNotice(en?"Document uploaded securely.":"Document déposé de manière sécurisée.");await load();
+  }
+  setBusy(false);
+ }
+
+ async function createFollowUp(event:FormEvent<HTMLFormElement>){
+  event.preventDefault();const supabase=getSupabaseBrowserClient();if(!supabase||!canManage)return;
+  setBusy(true);setError("");setNotice("");
+  const {data:{user}}=await supabase.auth.getUser();if(!user){setBusy(false);return;}
+  const dueAt=new Date(followUpDueAt);
+  if(!followUpTitle.trim()||!followUpDueAt||Number.isNaN(dueAt.getTime())){setError(en?"Enter a title and a valid due date.":"Saisis un intitulé et une échéance valide.");setBusy(false);return;}
+  const {error:e}=await supabase.from("jec_partner_follow_ups").insert({
+   partner_id:partnerId,title:followUpTitle.trim(),details:followUpDetails.trim()||null,due_at:dueAt.toISOString(),
+   status:"todo",priority:followUpPriority,assigned_to:followUpAssignMe?user.id:null,created_by:user.id
+  });
+  if(e)setError(e.message);else{setFollowUpTitle("");setFollowUpDetails("");setFollowUpDueAt("");setFollowUpPriority("normal");setNotice(en?"Follow-up scheduled.":"Relance planifiée.");await load();}
+  setBusy(false);
+ }
+
+ async function updateFollowUpStatus(id:string,status:FollowUp["status"]){
+  const supabase=getSupabaseBrowserClient();if(!supabase||!canManage)return;
+  setBusy(true);setError("");setNotice("");
+  const {error:e}=await supabase.from("jec_partner_follow_ups").update({
+   status,completed_at:status==="done"?new Date().toISOString():null,updated_at:new Date().toISOString()
+  }).eq("id",id);
+  if(e)setError(e.message);else{setNotice(en?"Follow-up updated.":"Relance mise à jour.");await load();}
+  setBusy(false);
+ }
+
+ async function updateOpportunityStatus(id:string,status:string){
+  const supabase=getSupabaseBrowserClient();if(!supabase||!canManage)return;
+  setBusy(true);setError("");setNotice("");
+  const {error:e}=await supabase.from("jec_partner_opportunities").update({opportunity_status:status,updated_at:new Date().toISOString()}).eq("id",id);
+  if(e)setError(e.message);else{setNotice(en?"Opportunity status updated.":"Statut de l'opportunité mis à jour.");await load();}
+  setBusy(false);
+ }
+
  async function createNote(event:FormEvent<HTMLFormElement>){
   event.preventDefault();const supabase=getSupabaseBrowserClient();if(!supabase||!canManage||!note.trim())return;
   setBusy(true);setError("");setNotice("");
