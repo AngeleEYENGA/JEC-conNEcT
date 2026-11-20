@@ -2098,3 +2098,36 @@
   .decision-hero-button,.decision-toggle-button,.decision-filter-tabs button,.decision-poll-card{transition:none!important}
   .decision-poll-card:hover,.decision-hero-button:hover{transform:none}
 }
+
+
+/* Partner CRM workflow extensions */
+.partner-workbench-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin:18px 0 22px;align-items:start}
+.partner-workbench-card{min-width:0;gap:10px}
+.partner-workbench-card h2{font:800 15px Manrope;margin:0;color:#312b4b}
+.partner-workbench-row{display:flex;flex-direction:column;gap:5px;padding:11px 0;border-top:1px solid #f0edf4;color:inherit;text-decoration:none}
+.partner-workbench-row strong{font-size:11px;color:#36304e}
+.partner-workbench-row small,.partner-workbench-meta{font-size:9px;color:#8d8698;line-height:1.5}
+.partner-workbench-row a{font-size:10px;color:#6944a0;font-weight:800;text-decoration:none}
+.partner-workbench-row a:hover{text-decoration:underline}
+.partner-workbench-row.is-overdue{border-left:3px solid #c65a50;padding-left:10px}
+.partner-inline-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 12px}
+.partner-inline-fields>label{min-width:0}
+.partner-checkbox-label{display:flex!important;flex-direction:row!important;align-items:center;gap:9px!important;color:#625b70;font-size:10px;font-weight:700}
+.partner-checkbox-label input{width:16px!important;height:16px;flex:none;accent-color:#654592}
+.partner-field-hint{display:block;color:#8d8698;font-size:9px;line-height:1.5;font-weight:500}
+.partner-status-edit{display:flex;flex-direction:column;gap:5px;max-width:260px;color:#81798c;font-size:9px;font-weight:800}
+.partner-status-edit select{min-width:0;max-width:100%;padding:8px 10px;border:1px solid #e6e1eb;border-radius:8px;background:#fff;color:#514962;font:600 10px 'DM Sans',sans-serif}
+.partner-followups-card{margin:16px 0}
+.partner-followup-row{gap:7px}
+.partner-followup-row.is-overdue{border-left:3px solid #c65a50;padding-left:11px}
+.partner-followup-main{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.partner-priority{display:inline-flex;align-items:center;flex:none;border-radius:20px;padding:4px 8px;font-size:8px;font-weight:900}
+.partner-priority.high{background:#fff0ed;color:#ae5148}
+.partner-priority.normal{background:#f3f0f7;color:#776b8d}
+.partner-priority.low{background:#edf5f0;color:#4c805c}
+.partner-followup-row.is-overdue time{color:#b6534b;font-weight:800}
+@media(max-width:760px){
+  .partner-workbench-grid{grid-template-columns:1fr}
+  .partner-inline-fields{grid-template-columns:1fr}
+  .partner-status-edit{max-width:none}
+}
