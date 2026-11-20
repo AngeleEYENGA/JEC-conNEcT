@@ -2466,3 +2466,17 @@
 @media(prefers-reduced-motion:reduce){
  .photo-credit{transition:none!important}
 }
+
+
+
+/* Editorial image templates for the portal and member launch cards */
+.real-photo-frame{position:relative;overflow:hidden;border-radius:14px;background:#ece8f2}
+.real-photo-frame>img{display:block;width:100%;height:100%;object-fit:cover;object-position:center 42%}
+.discover-preview-art.real-photo-frame{aspect-ratio:16/10;min-height:190px;height:auto}
+.community-launch-art.real-photo-frame{aspect-ratio:5/4;min-height:120px;height:auto}
+.discover-preview-art.real-photo-frame .photo-credit,
+.community-launch-art.real-photo-frame .photo-credit{left:8px;bottom:8px;max-width:calc(100% - 16px)}
+@media(max-width:760px){
+ .discover-preview-art.real-photo-frame{aspect-ratio:16/9;min-height:0}
+ .community-launch-art.real-photo-frame{aspect-ratio:16/9;min-height:0}
+}
