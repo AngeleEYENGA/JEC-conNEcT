@@ -106,7 +106,6 @@ export default function PhotoLibraryAdminPage() {
     }
     setSaving(true);
     try{
-      const {data:{user}}=await supabase.auth.getUser();
       const payload={
         title_fr:form.title_fr.trim(),title_en:form.title_en.trim()||null,
         caption_fr:form.caption_fr.trim()||null,caption_en:form.caption_en.trim()||null,
