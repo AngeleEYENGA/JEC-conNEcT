@@ -4,6 +4,7 @@ import Link from "next/link";
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { LanguageSwitcher, useLanguage } from "@/components/language-provider";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
+import { jecPhotos } from "@/lib/image-library";
 
 type Mood = "joyful" | "grateful" | "hopeful" | "thoughtful" | "tired" | "concerned" | "motivated" | "celebrating";
 type ReactionType = "like" | "love" | "support" | "celebrate" | "pray";
@@ -674,8 +675,9 @@ export default function CommunityPage() {
           <div className="community-hero-badges"><span>🤝 {en ? "Connection" : "Lien"}</span><span>💬 {en ? "Conversation" : "Échange"}</span><span>🌱 {en ? "Commitment" : "Engagement"}</span></div>
           <a href="#community-composer" className="community-hero-cta">{en ? "Share your story" : "Partager une pensée"} <span>↗</span></a>
         </div>
-        <div className="community-hero-visual">
-          <img src="/images/jec-community-illustration.svg" alt={en ? "Young people sharing ideas and learning together" : "Des jeunes échangent et apprennent ensemble"} />
+        <div className="community-hero-visual community-photo-frame">
+          <img src={jecPhotos.community.src} alt={en ? jecPhotos.community.altEn : jecPhotos.community.altFr} loading="eager"/>
+          <a className="photo-credit community-photo-credit" href={jecPhotos.community.sourceUrl} target="_blank" rel="noreferrer">{en?jecPhotos.community.captionEn:jecPhotos.community.captionFr}</a>
           <span className="community-visual-bubble community-visual-bubble-one">✦ {en ? "Together" : "Ensemble"}</span>
           <span className="community-visual-bubble community-visual-bubble-two">💬 {en ? "Every voice matters" : "Chaque voix compte"}</span>
         </div>

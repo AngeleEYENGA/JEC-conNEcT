@@ -5,6 +5,7 @@ import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import { LanguageSwitcher, useLanguage } from "@/components/language-provider";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
+import { workspacePhotos, jecPhotos } from "@/lib/image-library";
 
 type Tab="feed"|"tasks"|"projects"|"meetings"|"documents"|"members";
 type Workspace={id:string;name:string;slug:string;workspace_type:string;description:string|null};
@@ -26,15 +27,7 @@ const tabs:Record<Tab,{fr:string;en:string;icon:string}>={
   members:{fr:"Membres",en:"Members",icon:"♙"}
 };
 
-const workspaceArtwork:Record<string,string>={
-  national_team:"/images/jec-community-illustration.svg",
-  federation:"/images/news-leaders.svg",
-  local_team:"/images/news-learning.svg",
-  commission:"/images/news-wellbeing.svg",
-  service:"/images/news-learning.svg",
-  project:"/images/news-leaders.svg",
-  temporary_group:"/images/jec-community-illustration.svg"
-};
+const workspacePhoto=(type:string)=>workspacePhotos[type as keyof typeof workspacePhotos]??jecPhotos.community;
 
 function formatDate(value:string,en:boolean,withTime=false){
   return new Date(value).toLocaleString(en?"en-GB":"fr-FR",withTime?{dateStyle:"medium",timeStyle:"short"}:{dateStyle:"medium"});
@@ -320,7 +313,7 @@ export default function WorkspaceDetailPage(){
             <p className="collab-lead">{workspace.description|| (en?"A private place for your team to coordinate, share updates and move initiatives forward.":"Un espace privé pour coordonner l'équipe, partager les nouvelles et faire avancer les initiatives.")}</p>
             <div className="workspace-detail-stats"><span><b>{roster.length}</b>{en?"members":"membres"}</span><span><b>{posts.length}</b>{en?"updates":"échanges"}</span><span><b>{projects.length}</b>{en?"projects":"projets"}</span><span><b>{meetings.length}</b>{en?"meetings":"réunions"}</span></div>
           </div>
-          <div className="workspace-detail-hero-art"><img src={workspaceArtwork[workspace.workspace_type]||"/images/jec-community-illustration.svg"} alt={en?"Team members collaborating":"Des membres qui collaborent"}/><span>{en?"Together, we move forward":"Ensemble, on avance"}</span></div>
+          <div className="workspace-detail-hero-art"><img src={workspacePhoto(workspace.workspace_type).src} alt={en?workspacePhoto(workspace.workspace_type).altEn:workspacePhoto(workspace.workspace_type).altFr}/><a className="photo-credit" href={workspacePhoto(workspace.workspace_type).sourceUrl} target="_blank" rel="noreferrer">{en?workspacePhoto(workspace.workspace_type).captionEn:workspacePhoto(workspace.workspace_type).captionFr}</a><span>{en?"Together, we move forward":"Ensemble, on avance"}</span></div>
         </section>
 
         {invitePending?<section className="collab-empty"><span>✉</span><h2>{en?"You have been invited":"Tu as reçu une invitation"}</h2><p>{en?"Accept this invitation to view the workspace feed, tasks, projects, meetings and documents.":"Accepte l'invitation pour accéder au fil d'échanges, aux tâches, projets, réunions et documents."}</p><button className="primary-button" disabled={busy} onClick={acceptInvitation}>{en?"Accept invitation":"Accepter l'invitation"}</button></section>:!canCollaborate?<div className="collab-empty"><h2>{en?"Access required":"Accès requis"}</h2><p>{en?"You are not an active member of this workspace.":"Tu n'es pas membre actif de cet espace."}</p></div>:<>

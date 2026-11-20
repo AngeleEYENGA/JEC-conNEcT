@@ -6,11 +6,12 @@ import { useEffect, useMemo, useState } from "react";
 import { LanguageSwitcher, useLanguage } from "@/components/language-provider";
 import { PWAInstallButton } from "@/components/pwa-install-button";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
+import { jecPhotos } from "@/lib/image-library";
 
 const news = [
   {
     date: "13 avril 2026",
-    image: "/images/news-wellbeing.svg",
+    image: jecPhotos.peerStudy.src,
     category: "Santé et mieux-vivre",
     categoryEn: "Health & well-being",
     title: "3 vidéos pour un mieux-être et un mieux-vivre ensemble !",
@@ -22,7 +23,7 @@ const news = [
   },
   {
     date: "7 avril 2026",
-    image: "/images/news-learning.svg",
+    image: jecPhotos.africanClassroom.src,
     category: "Ressources pédagogiques",
     categoryEn: "Learning resources",
     title: "Un jeu pour découvrir l’utilisation des compétences psychosociales",
@@ -34,7 +35,7 @@ const news = [
   },
   {
     date: "7 avril 2026",
-    image: "/images/news-leaders.svg",
+    image: jecPhotos.studentTeam.src,
     category: "Vie du mouvement",
     categoryEn: "Movement life",
     title: "Les responsables se rencontrent et se forment !",
@@ -46,7 +47,7 @@ const news = [
   },
   {
     date: "26 juillet – 2 août 2026",
-    image: "/images/jec-community-illustration.svg",
+    image: jecPhotos.community.src,
     category: "Vie du mouvement · Cameroun",
     categoryEn: "Movement life · Cameroon",
     title: "Camp National Universitaire de Garoua 2026 : spiritualité active et citoyenneté responsable",
@@ -145,32 +146,40 @@ export default function Home() {
       eyebrow:t("LA JEC EN MOUVEMENT","YCS IN MOTION"),
       title:t("Grandir ensemble. Agir pour transformer le monde.","Grow together. Act to transform the world."),
       description:t("Un mouvement de jeunes qui apprennent à lire leur réalité, à dialoguer et à construire des réponses collectives.","A youth movement learning to understand its reality, share ideas and build collective responses."),
-      image:"/images/jec-community-illustration.svg",
-      imageAlt:t("Des jeunes de la JEC échangent autour d’une table","Young people from YCS sharing ideas around a table"),
+      image:jecPhotos.community.src,
+      photoUrl:jecPhotos.community.sourceUrl,
+      photoCredit:en?jecPhotos.community.captionEn:jecPhotos.community.captionFr,
+      imageAlt:t("Des jeunes échangent autour d’un ordinateur et de documents","Young people sharing ideas around a laptop and documents"),
       action:t("Découvrir la JEC","Discover YCS")
     },
     {
       eyebrow:t("PRENDRE SOIN DE SOI ET DES AUTRES","CARE FOR OURSELVES AND OTHERS"),
       title:news[0].title,
       description:news[0].summary,
-      image:news[0].image,
-      imageAlt:t("Illustration sur le mieux-être et le vivre ensemble","Illustration about well-being and living together"),
+      image:jecPhotos.peerStudy.src,
+      photoUrl:jecPhotos.peerStudy.sourceUrl,
+      photoCredit:en?jecPhotos.peerStudy.captionEn:jecPhotos.peerStudy.captionFr,
+      imageAlt:t("Deux étudiantes travaillent ensemble sur le campus","Two students working together on campus"),
       action:t("Lire les actualités","Explore the news")
     },
     {
       eyebrow:t("APPRENDRE ET PARTAGER","LEARN AND SHARE"),
       title:news[1].title,
       description:news[1].summary,
-      image:news[1].image,
-      imageAlt:t("Illustration d’étudiants qui apprennent ensemble","Illustration of students learning together"),
+      image:jecPhotos.library.src,
+      photoUrl:jecPhotos.library.sourceUrl,
+      photoCredit:en?jecPhotos.library.captionEn:jecPhotos.library.captionFr,
+      imageAlt:t("Un groupe d’étudiants échange dans une bibliothèque universitaire","A group of students sharing ideas in a university library"),
       action:t("Explorer les ressources","Explore resources")
     },
     {
       eyebrow:t("S’ENGAGER ET SE FORMER","LEAD AND LEARN"),
       title:news[2].title,
       description:news[2].summary,
-      image:news[2].image,
-      imageAlt:t("Illustration de responsables qui dialoguent","Illustration of youth leaders in conversation"),
+      image:jecPhotos.studentTeam.src,
+      photoUrl:jecPhotos.studentTeam.sourceUrl,
+      photoCredit:en?jecPhotos.studentTeam.captionEn:jecPhotos.studentTeam.captionFr,
+      imageAlt:t("Des étudiants de différentes origines collaborent sur des ordinateurs","Students from different backgrounds collaborating on laptops"),
       action:t("Voir les actualités","View the news")
     }
   ];
@@ -333,7 +342,7 @@ export default function Home() {
   const filteredNews=useMemo<NewsItem[]>(()=>{
     const records=publicContent===null?news:publicContent.filter(item=>item.content_type==="news").map(item=>({
       date:en?(item.date_label_en||formatPublicDate(item.content_date,en)):(item.date_label||formatPublicDate(item.content_date,en)),
-      image:item.image_url||"/images/news-learning.svg",
+      image:item.image_url||jecPhotos.community.src,
       category:item.category||(en?"JEC news":"Actualité JEC"),
       categoryEn:item.category_en||item.category||"JEC news",
       title:item.title,titleEn:item.title_en||item.title,
@@ -389,13 +398,16 @@ export default function Home() {
           : t("Connecte-toi pour accéder au Workspace", "Sign in to access Workspace");
 
   function NewsCard({item}:{item:NewsItem}) {
+    const photo=Object.values(jecPhotos).find(candidate=>candidate.src===item.image);
     return <article className="post-card verified-news-card">
       <div className="post-header">
         <div className="avatar violet">JEC</div>
         <div className="post-author"><strong>{item.publisher}</strong><small>{item.sourceKind==="booklet"?(en?"Source document · event dates":"Document source · dates de l’événement"):t("Publication publique vérifiée","Verified public publication")} · {item.date}</small></div>
         <span className="verified-pill">{t("Source","Source")}</span>
       </div>
-      <div className="verified-news-thumb"><img src={item.image} alt="" loading="lazy"/></div>
+      <div className="verified-news-thumb"><img src={item.image} alt="" loading="lazy"/>
+        {photo&&<a className="photo-credit" href={photo.sourceUrl} target="_blank" rel="noreferrer">{en?photo.captionEn:photo.captionFr}</a>}
+      </div>
       <span className="post-tag violet">{en?item.categoryEn:item.category}</span>
       <h3 className="verified-news-title">{en?item.titleEn:item.title}</h3>
       <p className="post-text">{en?item.summaryEn:item.summary}</p>
@@ -418,7 +430,7 @@ export default function Home() {
     </section>;
 
     if(active==="Découvrir la JEC") return <section className="discover-preview">
-      <div className="discover-preview-art"><img src="/images/jec-community-illustration.svg" alt={t("Illustration de jeunes qui échangent et apprennent ensemble","Illustration of young people learning and sharing together")}/></div>
+      <div className="discover-preview-art real-photo-frame"><img src={jecPhotos.library.src} alt={en?jecPhotos.library.altEn:jecPhotos.library.altFr}/><a className="photo-credit" href={jecPhotos.library.sourceUrl} target="_blank" rel="noreferrer">{en?jecPhotos.library.captionEn:jecPhotos.library.captionFr}</a></div>
       <div className="discover-preview-copy"><p className="eyebrow">{t("HISTOIRE · MISSION · DÉMARCHE","HISTORY · MISSION · APPROACH")}</p><h2>{t("Découvrir la Jeunesse Étudiante Chrétienne","Discover the Young Christian Students")}</h2><p>{t("Des premiers groupes en France en 1929 à la coordination internationale, explore les repères historiques, la pédagogie Voir-Juger-Agir et les piliers du mouvement.","From the first groups in France in 1929 to the international coordination, explore the timeline, the See-Judge-Act approach and the movement’s pillars.")}</p><Link href="/decouvrir#frise-chronologique" className="primary-button">{t("Explorer la frise chronologique →","Explore the interactive timeline →")}</Link></div>
     </section>;
 
@@ -532,6 +544,7 @@ export default function Home() {
               <div className="welcome-slide-visual">
                 <div className="welcome-visual-glow"/>
                 <img src={slide.image} alt={slide.imageAlt} loading={index===0?"eager":"lazy"}/>
+                <a className="photo-credit hero-photo-credit" href={slide.photoUrl} target="_blank" rel="noreferrer">{slide.photoCredit}</a>
                 <div className="welcome-visual-stamp"><span>✝</span><b>JEC</b><small>{t("Voir · Juger · Agir","See · Judge · Act")}</small></div>
               </div>
             </article>)}
@@ -553,7 +566,7 @@ export default function Home() {
           <div className="content-grid"><section className="feed-column"><div className="section-heading"><div><p className="eyebrow">{t("PUBLICATIONS OFFICIELLES","OFFICIAL PUBLICATIONS")}</p><h2>{t("Les dernières actualités repérées","Latest verified news")}</h2></div><button className="text-button" onClick={()=>setActive("Actualités JEC")}>{t("Toutes les actualités ↗","All news ↗")}</button></div>{filteredNews.slice(0,3).map(item=><NewsCard key={item.url ?? item.detailPath ?? item.title} item={item}/>)}</section>
           <aside className="right-column"><section className="widget-card"><div className="widget-heading"><h3>{t("Repères historiques","Historical milestones")}</h3><button onClick={()=>setActive("Découvrir la JEC")}>{t("Explorer","Explore")}</button></div><div className="fact-item"><b>1929</b><div><strong>{t("Origines de la JEC en France","Origins of JEC in France")}</strong><small>{t("Premiers groupes autour de Louis Chaudron et Paul Vignaux.","First groups around Louis Chaudron and Paul Vignaux.")}</small></div></div><div className="fact-item"><b>1946</b><div><strong>{t("Coordination internationale","International coordination")}</strong><small>{t("Fondation de la JECI / IYCS.","Foundation of JECI / IYCS.")}</small></div></div><Link className="widget-link" href="/decouvrir#frise-chronologique">{t("Voir la frise chronologique →","Explore the timeline →")}</Link></section>
           <section className="widget-card"><div className="widget-heading"><h3>{t("Événement à suivre","Event to follow")}</h3><button onClick={()=>setActive("Agenda public")}>{t("Agenda","Calendar")}</button></div>{publicContent===null?<div className="event-item"><div className="event-date"><b>2027</b><span>JUL–AUG</span></div><div><strong>{t("JMJ Séoul 2027","WYD Seoul 2027")}</strong><small>29 juillet – 8 août · Corée du Sud</small><SourceLink href="https://www.jmj2027.fr/">{t("Site officiel","Official website")}</SourceLink></div></div>:featuredEvent?<div className="event-item"><div className="event-date"><b>{formatAgendaDate(featuredEvent.starts_on||featuredEvent.content_date,en)}</b>{featuredEvent.ends_on&&featuredEvent.ends_on!==featuredEvent.starts_on?<span>{formatAgendaDate(featuredEvent.ends_on,en)}</span>:null}</div><div><strong>{en?(featuredEvent.title_en||featuredEvent.title):featuredEvent.title}</strong><small>{new Date((featuredEvent.starts_on||featuredEvent.content_date)+"T12:00:00").getFullYear()} · {en?(featuredEvent.category_en||featuredEvent.category||"JEC event"):(featuredEvent.category||"Événement JEC")}</small>{featuredEvent.source_url?<SourceLink href={featuredEvent.source_url}>{t("Source officielle","Official source")}</SourceLink>:null}{featuredEvent.detail_path?<Link className="source-link" href={featuredEvent.detail_path}>{t("Consulter le dossier","View event details")} →</Link>:null}</div></div>:<div className="event-item"><div className="event-date"><b>—</b></div><div><strong>{t("Aucun événement à venir publié","No upcoming event published")}</strong><small>{t("Consulte l’agenda public pour retrouver les événements archivés.","Visit the public calendar to explore past events.")}</small></div></div>}</section>
-          {canAccessMemberNavigation&&<section className="community-launch-card"><div className="community-launch-art"><img src="/images/jec-community-illustration.svg" alt=""/></div><div><p className="eyebrow">{t("VIE COMMUNAUTAIRE","COMMUNITY LIFE")}</p><h3>{t("La communauté JEC vit ici","The JEC community lives here")}</h3><p>{t("Partage tes nouvelles, tes idées et tes humeurs avec les autres membres.","Share your news, ideas and moods with other members.")}</p><Link href="/communaute" className="community-launch-link">{t("Rejoindre la communauté →","Join the community →")}</Link></div></section>}
+          {canAccessMemberNavigation&&<section className="community-launch-card"><div className="community-launch-art real-photo-frame"><img src={jecPhotos.peerStudy.src} alt={en?jecPhotos.peerStudy.altEn:jecPhotos.peerStudy.altFr}/><a className="photo-credit" href={jecPhotos.peerStudy.sourceUrl} target="_blank" rel="noreferrer">{en?jecPhotos.peerStudy.captionEn:jecPhotos.peerStudy.captionFr}</a></div><div><p className="eyebrow">{t("VIE COMMUNAUTAIRE","COMMUNITY LIFE")}</p><h3>{t("La communauté JEC vit ici","The JEC community lives here")}</h3><p>{t("Partage tes nouvelles, tes idées et tes humeurs avec les autres membres.","Share your news, ideas and moods with other members.")}</p><Link href="/communaute" className="community-launch-link">{t("Rejoindre la communauté →","Join the community →")}</Link></div></section>}
           {canAccessMemberNavigation&&<><section className="ai-card"><div className="ai-spark">✧</div><p className="eyebrow">JEC CONNECT</p><h3>{t("Un espace à construire ensemble","A space to build together")}</h3><p>{t("JEC-conNEcT relie les espaces de travail, projets, tâches, réunions et échanges de ses membres. Les archives avancées et l’assistant IA viendront dans une prochaine phase.","JEC-conNEcT connects members’ workspaces, projects, tasks, meetings and conversations. Advanced archives and the AI assistant are planned for a later phase.")}</p><button onClick={()=>setActive("Workspace")}>{t("Découvrir les modules →","Explore modules →")}</button></section><p className="prototype-note">{t("Prototype de présentation · Contenus publics sourcés","Presentation prototype · Public sourced content")}<br/>{t("Les espaces privés sont accessibles aux membres autorisés selon les droits de chaque équipe.","Private workspaces are available to authorized members according to each team’s permissions.")}</p></>}</aside></div>
         </>:renderContent()}
       </div>

@@ -5,6 +5,7 @@ import { FormEvent,useCallback,useEffect,useMemo,useState } from "react";
 import { useParams } from "next/navigation";
 import { LanguageSwitcher,useLanguage } from "@/components/language-provider";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
+import { jecPhotos } from "@/lib/image-library";
 
 type Project={id:string;workspace_id:string;title:string;objective:string|null;description:string|null;project_status:string;priority:string;owner_id:string;start_date:string|null;due_date:string|null;created_by:string};
 type Task={id:string;title:string;description:string|null;task_status:string;priority:string;assigned_to:string|null;due_at:string|null;created_by:string};
@@ -156,7 +157,7 @@ export default function ProjectDetailPage(){
      <div className="project-detail-hero-meta"><span className={"project-status "+project.project_status}>{project.project_status.replace("_"," ")}</span><span>✦ {en?"Shared goal · Collective action":"Objectif commun · Action collective"}</span></div>
      <div className="project-detail-mini-stats"><span><b>{tasks.length}</b>{en?"tasks":"tâches"}</span><span><b>{completed}</b>{en?"completed":"terminées"}</span><span><b>{progress}%</b>{en?"progress":"avancement"}</span></div>
     </div>
-    <div className="project-detail-hero-art"><img src="/images/news-learning.svg" alt={en?"Young people learning and building together":"Des jeunes qui apprennent et construisent ensemble"}/><div className="project-detail-art-badge"><strong>{progress}%</strong><small>{en?"moving forward":"d'avancement"}</small></div></div>
+    <div className="project-detail-hero-art"><img src={jecPhotos.studentTeam.src} alt={en?jecPhotos.studentTeam.altEn:jecPhotos.studentTeam.altFr}/><a className="photo-credit" href={jecPhotos.studentTeam.sourceUrl} target="_blank" rel="noreferrer">{en?jecPhotos.studentTeam.captionEn:jecPhotos.studentTeam.captionFr}</a><div className="project-detail-art-badge"><strong>{progress}%</strong><small>{en?"moving forward":"d'avancement"}</small></div></div>
    </section>
    {error&&<p className="alert error">{error}</p>}{notice&&<p className="alert success">{notice}</p>}
    <div className="project-kpi-grid">
