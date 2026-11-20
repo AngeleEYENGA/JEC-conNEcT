@@ -105,12 +105,42 @@ function SourceLink({href,children}:{href:string;children:React.ReactNode}) {
   return <a className="source-link" href={href} target="_blank" rel="noreferrer">{children} ↗</a>;
 }
 
+type PublicContentRecord = {
+  id: string; content_type: "news" | "event";
+  title: string; title_en: string | null; summary: string; summary_en: string | null;
+  category: string | null; category_en: string | null;
+  content_date: string; date_label: string | null; date_label_en: string | null;
+  starts_on: string | null; ends_on: string | null;
+  source_name: string; source_label: string; source_label_en: string | null;
+  source_kind: string; source_url: string | null; image_url: string | null; detail_path: string | null;
+};
+type NewsItem = typeof news[number];
+function formatPublicDate(value: string, en: boolean) {
+  return new Date(value + "T12:00:00").toLocaleDateString(en ? "en-GB" : "fr-FR", { day: "numeric", month: "long", year: "numeric" });
+}
+function formatAgendaDate(value: string, en: boolean) {
+  return new Date(value + "T12:00:00").toLocaleDateString(en ? "en-GB" : "fr-FR", { day: "2-digit", month: "short" }).toUpperCase();
+}
+
 export default function Home() {
   const {lang}=useLanguage();
   const en=lang==="en";
   const t=(fr:string,english:string)=>en?english:fr;
   const [active,setActive]=useState("Vue d'ensemble");
   const [search,setSearch]=useState("");
+  const [publicContent,setPublicContent]=useState<PublicContentRecord[]|null>(null);
+
+  useEffect(()=>{
+    const supabase=getSupabaseBrowserClient();
+    if(!supabase)return;
+    let active=true;
+    void supabase.from("jec_public_content")
+      .select("id,content_type,title,title_en,summary,summary_en,category,category_en,content_date,date_label,date_label_en,starts_on,ends_on,source_name,source_label,source_label_en,source_kind,source_url,image_url,detail_path")
+      .eq("is_published",true)
+      .order("content_date",{ascending:false})
+      .then(({data,error})=>{if(!active||error||!data)return;setPublicContent(data as PublicContentRecord[]);});
+    return ()=>{active=false;};
+  },[]);
 
   const [identity,setIdentity]=useState<{
     id:string; email:string; displayName:string; avatarUrl:string|null;
@@ -241,9 +271,20 @@ export default function Home() {
   }
 
 
-  const filteredNews=useMemo(()=>news.filter(item=>
-    (item.title+" "+item.titleEn+" "+item.summary+" "+item.summaryEn+" "+item.category).toLowerCase().includes(search.toLowerCase())
-  ),[search]);
+  const filteredNews=useMemo<NewsItem[]>(()=>{
+    const records=publicContent===null?news:publicContent.filter(item=>item.content_type==="news").map(item=>({
+      date:en?(item.date_label_en||item.date_label||formatPublicDate(item.content_date,en)):(item.date_label||formatPublicDate(item.content_date,en)),
+      image:item.image_url||"/images/news-learning.svg",
+      category:item.category||(en?"JEC news":"Actualité JEC"),
+      categoryEn:item.category_en||item.category||"JEC news",
+      title:item.title,titleEn:item.title_en||item.title,
+      summary:item.summary,summaryEn:item.summary_en||item.summary,
+      url:item.source_url,publisher:item.source_name,sourceKind:item.source_kind,
+      sourceLabel:en?(item.source_label_en||item.source_label):item.source_label,
+      detailPath:item.detail_path
+    }));
+    return records.filter(item=>(item.title+" "+item.titleEn+" "+item.summary+" "+item.summaryEn+" "+item.category+" "+item.categoryEn).toLowerCase().includes(search.toLowerCase()));
+  },[publicContent,search,en]);
 
   // Private collaboration modules are shown only to JEC-verified members or platform admins.
   const canAccessMemberNavigation = Boolean(
@@ -279,7 +320,7 @@ export default function Home() {
           ? t("Adhésion JEC à confirmer — consulter mon compte", "JEC membership pending — view your account")
           : t("Connecte-toi pour accéder au Workspace", "Sign in to access Workspace");
 
-  function NewsCard({item}:{item:typeof news[number]}) {
+  function NewsCard({item}:{item:NewsItem}) {
     return <article className="post-card verified-news-card">
       <div className="post-header">
         <div className="avatar violet">JEC</div>
@@ -335,11 +376,24 @@ export default function Home() {
       <p className="source-note"><SourceLink href="https://jecfrance.org/nos-equipes/">{t("Consulter la page officielle des équipes","View the official teams page")}</SourceLink></p>
     </section>;
 
-    if(active==="Agenda public") return <section>
-      <div className="section-heading"><div><p className="eyebrow">{t("RENDEZ-VOUS PUBLICS","PUBLIC EVENTS")}</p><h2>{t("Agenda et mémoire des événements JEC","JEC calendar and event memory")}</h2></div></div>
-      <article className="event-feature"><div className="event-feature-date"><span>26 JUL.</span><b>—</b><span>02 AUG.</span><small>2026</small></div><div className="event-feature-body"><span className="post-tag violet">{t("ÉVÉNEMENT PASSÉ · RÉTROSPECTIVE","PAST EVENT · RECAP")}</span><h3>{t("Camp National Universitaire de Garoua 2026","Garoua 2026 National University Camp")}</h3><p>{t("Huit journées de formation, spiritualité, citoyenneté, vie culturelle et engagement au Centre Jeunesse Lumière de Ngalbidjie. Le livret du camp est désormais conservé dans la mémoire publique de JEC-conNEcT.","Eight days of formation, spirituality, citizenship, cultural life and commitment at the Centre Jeunesse Lumière de Ngalbidjie. The camp booklet is now preserved in JEC-conNEcT’s public memory.")}</p><Link className="source-link" href="/actualites/camp-garoua-2026">{t("Voir le programme et les temps forts","View the programme and highlights")} →</Link></div></article>
-      <article className="event-feature"><div className="event-feature-date"><span>29 JUL.</span><b>—</b><span>08 AUG.</span><small>2027</small></div><div className="event-feature-body"><span className="post-tag blue">{t("ÉVÉNEMENT INTERNATIONAL · SOURCE EXTERNE","INTERNATIONAL EVENT · EXTERNAL SOURCE")}</span><h3>{t("Journées Mondiales de la Jeunesse — Séoul 2027","World Youth Day — Seoul 2027")}</h3><p>{t("Le site JMJ 2027 en France annonce le rendez-vous du 29 juillet au 8 août 2027 à Séoul, en Corée du Sud. Aucune participation de la JEC France n'est présumée.","The French WYD 2027 website lists the event from 29 July to 8 August 2027 in Seoul, South Korea. No participation by JEC France is implied.")}</p><SourceLink href="https://www.jmj2027.fr/">{t("Site officiel JMJ 2027 France","Official WYD 2027 France website")}</SourceLink></div></article>
-    </section>;
+    if(active==="Agenda public") {
+      const agendaEvents=publicContent===null?[]:publicContent.filter(item=>item.content_type==="event").sort((a,b)=>(a.starts_on||"").localeCompare(b.starts_on||""));
+      if(publicContent===null) return <section>
+        <div className="section-heading"><div><p className="eyebrow">{t("RENDEZ-VOUS PUBLICS","PUBLIC EVENTS")}</p><h2>{t("Agenda et mémoire des événements JEC","JEC calendar and event memory")}</h2></div></div>
+        <article className="event-feature"><div className="event-feature-date"><span>26 JUIL.</span><b>—</b><span>02 AOÛT</span><small>2026</small></div><div className="event-feature-body"><span className="post-tag violet">{t("ÉVÉNEMENT PASSÉ · RÉTROSPECTIVE","PAST EVENT · RECAP")}</span><h3>{t("Camp National Universitaire de Garoua 2026","Garoua 2026 National University Camp")}</h3><p>{t("Huit journées de formation, spiritualité, citoyenneté, vie culturelle et engagement au Centre Jeunesse Lumière de Ngalbidjie. Le livret du camp est désormais conservé dans la mémoire publique de JEC-conNEcT.","Eight days of formation, spirituality, citizenship, cultural life and commitment at the Centre Jeunesse Lumière de Ngalbidjie. The camp booklet is now preserved in JEC-conNEcT’s public memory.")}</p><Link className="source-link" href="/actualites/camp-garoua-2026">{t("Voir le programme et les temps forts","View the programme and highlights")} →</Link></div></article>
+        <article className="event-feature"><div className="event-feature-date"><span>29 JUL.</span><b>—</b><span>08 AUG.</span><small>2027</small></div><div className="event-feature-body"><span className="post-tag blue">{t("ÉVÉNEMENT INTERNATIONAL · SOURCE EXTERNE","INTERNATIONAL EVENT · EXTERNAL SOURCE")}</span><h3>{t("Journées Mondiales de la Jeunesse — Séoul 2027","World Youth Day — Seoul 2027")}</h3><p>{t("Le site JMJ 2027 en France annonce le rendez-vous du 29 juillet au 8 août 2027 à Séoul, en Corée du Sud. Aucune participation de la JEC France n'est présumée.","The French WYD 2027 website lists the event from 29 July to 8 August 2027 in Seoul, South Korea. No participation by JEC France is implied.")}</p><SourceLink href="https://www.jmj2027.fr/">{t("Site officiel JMJ 2027 France","Official WYD 2027 France website")}</SourceLink></div></article>
+      </section>;
+      return <section>
+        <div className="section-heading"><div><p className="eyebrow">{t("RENDEZ-VOUS PUBLICS","PUBLIC EVENTS")}</p><h2>{t("Agenda et mémoire des événements JEC","JEC calendar and event memory")}</h2></div><span className="source-count">{agendaEvents.length} {t("événements","events")}</span></div>
+        <p className="section-intro">{t("Les rendez-vous publiés par l’équipe éditoriale sont affichés ici avec leur provenance. Les événements passés restent consultables comme mémoire du mouvement.","Events published by the editorial team appear here with their sources. Past events remain available as part of the movement’s history.")}</p>
+        {agendaEvents.length?agendaEvents.map(item=><article className="event-feature" key={item.id}>
+          <div className="event-feature-date"><span>{formatAgendaDate(item.starts_on||item.content_date,en)}</span>{item.ends_on&&item.ends_on!==item.starts_on?<><b>—</b><span>{formatAgendaDate(item.ends_on,en)}</span></>:null}<small>{new Date((item.starts_on||item.content_date)+"T12:00:00").getFullYear()}</small></div>
+          <div className="event-feature-body"><span className={"post-tag "+(item.source_kind==="booklet"?"violet":"blue")}>{en?(item.category_en||item.category||"JEC event"):(item.category||"Événement JEC")}</span><h3>{en?(item.title_en||item.title):item.title}</h3><p>{en?(item.summary_en||item.summary):item.summary}</p>
+            <div className="source-footer"><span>{en?(item.source_label_en||item.source_label):item.source_label}</span>{item.detail_path?<Link className="source-link" href={item.detail_path}>{t("Consulter le dossier","View event details")} →</Link>:null}{item.source_url?<SourceLink href={item.source_url}>{t("Source officielle","Official source")}</SourceLink>:null}</div>
+          </div>
+        </article>):<div className="directory-empty compact"><p>{t("Aucun événement public n’est publié pour le moment.","No public event has been published yet.")}</p></div>}
+      </section>;
+    }
 
     return <section className="module-placeholder widget-card"><div className="module-icon">✧</div><p className="eyebrow">{t("MODULE EN CONCEPTION","MODULE IN DEVELOPMENT")}</p><h2>{nav.find(item=>item[0]===active)?.[en?1:0]??active}</h2><p>{t("Ce module fait partie du périmètre de JEC-conNEcT. Il sera activé progressivement après validation des besoins, des droits d'accès et des règles de gouvernance par la JEC France.","This module is part of JEC-conNEcT. It will be activated progressively after JEC France validates requirements, access rights and governance rules.")}</p><div className="prototype-banner">{t("Aucune donnée interne ou confidentielle n'est utilisée dans cette démonstration.","No internal or confidential information is used in this demonstration.")}</div></section>;
   }
@@ -374,7 +428,7 @@ export default function Home() {
       <div className="sidebar-bottom"><div className="help-card"><div className="help-icon">✧</div><strong>{t("Sources vérifiables","Verifiable sources")}</strong><p>{t("Les faits publics renvoient à leurs publications d'origine.","Public facts link to their original publications.")}</p><button onClick={()=>setActive("Actualités JEC")}>{t("Voir les sources →","Browse sources →")}</button></div>{identity?<div className="profile-mini profile-mini-auth"><Link href="/compte" className="profile-avatar-link"><div className="avatar user">{identity.avatarUrl?<img src={identity.avatarUrl} alt=""/>:identity.displayName.trim().split(/\s+/).slice(0,2).map(x=>x[0]).join("").toUpperCase()}</div></Link><Link href="/compte" className="profile-identity"><strong>{identity.displayName}</strong><small>{identity.isAdmin?t("Administrateur JEC-conNEcT","JEC-conNEcT administrator"):identity.membershipStatus==="verified"?t("Membre JEC vérifié","Verified JEC member"):identity.membershipStatus==="rejected"?t("Adhésion non validée","Membership not approved"):t("Compte connecté · adhésion à confirmer","Signed in · membership pending")}</small></Link><button className="profile-signout" onClick={signOut} title={t("Se déconnecter","Sign out")} aria-label={t("Se déconnecter","Sign out")}>↪</button></div>:authResolved?<div className="profile-mini"><div className="avatar user">VP</div><div><strong>{t("Visiteur","Visitor")}</strong><small>{t("Aperçu public · non connecté","Public preview · signed out")}</small></div><Link className="profile-signin" href="/login">{t("Connexion","Sign in")}</Link></div>:<div className="profile-mini profile-mini-loading"><div className="avatar user">…</div><div><strong>{t("Vérification…","Checking…")}</strong><small>{t("Chargement de la session","Loading session")}</small></div></div>}</div>
     </aside>
     <main className="main-area">
-      <header className="topbar"><div className="breadcrumb">JEC France <span>/</span> <strong>{en?(nav.find(item=>item[0]===active)?.[1]??active):active}</strong></div><div className="top-actions"><label className="search-box"><span>⌕</span><input value={search} onChange={e=>setSearch(e.target.value)} placeholder={t("Rechercher dans les sources publiques","Search public sources")}/><kbd>⌘ K</kbd></label><PWAInstallButton/><LanguageSwitcher/>{identity?.isAdmin&&<Link className="admin-top-link" href="/gestion">{t("Administration","Administration")}</Link>}<Link className="top-login" href={authResolved?(identity?"/compte":"/login"):"#"} onClick={event=>{if(!authResolved)event.preventDefault();}} aria-disabled={!authResolved} title={!authResolved?t("Vérification de la connexion…","Checking sign-in…"):undefined}>{!authResolved?t("Vérification…","Checking…"):identity?t("Mon compte","My account"):t("Connexion","Sign in")}</Link></div></header>
+      <header className="topbar"><div className="breadcrumb">JEC France <span>/</span> <strong>{en?(nav.find(item=>item[0]===active)?.[1]??active):active}</strong></div><div className="top-actions"><label className="search-box"><span>⌕</span><input value={search} onChange={e=>setSearch(e.target.value)} placeholder={t("Rechercher dans les sources publiques","Search public sources")}/><kbd>⌘ K</kbd></label><PWAInstallButton/><LanguageSwitcher/>{identity?.isAdmin&&<><Link className="admin-top-link" href="/gestion">{t("Administration","Administration")}</Link><Link className="admin-top-link" href="/gestion/contenus">{t("Contenus publics","Public content")}</Link></>}<Link className="top-login" href={authResolved?(identity?"/compte":"/login"):"#"} onClick={event=>{if(!authResolved)event.preventDefault();}} aria-disabled={!authResolved} title={!authResolved?t("Vérification de la connexion…","Checking sign-in…"):undefined}>{!authResolved?t("Vérification…","Checking…"):identity?t("Mon compte","My account"):t("Connexion","Sign in")}</Link></div></header>
       <div className="page-content">
         {identity?.membershipStatus==="pending"&&<p className="auth-config-note">Ton compte est connecté, mais ton adhésion JEC attend encore une validation. Une fois vérifié, l'administrateur devra aussi t'inviter dans les espaces de travail concernés.</p>}
         {identity?.membershipStatus==="rejected"&&<p className="alert error">Ton adhésion JEC n'a pas été validée. Contacte l'équipe responsable pour obtenir des précisions.</p>}
