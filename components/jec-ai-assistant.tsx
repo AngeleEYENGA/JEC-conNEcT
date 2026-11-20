@@ -189,7 +189,14 @@ export default function JecAiAssistant() {
             <h2>JEC IA</h2>
           </div>
         </div>
-        <span className="jec-ai-status"><i />{en ? "Local Ollama · Verified sources" : "Ollama local · Sources vérifiées"}</span>
+        <div className="jec-ai-heading-actions">
+          <Link href="/gestion/veille" className="jec-ai-editorial-link">
+            <span className="jec-ai-editorial-icon" aria-hidden="true">🔎</span>
+            <span>{en ? "Open editorial monitoring" : "Ouvrir la veille éditoriale"}</span>
+            <small>{en ? "Administrators" : "Administrateurs"}</small>
+          </Link>
+          <span className="jec-ai-status"><i />{en ? "Local Ollama · Verified sources" : "Ollama local · Sources vérifiées"}</span>
+        </div>
       </div>
 
       <div className="jec-ai-intro">

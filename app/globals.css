@@ -1172,6 +1172,11 @@
 .jec-ai-brand .eyebrow{margin:0 0 4px}
 .jec-ai-brand h2{font:800 24px Manrope,sans-serif;letter-spacing:-.6px;margin:0;color:#302b59}
 .jec-ai-mark,.jec-ai-welcome-icon{width:45px;height:45px;display:grid;place-items:center;border-radius:14px;background:linear-gradient(145deg,#f4d43e,#e87f33);color:#46336e;font-size:25px;box-shadow:0 6px 18px #302b5919}
+.jec-ai-heading-actions{display:flex;align-items:center;justify-content:flex-end;gap:10px;flex-wrap:wrap}
+.jec-ai-editorial-link{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:40px;padding:9px 13px;border:1px solid #d9ccec;border-radius:9px;background:#f6f1fc;color:#58358e;font-size:10px;font-weight:800;white-space:nowrap;transition:background .15s,border-color .15s}
+.jec-ai-editorial-link:hover{background:#eee5fa;border-color:#bca6dc}
+.jec-ai-editorial-link small{padding:3px 6px;border-radius:20px;background:#e9e0f5;color:#6a4c91;font-size:8px;font-weight:800}
+.jec-ai-editorial-icon{font-size:14px;line-height:1}
 .jec-ai-status{display:inline-flex;align-items:center;gap:7px;border:1px solid #dceee3;background:#f2faf4;border-radius:20px;padding:7px 11px;color:#267448;font-size:9px;font-weight:800}
 .jec-ai-status i,.jec-ai-live-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#269a5b}
 .jec-ai-intro{padding:21px 23px;border-radius:15px;background:linear-gradient(112deg,#302b59,#67439c);color:#fff;margin-bottom:16px}
