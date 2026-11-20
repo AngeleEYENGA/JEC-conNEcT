@@ -2273,3 +2273,5 @@
     animation:none!important;transition:none!important;transform:none!important
   }
 }
+
+.home-quick-links+.content-grid{margin-top:0}
