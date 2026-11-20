@@ -144,7 +144,7 @@ begin
   return new_ballot_id;
 end;
 $function$
-
+;
 
 -- Defence in depth: reject any direct or future write that weakens election privacy.
 do $migration$
