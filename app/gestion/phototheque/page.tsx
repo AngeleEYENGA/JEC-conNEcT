@@ -58,7 +58,7 @@ export default function PhotoLibraryAdminPage() {
     if(queryError)setError(queryError.message);
     if(rightsError)setError(rightsError.message);
     type RightsRow={photo_id:string;rights_evidence:string|null;rights_notes:string|null;approved_by:string|null;approved_at:string|null};
-    const rightsByPhoto=new Map<string,RightsRow>(((rightsRows??[]) as RightsRow[]).map(row=>[row.photo_id,row]));
+    const rightsByPhoto=new Map<string,RightsRow>(((rightsRows??[]) as RightsRow[]).map(row=>[row.photo_id,row] as const));
     const photoRows=(data??[]) as Array<Omit<PhotoAsset,"rights_evidence"|"rights_notes">>;
     setItems(photoRows.map(item=>{
       const rights=rightsByPhoto.get(item.id);
