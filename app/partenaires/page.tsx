@@ -5,6 +5,9 @@ import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { LanguageSwitcher, useLanguage } from "@/components/language-provider";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
+type FollowUpPreview = { id:string; partner_id:string; title:string; due_at:string; status:string; priority:string; assigned_to:string|null };
+type OpportunityPreview = { id:string; partner_id:string|null; title:string; opportunity_type:string; opportunity_status:string; deadline:string|null; expected_amount:number|null; currency_code:string|null; source_url:string|null };
+
 type Partner = {
   id: string;
   display_name: string;
@@ -72,6 +75,9 @@ export default function PartnersPage() {
   const { lang } = useLanguage();
   const en = lang === "en";
   const [rows, setRows] = useState<Partner[]>([]);
+  const [followUpPreview, setFollowUpPreview] = useState<FollowUpPreview[]>([]);
+  const [opportunityPreview, setOpportunityPreview] = useState<OpportunityPreview[]>([]);
+  const [showPrivateOverview, setShowPrivateOverview] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
@@ -121,10 +127,12 @@ export default function PartnersPage() {
       item.partner_id === null && ["manager", "editor"].includes(item.access_role)
     );
     const partnerAccess = accesses.length > 0;
+    const privateAccess = admin || accesses.some((item: { access_role: string }) => ["manager","editor","viewer"].includes(item.access_role));
     const verifiedMember = membershipResult.data?.membership_status === "verified";
     setIsAdmin(admin);
     setCanCreate(admin || globalManager);
     setCanViewDirectory(admin || verifiedMember || partnerAccess);
+    setShowPrivateOverview(privateAccess);
 
     const { data, error: queryError } = await supabase
       .from("jec_partners")
@@ -134,6 +142,24 @@ export default function PartnersPage() {
     else {
       setError("");
       setRows((data ?? []) as Partner[]);
+    }
+    if (privateAccess) {
+      const [followUpResult, opportunityResult] = await Promise.all([
+        supabase.from("jec_partner_follow_ups")
+          .select("id,partner_id,title,due_at,status,priority,assigned_to")
+          .in("status", ["todo","in_progress"])
+          .order("due_at", { ascending:true }).limit(8),
+        supabase.from("jec_partner_opportunities")
+          .select("id,partner_id,title,opportunity_type,opportunity_status,deadline,expected_amount,currency_code,source_url")
+          .in("opportunity_status", ["identified","reviewing","submitted"])
+          .order("deadline", { ascending:true, nullsFirst:false }).limit(8)
+      ]);
+      if (followUpResult.error || opportunityResult.error) setError((followUpResult.error || opportunityResult.error)?.message ?? "");
+      setFollowUpPreview((followUpResult.data ?? []) as FollowUpPreview[]);
+      setOpportunityPreview((opportunityResult.data ?? []) as OpportunityPreview[]);
+    } else {
+      setFollowUpPreview([]);
+      setOpportunityPreview([]);
     }
     setLoading(false);
   }, [en]);
@@ -243,6 +269,32 @@ export default function PartnersPage() {
             <article className="partner-kpi"><strong>{pendingCount}</strong><span>{en ? "To review" : "À vérifier"}</span></article>
             <article className="partner-kpi"><strong>{typeCount}</strong><span>{en ? "Partner categories" : "Types de partenaires"}</span></article>
           </div>
+
+          {showPrivateOverview && <section className="partner-workbench-grid">
+            <article className="collab-card partner-workbench-card">
+              <div className="collab-card-heading"><div><p className="eyebrow">{en?"FOLLOW-UP PIPELINE":"SUIVI DES RELANCES"}</p><h2>{en?"Next actions":"Prochaines actions"}</h2></div><span className="collab-count">{followUpPreview.length}</span></div>
+              {followUpPreview.length ? followUpPreview.map(item => {
+                const partner=rows.find(row=>row.id===item.partner_id);
+                const overdue=new Date(item.due_at).getTime()<Date.now();
+                return <Link className={"partner-workbench-row "+(overdue?"is-overdue":"")} href={"/partenaires/"+item.partner_id} key={item.id}>
+                  <span className="partner-workbench-row-top"><strong>{item.title}</strong><span className={"partner-priority "+item.priority}>{item.priority==="high"?(en?"High":"Haute"):item.priority==="low"?(en?"Low":"Basse"):(en?"Normal":"Normale")}</span></span>
+                  <small>{partner?.display_name|| (en?"Partner record":"Fiche partenaire")} · {new Date(item.due_at).toLocaleString(en?"en-GB":"fr-FR",{dateStyle:"medium",timeStyle:"short"})}</small>
+                </Link>;
+              }) : <p className="collab-muted">{en?"No open follow-up is scheduled.":"Aucune relance en cours n'est planifiée."}</p>}
+            </article>
+            <article className="collab-card partner-workbench-card">
+              <div className="collab-card-heading"><div><p className="eyebrow">{en?"FUNDING PIPELINE":"PIPELINE FINANCEMENTS"}</p><h2>{en?"Opportunities to review":"Opportunités à traiter"}</h2></div><span className="collab-count">{opportunityPreview.length}</span></div>
+              {opportunityPreview.length ? opportunityPreview.map(item => {
+                const partner=item.partner_id?rows.find(row=>row.id===item.partner_id):null;
+                return <article className="partner-workbench-row" key={item.id}>
+                  {item.partner_id ? <Link href={"/partenaires/"+item.partner_id}><strong>{item.title}</strong></Link> : <strong>{item.title}</strong>}
+                  <small>{partner?.display_name|| (en?"General opportunity":"Opportunité générale")} · {item.opportunity_type.replaceAll("_"," ")}</small>
+                  <span className="partner-workbench-meta">{item.deadline?(en?"Deadline":"Échéance")+": "+new Date(item.deadline+"T00:00:00").toLocaleDateString(en?"en-GB":"fr-FR"):(en?"No deadline entered":"Échéance non renseignée")}{item.expected_amount!==null&&item.currency_code?" · "+new Intl.NumberFormat(en?"en-GB":"fr-FR",{maximumFractionDigits:2}).format(Number(item.expected_amount))+" "+item.currency_code:""}</span>
+                  {item.source_url&&<a href={item.source_url} target="_blank" rel="noreferrer">{en?"Open source ↗":"Ouvrir la source ↗"}</a>}
+                </article>;
+              }) : <p className="collab-muted">{en?"No funding opportunity is being tracked.":"Aucune opportunité de financement n'est suivie."}</p>}
+            </article>
+          </section>}
 
           {showCreate && canCreate && <section className="collab-card partner-create-card">
             <div className="collab-card-heading"><div><p className="eyebrow">{en ? "NEW RECORD" : "NOUVELLE FICHE"}</p><h2>{en ? "Add a partner or a network" : "Ajouter un partenaire ou un réseau"}</h2></div></div>
