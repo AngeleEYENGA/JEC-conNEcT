@@ -23,7 +23,7 @@ const news = [
   },
   {
     date: "7 avril 2026",
-    image: jecPhotos.library.src,
+    image: jecPhotos.africanClassroom.src,
     category: "Ressources pédagogiques",
     categoryEn: "Learning resources",
     title: "Un jeu pour découvrir l’utilisation des compétences psychosociales",
@@ -149,7 +149,7 @@ export default function Home() {
       image:jecPhotos.community.src,
       photoUrl:jecPhotos.community.sourceUrl,
       photoCredit:en?jecPhotos.community.captionEn:jecPhotos.community.captionFr,
-      imageAlt:t("Des jeunes de la JEC échangent autour d’une table","Young people from YCS sharing ideas around a table"),
+      imageAlt:t("Des jeunes échangent autour d’un ordinateur et de documents","Young people sharing ideas around a laptop and documents"),
       action:t("Découvrir la JEC","Discover YCS")
     },
     {
@@ -159,7 +159,7 @@ export default function Home() {
       image:jecPhotos.peerStudy.src,
       photoUrl:jecPhotos.peerStudy.sourceUrl,
       photoCredit:en?jecPhotos.peerStudy.captionEn:jecPhotos.peerStudy.captionFr,
-      imageAlt:t("Illustration sur le mieux-être et le vivre ensemble","Illustration about well-being and living together"),
+      imageAlt:t("Deux étudiantes travaillent ensemble sur le campus","Two students working together on campus"),
       action:t("Lire les actualités","Explore the news")
     },
     {
@@ -169,7 +169,7 @@ export default function Home() {
       image:jecPhotos.library.src,
       photoUrl:jecPhotos.library.sourceUrl,
       photoCredit:en?jecPhotos.library.captionEn:jecPhotos.library.captionFr,
-      imageAlt:t("Illustration d’étudiants qui apprennent ensemble","Illustration of students learning together"),
+      imageAlt:t("Un groupe d’étudiants échange dans une bibliothèque universitaire","A group of students sharing ideas in a university library"),
       action:t("Explorer les ressources","Explore resources")
     },
     {
@@ -179,7 +179,7 @@ export default function Home() {
       image:jecPhotos.studentTeam.src,
       photoUrl:jecPhotos.studentTeam.sourceUrl,
       photoCredit:en?jecPhotos.studentTeam.captionEn:jecPhotos.studentTeam.captionFr,
-      imageAlt:t("Illustration de responsables qui dialoguent","Illustration of youth leaders in conversation"),
+      imageAlt:t("Des étudiants de différentes origines collaborent sur des ordinateurs","Students from different backgrounds collaborating on laptops"),
       action:t("Voir les actualités","View the news")
     }
   ];
