@@ -672,16 +672,26 @@ export default function CommunityPage() {
           <h1>{en ? "A community that lives, shares and grows together." : "Une communauté qui vit, partage et grandit ensemble."}</h1>
           <p>{en ? "Share a moment, celebrate an initiative, ask a question or simply say how you feel. Your voice has a place here." : "Partage un moment, célèbre une initiative, pose une question ou exprime simplement ton humeur. Ta voix a sa place ici."}</p>
           <div className="community-hero-badges"><span>🤝 {en ? "Connection" : "Lien"}</span><span>💬 {en ? "Conversation" : "Échange"}</span><span>🌱 {en ? "Commitment" : "Engagement"}</span></div>
+          <a href="#community-composer" className="community-hero-cta">{en ? "Share your story" : "Partager une pensée"} <span>↗</span></a>
         </div>
-        <div className="community-hero-visual"><img src="/images/jec-community-illustration.svg" alt={en ? "Young people sharing ideas and learning together" : "Des jeunes échangent et apprennent ensemble"} /></div>
+        <div className="community-hero-visual">
+          <img src="/images/jec-community-illustration.svg" alt={en ? "Young people sharing ideas and learning together" : "Des jeunes échangent et apprennent ensemble"} />
+          <span className="community-visual-bubble community-visual-bubble-one">✦ {en ? "Together" : "Ensemble"}</span>
+          <span className="community-visual-bubble community-visual-bubble-two">💬 {en ? "Every voice matters" : "Chaque voix compte"}</span>
+        </div>
       </section>
+      <div className="community-impact-row">
+        <article><span className="community-impact-icon">✍</span><div><strong>{posts.length}</strong><small>{en ? "Recent posts loaded" : "Publications récentes"}</small></div></article>
+        <article><span className="community-impact-icon mint">🤝</span><div><strong>{new Set(posts.map(post => post.author_id)).size}</strong><small>{en ? "Contributors in this feed" : "Contributeurs du fil"}</small></div></article>
+        <article><span className="community-impact-icon peach">♥</span><div><strong>{posts.reduce((total, post) => total + post.reactions.length, 0)}</strong><small>{en ? "Reactions shared" : "Réactions partagées"}</small></div></article>
+      </div>
 
       <div className="community-layout">
         <section className="community-feed-column">
           {error && <p className="community-alert error">{error}</p>}
           {notice && <p className="community-alert success">{notice}</p>}
 
-          <form className="community-composer" onSubmit={createPost}>
+          <form id="community-composer" className="community-composer" onSubmit={createPost}>
             <div className="community-composer-heading"><div className="community-composer-icon">✎</div><div><strong>{en ? "What would you like to share?" : "Qu'as-tu envie de partager ?"}</strong><span>{en ? "A thought, a feeling, a photo, a short video or audio…" : "Une pensée, une humeur, une photo, une courte vidéo ou un audio…"}</span></div></div>
             <textarea rows={4} value={body} onChange={event => setBody(event.target.value)} maxLength={5000} placeholder={en ? "Tell the community what's happening…" : "Raconte à la communauté ce qui se passe…"} />
             <div className="community-media-picker-row">
