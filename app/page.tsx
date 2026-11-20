@@ -398,6 +398,7 @@ export default function Home() {
           : t("Connecte-toi pour accéder au Workspace", "Sign in to access Workspace");
 
   function NewsCard({item}:{item:NewsItem}) {
+    const photo=Object.values(jecPhotos).find(candidate=>candidate.src===item.image);
     return <article className="post-card verified-news-card">
       <div className="post-header">
         <div className="avatar violet">JEC</div>
@@ -405,7 +406,7 @@ export default function Home() {
         <span className="verified-pill">{t("Source","Source")}</span>
       </div>
       <div className="verified-news-thumb"><img src={item.image} alt="" loading="lazy"/>
-        {Object.values(jecPhotos).some(photo=>photo.src===item.image)&&<a className="photo-credit" href={Object.values(jecPhotos).find(photo=>photo.src===item.image)?.sourceUrl} target="_blank" rel="noreferrer">{en?"Illustrative photo · Pexels":"Photo d’illustration · Pexels"}</a>}
+        {photo&&<a className="photo-credit" href={photo.sourceUrl} target="_blank" rel="noreferrer">{en?photo.captionEn:photo.captionFr}</a>}
       </div>
       <span className="post-tag violet">{en?item.categoryEn:item.category}</span>
       <h3 className="verified-news-title">{en?item.titleEn:item.title}</h3>
