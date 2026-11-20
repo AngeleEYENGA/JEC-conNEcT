@@ -19,6 +19,16 @@ const typeLabels:Record<WorkspaceType,{fr:string;en:string}>={
   temporary_group:{fr:"Groupe temporaire",en:"Temporary group"}
 };
 
+const workspaceArtwork:Record<WorkspaceType,string>={
+  national_team:"/images/jec-community-illustration.svg",
+  federation:"/images/news-leaders.svg",
+  local_team:"/images/news-learning.svg",
+  commission:"/images/news-wellbeing.svg",
+  service:"/images/news-learning.svg",
+  project:"/images/news-leaders.svg",
+  temporary_group:"/images/jec-community-illustration.svg"
+};
+
 function slugify(value:string){
   return value.normalize("NFKD").replace(/[\u0300-\u036f]/g,"").toLowerCase()
     .replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
@@ -116,20 +126,32 @@ export default function WorkspaceIndexPage(){
         <Link href="/" className="back-link-inline">{en?"Back to portal":"Retour au portail"}</Link>
       </div>
     </header>
-    <div className="collab-content">
-      <p className="eyebrow">{en?"COLLABORATION":"COLLABORATION"}</p>
-      <h1>{en?"My workspaces":"Mes espaces de travail"}</h1>
-      <p className="collab-lead">{en?"Dedicated spaces for national teams, federations, local teams, commissions and services. Each space has its own members, discussions, projects, tasks, meetings and private documents.":"Des espaces dédiés aux équipes nationales, fédérations, équipes locales, commissions et services. Chaque espace possède ses membres, échanges, projets, tâches, réunions et documents privés."}</p>
+    <div className="collab-content workspace-overview-content">
+      <section className="collab-visual-hero workspace-visual-hero">
+        <div className="collab-visual-copy">
+          <p className="eyebrow">{en?"COLLABORATION":"COLLABORATION"}</p>
+          <h1>{en?"One shared space for every team.":"Un espace commun pour faire grandir chaque équipe."}</h1>
+          <p>{en?"Bring your people, conversations, projects, meetings and documents together in a private place designed for collective action.":"Réunis ton équipe, ses échanges, projets, réunions et documents dans un espace privé pensé pour l'action collective."}</p>
+          <div className="collab-hero-actions"><span className="collab-hero-note">✦ {en?"Connect · Coordinate · Create":"Relier · Coordonner · Créer"}</span>{isAdmin&&<a className="collab-hero-button" href="#create-workspace">{en?"Create a workspace":"Créer un espace"} <span>＋</span></a>}</div>
+        </div>
+        <div className="collab-visual-art"><img src="/images/jec-community-illustration.svg" alt={en?"JEC members working together":"Des membres JEC qui travaillent ensemble"}/><span className="collab-art-chip">{en?"A place to belong":"Un espace à soi"}</span></div>
+      </section>
+      <div className="collab-metric-strip">
+        <article><strong>{loading?"—":activeWorkspaces.length}</strong><span>{en?"Active spaces":"Espaces actifs"}</span></article>
+        <article><strong>{loading?"—":invitations.length}</strong><span>{en?"Invitations to answer":"Invitations à traiter"}</span></article>
+        <article><strong>{loading?"—":workspaces.length}</strong><span>{en?"Spaces available to you":"Espaces accessibles"}</span></article>
+      </div>
 
       {error&&<p className="alert error">{error}</p>}
       {notice&&<p className="alert success">{notice}</p>}
 
       {invitations.length>0&&<section className="collab-section">
         <div className="collab-section-heading"><div><p className="eyebrow">{en?"INVITATIONS":"INVITATIONS"}</p><h2>{en?"Waiting for your response":"En attente de ta réponse"}</h2></div><span>{invitations.length}</span></div>
-        <div className="collab-grid">{invitations.map(workspace=><article className="collab-card invitation-card" key={workspace.id}>
-          <div className="collab-card-icon">✉</div><span className="collab-type">{typeLabels[workspace.workspace_type][en?"en":"fr"]}</span>
+        <div className="collab-grid">{invitations.map(workspace=><article className="collab-card invitation-card workspace-visual-card" key={workspace.id}>
+          <div className="workspace-card-visual"><img src={workspaceArtwork[workspace.workspace_type]} alt="" loading="lazy"/><span>✉</span></div>
+          <div className="workspace-card-copy"><span className="collab-type">{typeLabels[workspace.workspace_type][en?"en":"fr"]}</span>
           <h3>{workspace.name}</h3><p>{workspace.description|| (en?"You have been invited to join this JEC workspace.":"Tu as été invité·e à rejoindre cet espace JEC.")}</p>
-          <button className="primary-button" onClick={()=>acceptInvitation(workspace.id)}>{en?"Accept invitation":"Accepter l'invitation"}</button>
+          <button className="primary-button" onClick={()=>acceptInvitation(workspace.id)}>{en?"Accept invitation":"Accepter l'invitation"}</button></div>
         </article>)}</div>
       </section>}
 
@@ -137,15 +159,16 @@ export default function WorkspaceIndexPage(){
         <div className="collab-section-heading"><div><p className="eyebrow">{en?"YOUR SPACES":"TES ESPACES"}</p><h2>{en?"Active workspaces":"Espaces actifs"}</h2></div><span>{activeWorkspaces.length}</span></div>
         {loading?<p className="muted">{en?"Loading workspaces…":"Chargement des espaces…"}</p>:activeWorkspaces.length?<div className="collab-grid">{activeWorkspaces.map(workspace=>{
           const role=membershipByWorkspace.get(workspace.id)?.workspace_role;
-          return <Link className="collab-card" href={"/workspace/"+workspace.slug} key={workspace.id}>
-            <div className="collab-card-icon">⌘</div><span className="collab-type">{typeLabels[workspace.workspace_type][en?"en":"fr"]}</span>
+          return <Link className="collab-card workspace-visual-card" href={"/workspace/"+workspace.slug} key={workspace.id}>
+            <div className="workspace-card-visual"><img src={workspaceArtwork[workspace.workspace_type]} alt="" loading="lazy"/><span>⌘</span><small>{typeLabels[workspace.workspace_type][en?"en":"fr"]}</small></div>
+            <div className="workspace-card-copy"><div className="workspace-card-topline"><span className="collab-type">{typeLabels[workspace.workspace_type][en?"en":"fr"]}</span><span className={"workspace-role-pill "+(role==="owner"||role==="manager"?"manager":"member")}>{role==="owner"?(en?"Owner":"Propriétaire"):role==="manager"?(en?"Manager":"Responsable"):(en?"Member":"Membre")}</span></div>
             <h3>{workspace.name}</h3><p>{workspace.description|| (en?"Private JEC workspace.":"Espace de travail privé JEC.")}</p>
-            <div className="collab-card-footer"><span>{role==="owner"?(en?"Owner":"Propriétaire"):role==="manager"?(en?"Manager":"Responsable"):(en?"Member":"Membre")}</span><strong>{en?"Open space →":"Ouvrir l'espace →"}</strong></div>
+            <div className="collab-card-footer"><strong>{en?"Open space →":"Ouvrir l'espace →"}</strong></div></div>
           </Link>;
         })}</div>:<div className="collab-empty"><span>⌘</span><h3>{en?"No workspace yet":"Aucun espace pour le moment"}</h3><p>{en?"Your workspaces will appear here once a JEC administrator creates them or invites you.":"Tes espaces apparaîtront ici lorsqu'un administrateur JEC en aura créé un ou t'y aura invité·e."}</p></div>}
       </section>
 
-      {isAdmin&&<section className="collab-section">
+      {isAdmin&&<section className="collab-section workspace-create-section" id="create-workspace">
         <div className="collab-section-heading"><div><p className="eyebrow">{en?"ADMINISTRATION":"ADMINISTRATION"}</p><h2>{en?"Create a workspace":"Créer un espace de travail"}</h2></div></div>
         <form className="collab-form" onSubmit={createWorkspace}>
           <label>{en?"Workspace name":"Nom de l'espace"}<input value={name} onChange={e=>setName(e.target.value)} required maxLength={120} placeholder={en?"e.g. National Coordination":"Ex. Coordination nationale"}/></label>
