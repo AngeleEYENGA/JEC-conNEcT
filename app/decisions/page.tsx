@@ -66,6 +66,9 @@ export default function DecisionsPage() {
   const [closesAt, setClosesAt] = useState(localDateTime(3));
   const [optionsText, setOptionsText] = useState("");
   const [candidateIds, setCandidateIds] = useState<string[]>([]);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [typeFilter, setTypeFilter] = useState<"all" | "consultation" | "decision" | "election">("all");
+  const [statusFilter, setStatusFilter] = useState<"all" | "open" | "draft" | "closed">("all");
 
   const managerWorkspaces = useMemo(() => {
     if (globalAdmin) return workspaces;
@@ -221,6 +224,7 @@ export default function DecisionsPage() {
       setIsAnonymous(true);
       setResultsVisibility("after_close");
       setNotice(t("Scrutin créé. Les électeurs éligibles sont enregistrés selon le périmètre choisi.", "Ballot created. Eligible voters were recorded according to the selected scope."));
+      setCreateOpen(false);
       await load();
     }
     setBusy(false);
@@ -311,14 +315,64 @@ export default function DecisionsPage() {
 
   const managerWorkspace = managerWorkspaces.some(space => space.id === workspaceId);
 
+  const ballotState = (ballot: Ballot) => {
+    const status = results[ballot.id]?.status || ballot.status;
+    const now = Date.now();
+    if (status === "cancelled") return "cancelled";
+    if (status === "open" && new Date(ballot.closes_at).getTime() <= now) return "closed";
+    if (status === "open" && new Date(ballot.opens_at).getTime() > now) return "draft";
+    return status;
+  };
+
+  const filteredBallots = ballots.filter(ballot => {
+    const matchesType = typeFilter === "all" || ballot.ballot_type === typeFilter;
+    const state = ballotState(ballot);
+    const matchesStatus = statusFilter === "all" ||
+      (statusFilter === "closed" ? state === "closed" || state === "cancelled" : state === statusFilter);
+    return matchesType && matchesStatus;
+  });
+
+  const ballotStats = {
+    total: ballots.length,
+    open: ballots.filter(ballot => ballotState(ballot) === "open").length,
+    upcoming: ballots.filter(ballot => ballotState(ballot) === "draft").length
+  };
+
   return (
     <main className="collab-page decision-page">
       <header className="account-header">
-        <Link href="/" className="brand-lockup"><span className="brand-mark"><span>JEC</span><i>✳</i></span><span>conNEcT</span></Link>
+        <Link href="/" className="brand-lockup"><span className="brand-mark"><span>JEC</span><i aria-hidden="true">✝</i></span><span>conNEcT</span></Link>
         <div><LanguageSwitcher /><Link href="/workspace" className="back-link-inline">{t("Espaces de travail", "Workspaces")}</Link></div>
       </header>
       <div className="collab-content decision-content">
-        <p className="eyebrow">{t("GOUVERNANCE PARTICIPATIVE", "PARTICIPATORY GOVERNANCE")}</p>
+        <section className="decision-hero">
+          <div className="decision-hero-copy">
+            <p className="eyebrow">{t("VIE DÉMOCRATIQUE JEC", "JEC DEMOCRATIC LIFE")}</p>
+            <h1>{t("Sondages et votes", "Polls and voting")}</h1>
+            <p>{t("Un espace clair pour recueillir les avis, prendre des décisions collectives et organiser les élections de la JEC.", "A clear space to gather opinions, make collective decisions and organise JEC elections.")}</p>
+          </div>
+          <div className="decision-hero-aside">
+            <div className="decision-hero-illustration" aria-hidden="true">
+              <span className="decision-hero-sheet">☑</span>
+              <i>✓</i>
+            </div>
+            <div className="decision-security">
+              <span aria-hidden="true">🔐</span>
+              <div><strong>{t("Vote confidentiel", "Confidential voting")}</strong><small>{t("Bulletins secrets protégés", "Protected secret ballots")}</small></div>
+            </div>
+            {managerWorkspace && <button type="button" className="decision-hero-button" onClick={() => setCreateOpen(true)}>
+              <span aria-hidden="true">＋</span>{t("Créer un scrutin", "Create a ballot")}
+            </button>}
+          </div>
+        </section>
+
+        <section className="decision-summary" aria-label={t("Vue d'ensemble", "Overview")}>
+          <div className="decision-summary-card"><span>{t("Tous les scrutins", "All ballots")}</span><strong>{ballotStats.total}</strong><small>{t("Dans tes espaces JEC", "Across your JEC spaces")}</small></div>
+          <div className="decision-summary-card is-live"><span>{t("En cours", "Open now")}</span><strong>{ballotStats.open}</strong><small>{t("Participation possible", "Voting is available")}</small></div>
+          <div className="decision-summary-card"><span>{t("À venir", "Upcoming")}</span><strong>{ballotStats.upcoming}</strong><small>{t("En attente d'ouverture", "Waiting to open")}</small></div>
+        </section>
+
+        {error && <p className="alert error">{error}</p>}
         <div className="decision-page-heading">
           <div><h1>{t("Décisions, votes et élections", "Decisions, votes & elections")}</h1>
             <p className="collab-lead">{t("Consulter les membres, prendre des décisions collectives et organiser les élections de la JEC, y compris dans le cadre d'une réunion.", "Consult members, take collective decisions and run JEC elections, including as part of a meeting.")}</p>
@@ -329,69 +383,122 @@ export default function DecisionsPage() {
         {notice && <p className="alert success">{notice}</p>}
         {loading ? <p className="collab-muted">{t("Chargement des scrutins…", "Loading ballots…")}</p> : (
           <>
-            {managerWorkspace && <section className="collab-card decision-create-card">
-              <div className="collab-card-heading"><div><p className="eyebrow">{t("ORGANISATION D'UN SCRUTIN", "BALLOT SETUP")}</p><h2>{t("Créer une consultation, une décision ou une élection", "Create a consultation, decision or election")}</h2></div></div>
-              <p className="collab-muted">{t("Les électeurs sont déterminés et enregistrés à la création selon le périmètre sélectionné. Un seul vote est accepté par personne.", "Voter eligibility is determined and snapshotted at creation according to the selected scope. Only one submission per person is accepted.")}</p>
-              <form className="decision-form" onSubmit={createBallot}>
-                <label>{t("Espace JEC", "JEC workspace")}<select value={workspaceId} onChange={e => { setWorkspaceId(e.target.value); setMeetingId(""); setCandidateIds([]); }} required>
-                  {managerWorkspaces.map(space => <option key={space.id} value={space.id}>{space.name}</option>)}
-                </select></label>
-                <label>{t("Type de scrutin", "Ballot type")}<select value={ballotType} onChange={e => { const value = e.target.value as "consultation" | "decision" | "election"; setBallotType(value); if (value === "election") { setVotingMode("single"); setIsAnonymous(true); setResultsVisibility("after_close"); setEligibilityScope("workspace_members"); } }}>
-                  <option value="consultation">{t("Sondage / consultation", "Poll / consultation")}</option>
-                  <option value="decision">{t("Vote décisionnel", "Formal decision")}</option>
-                  <option value="election">{t("Élection", "Election")}</option>
-                </select></label>
-                <label>{t("Intitulé", "Title")}<input value={title} onChange={e => setTitle(e.target.value)} minLength={3} maxLength={180} required placeholder={t("Ex. Adoption du plan d'action 2027", "e.g. Adoption of the 2027 action plan")} /></label>
-                <label>{t("Contexte et objet", "Context and purpose")}<textarea rows={3} value={description} onChange={e => setDescription(e.target.value)} /></label>
-                <label>{t("Réunion associée (facultatif)", "Related meeting (optional)")}<select value={meetingId} onChange={e => setMeetingId(e.target.value)}>
-                  <option value="">— {t("Aucune réunion", "No meeting")} —</option>
-                  {availableMeetings.map(meeting => <option key={meeting.id} value={meeting.id}>{meeting.title} · {dateLabel(meeting.starts_at, en)}</option>)}
-                </select></label>
-                <label>{t("Électeurs autorisés", "Eligible voters")}<select value={eligibilityScope} onChange={e => setEligibilityScope(e.target.value as typeof eligibilityScope)}>
-                  <option value="workspace_members">{t("Membres vérifiés actifs de l'espace", "Active verified workspace members")}</option>
-                  <option value="meeting_participants">{t("Participants vérifiés ayant accepté / assisté", "Verified meeting participants who accepted / attended")}</option>
-                  <option value="verified_members">{t("Tous les membres JEC vérifiés", "All verified JEC members")}</option>
-                </select></label>
-                {ballotType === "election" ? (
-                  <div className="decision-candidate-picker decision-wide"><strong>{t("Candidats (au moins deux)", "Candidates (at least two)")}</strong>
-                    <p className="decision-muted">{t("Sélectionne les membres actifs de cet espace. Le système vérifie leur statut de membre vérifié avant de créer l'élection.", "Select active members of this workspace. The system verifies their membership status before creating the election.")}</p>
-                    <div className="decision-candidate-list">{availableCandidates.map(candidate => <label className="decision-candidate" key={candidate.user_id}>
-                      <input type="checkbox" checked={candidateIds.includes(candidate.user_id)} onChange={e => setCandidateIds(current => e.target.checked ? [...current, candidate.user_id] : current.filter(id => id !== candidate.user_id))} />
-                      <span>{candidate.name}</span>
-                    </label>)}</div>
+            {managerWorkspace && (
+              <section className="collab-card decision-create-card">
+                <div className="decision-create-top">
+                  <div>
+                    <p className="eyebrow">{t("ORGANISATION D'UN SCRUTIN", "BALLOT SETUP")}</p>
+                    <h2>{t("Préparer un nouveau scrutin", "Set up a new ballot")}</h2>
+                    <p>{t("Choisis le type de consultation, les participants et les règles de vote. Tu pourras vérifier les paramètres avant de publier.", "Choose the ballot type, participants and voting rules. Review the settings before publishing.")}</p>
                   </div>
-                ) : (
-                  <label className="decision-wide">{t("Choix proposés (un par ligne : Choix | précision)", "Options (one per line: Option | description)")}<textarea rows={5} value={optionsText} onChange={e => setOptionsText(e.target.value)} required placeholder={"Option A\nOption B"} /></label>
+                  <button type="button" className="decision-toggle-button" aria-expanded={createOpen} onClick={() => setCreateOpen(current => !current)}>
+                    <span>{createOpen ? t("Fermer", "Close") : t("Créer", "Create")}</span><b>{createOpen ? "−" : "+"}</b>
+                  </button>
+                </div>
+
+                {createOpen && (
+                  <form className="decision-form" onSubmit={createBallot}>
+                    <div className="decision-form-group">
+                      <div className="decision-form-group-heading"><span>01</span><div><h3>{t("Le sujet", "The topic")}</h3><p>{t("Définis où se déroule le scrutin et ce qui est soumis aux membres.", "Choose the workspace and define what members are being asked.")}</p></div></div>
+                      <label>{t("Espace JEC", "JEC workspace")}<select value={workspaceId} onChange={e => { setWorkspaceId(e.target.value); setMeetingId(""); setCandidateIds([]); }} required>
+                        {managerWorkspaces.map(space => <option key={space.id} value={space.id}>{space.name}</option>)}
+                      </select></label>
+                      <label>{t("Type de scrutin", "Ballot type")}<select value={ballotType} onChange={e => { const value = e.target.value as "consultation" | "decision" | "election"; setBallotType(value); if (value === "election") { setVotingMode("single"); setIsAnonymous(true); setResultsVisibility("after_close"); setEligibilityScope("workspace_members"); } }}>
+                        <option value="consultation">{t("Sondage / consultation", "Poll / consultation")}</option>
+                        <option value="decision">{t("Vote décisionnel", "Formal decision")}</option>
+                        <option value="election">{t("Élection", "Election")}</option>
+                      </select></label>
+                      <label className="decision-wide">{t("Question ou intitulé", "Question or title")}<input value={title} onChange={e => setTitle(e.target.value)} minLength={3} maxLength={180} required placeholder={t("Ex. Quel thème choisir pour la prochaine campagne ?", "e.g. Which theme should we choose for the next campaign?")} /></label>
+                      <label className="decision-wide">{t("Contexte (facultatif)", "Context (optional)")}<textarea rows={3} value={description} onChange={e => setDescription(e.target.value)} placeholder={t("Ajoute quelques éléments pour aider les membres à se prononcer.", "Add context to help members make an informed choice.")} /></label>
+                    </div>
+
+                    <div className="decision-form-group">
+                      <div className="decision-form-group-heading"><span>02</span><div><h3>{t("Choix et participants", "Options and participants")}</h3><p>{t("Détermine les réponses possibles et les personnes autorisées à voter.", "Set the available choices and who is allowed to vote.")}</p></div></div>
+                      <label>{t("Réunion associée (facultatif)", "Related meeting (optional)")}<select value={meetingId} onChange={e => setMeetingId(e.target.value)}>
+                        <option value="">— {t("Aucune réunion", "No meeting")} —</option>
+                        {availableMeetings.map(meeting => <option key={meeting.id} value={meeting.id}>{meeting.title} · {dateLabel(meeting.starts_at, en)}</option>)}
+                      </select></label>
+                      <label>{t("Qui peut voter ?", "Who can vote?")}<select value={eligibilityScope} onChange={e => setEligibilityScope(e.target.value as typeof eligibilityScope)}>
+                        <option value="workspace_members">{t("Membres vérifiés actifs de l'espace", "Active verified workspace members")}</option>
+                        <option value="meeting_participants">{t("Participants vérifiés ayant accepté / assisté", "Verified meeting participants who accepted / attended")}</option>
+                        <option value="verified_members">{t("Tous les membres JEC vérifiés", "All verified JEC members")}</option>
+                      </select></label>
+                      {ballotType === "election" ? (
+                        <div className="decision-candidate-picker decision-wide"><strong>{t("Candidats (au moins deux)", "Candidates (at least two)")}</strong>
+                          <p className="decision-muted">{t("Sélectionne les membres actifs de cet espace. Le système vérifie leur statut de membre vérifié avant de créer l'élection.", "Select active members of this workspace. The system verifies their membership status before creating the election.")}</p>
+                          <div className="decision-candidate-list">{availableCandidates.map(candidate => <label className="decision-candidate" key={candidate.user_id}>
+                            <input type="checkbox" checked={candidateIds.includes(candidate.user_id)} onChange={e => setCandidateIds(current => e.target.checked ? [...current, candidate.user_id] : current.filter(id => id !== candidate.user_id))} />
+                            <span>{candidate.name}</span>
+                          </label>)}</div>
+                        </div>
+                      ) : (
+                        <label className="decision-wide">{t("Choix proposés (un par ligne)", "Options (one per line)")}<textarea rows={4} value={optionsText} onChange={e => setOptionsText(e.target.value)} required placeholder={t("Option A\nOption B", "Option A\nOption B")} /><small className="decision-field-hint">{t("Tu peux ajouter une précision après le symbole | : « Option A | description ».", "You can add a description after the | symbol: “Option A | description”.")}</small></label>
+                      )}
+                    </div>
+
+                    <div className="decision-form-group">
+                      <div className="decision-form-group-heading"><span>03</span><div><h3>{t("Règles du vote", "Voting rules")}</h3><p>{t("Précise comment les membres votent et quand les résultats sont visibles.", "Choose how members vote and when results become visible.")}</p></div></div>
+                      <label>{t("Mode de vote", "Voting mode")}<select value={votingMode} disabled={ballotType === "election"} onChange={e => { const value = e.target.value as "single" | "multiple"; setVotingMode(value); if (value === "multiple") setApprovalRule("plurality"); }}>
+                        <option value="single">{t("Un seul choix", "Single choice")}</option>
+                        <option value="multiple">{t("Plusieurs choix possibles", "Multiple selections")}</option>
+                      </select></label>
+                      <label>{t("Règle de décision", "Approval rule")}<select value={approvalRule} disabled={votingMode === "multiple" || ballotType === "election"} onChange={e => setApprovalRule(e.target.value)}>
+                        <option value="plurality">{t("Pluralité des voix", "Plurality")}</option>
+                        <option value="simple_majority">{t("Majorité simple", "Simple majority")}</option>
+                        <option value="absolute_majority">{t("Majorité absolue", "Absolute majority")}</option>
+                        <option value="two_thirds">{t("Deux tiers", "Two-thirds majority")}</option>
+                      </select></label>
+                      <label>{t("Visibilité des résultats", "Results visibility")}<select value={ballotType === "election" ? "after_close" : resultsVisibility} disabled={ballotType === "election"} onChange={e => setResultsVisibility(e.target.value as "live" | "after_close")}>
+                        <option value="after_close">{t("Après clôture", "After closing")}</option>
+                        <option value="live">{t("En direct", "Live")}</option>
+                      </select></label>
+                      <label>{t("Quorum requis (%)", "Required quorum (%)")}<input type="number" min="0" max="100" step="1" value={quorum} onChange={e => setQuorum(e.target.value)} /></label>
+                      <label className="decision-anonymous decision-wide"><input type="checkbox" checked={ballotType === "election" ? true : isAnonymous} disabled={ballotType === "election"} onChange={e => setIsAnonymous(e.target.checked)} /><span>{t("Bulletin secret : ton identité est séparée de ton choix.", "Secret ballot: your identity is separated from your selection.")}</span></label>
+                      <p className="decision-form-note decision-wide">{ballotType === "election"
+                        ? t("Les élections utilisent toujours le bulletin secret et les résultats sont masqués jusqu'à la clôture.", "Elections always use a secret ballot and results remain hidden until closing.")
+                        : t("Pour un vote non secret, l'identité du votant est associée à son choix dans le registre interne. Les tables de votes ne sont pas directement accessibles depuis l'interface.", "For a non-secret ballot, the voter's identity is associated with their choice in the internal register. Vote tables are not directly accessible through the interface.")}</p>
+                    </div>
+
+                    <div className="decision-form-group">
+                      <div className="decision-form-group-heading"><span>04</span><div><h3>{t("Calendrier", "Schedule")}</h3><p>{t("Définis la période pendant laquelle les votes seront acceptés.", "Set the period during which votes will be accepted.")}</p></div></div>
+                      <label>{t("Ouverture du scrutin", "Voting opens")}<input type="datetime-local" value={opensAt} min={localDateTime(0)} onChange={e => setOpensAt(e.target.value)} required /></label>
+                      <label>{t("Clôture du scrutin", "Voting closes")}<input type="datetime-local" value={closesAt} min={opensAt} onChange={e => setClosesAt(e.target.value)} required /></label>
+                    </div>
+
+                    <div className="decision-form-actions decision-wide">
+                      <p>{t("Vérifie les paramètres avant de publier : les personnes éligibles sont enregistrées à la création du scrutin.", "Review the settings before publishing: eligible voters are recorded when the ballot is created.")}</p>
+                      <button className="primary-button decision-submit" type="submit" disabled={busy || !workspaceId}>{busy ? t("Publication…", "Publishing…") : t("Publier le scrutin", "Publish ballot")}</button>
+                    </div>
+                  </form>
                 )}
-                <label>{t("Mode de vote", "Voting mode")}<select value={votingMode} disabled={ballotType === "election"} onChange={e => { const value = e.target.value as "single" | "multiple"; setVotingMode(value); if (value === "multiple") setApprovalRule("plurality"); }}>
-                  <option value="single">{t("Un seul choix", "Single choice")}</option>
-                  <option value="multiple">{t("Plusieurs choix possibles", "Multiple selections")}</option>
-                </select></label>
-                <label>{t("Règle de décision", "Approval rule")}<select value={approvalRule} disabled={votingMode === "multiple" || ballotType === "election"} onChange={e => setApprovalRule(e.target.value)}>
-                  <option value="plurality">{t("Pluralité des voix", "Plurality")}</option>
-                  <option value="simple_majority">{t("Majorité simple", "Simple majority")}</option>
-                  <option value="absolute_majority">{t("Majorité absolue", "Absolute majority")}</option>
-                  <option value="two_thirds">{t("Deux tiers", "Two-thirds majority")}</option>
-                </select></label>
-                <label>{t("Résultats", "Results visibility")}<select value={ballotType === "election" ? "after_close" : resultsVisibility} disabled={ballotType === "election"} onChange={e => setResultsVisibility(e.target.value as "live" | "after_close")}>
-                  <option value="after_close">{t("Après clôture", "After closing")}</option>
-                  <option value="live">{t("En direct", "Live")}</option>
-                </select></label>
-                <label>{t("Quorum requis (%)", "Required quorum (%)")}<input type="number" min="0" max="100" step="1" value={quorum} onChange={e => setQuorum(e.target.value)} /></label>
-                <label>{t("Ouverture du scrutin", "Voting opens")}<input type="datetime-local" value={opensAt} min={localDateTime(0)} onChange={e => setOpensAt(e.target.value)} required /></label>
-                <label>{t("Clôture du scrutin", "Voting closes")}<input type="datetime-local" value={closesAt} min={opensAt} onChange={e => setClosesAt(e.target.value)} required /></label>
-                <label className="decision-check"><input type="checkbox" checked={ballotType === "election" ? true : isAnonymous} disabled={ballotType === "election"} onChange={e => setIsAnonymous(e.target.checked)} /><span>{t("Bulletin secret (identité séparée du choix)", "Secret ballot (identity separated from choice)")}</span></label>
-                <p className="decision-form-note">{ballotType === "election"
-                  ? t("Les élections utilisent toujours le bulletin secret et les résultats sont masqués jusqu'à la clôture.", "Elections always use a secret ballot and results remain hidden until closing.")
-                  : t("Pour un vote non secret, l'identité du votant est associée à son choix dans le registre interne. Les tables de votes ne sont pas directement accessibles depuis l'interface.", "For a non-secret ballot, the voter's identity is associated with their choice in the internal register. Vote tables are not directly accessible through the interface.")}</p>
-                <button className="primary-button" disabled={busy || !workspaceId}>{busy ? t("Publication…", "Publishing…") : t("Créer le scrutin", "Create ballot")}</button>
-              </form>
-            </section>}
+              </section>
+            )}
             <section className="decision-list">
-              <div className="collab-card-heading"><div><p className="eyebrow">{t("VIE DÉMOCRATIQUE", "DEMOCRATIC LIFE")}</p><h2>{t("Consultations et scrutins", "Consultations and ballots")}</h2></div><span className="collab-count">{ballots.length}</span></div>
-              {!ballots.length ? <div className="collab-empty"><p>{t("Aucune consultation ou élection n'a encore été lancée dans tes espaces.", "No poll or election has been launched in your workspaces yet.")}</p></div> : ballots.map(ballot => {
+              <div className="decision-list-heading">
+                <div><p className="eyebrow">{t("ESPACE DE PARTICIPATION", "PARTICIPATION SPACE")}</p><h2>{t("Les scrutins de tes espaces", "Ballots in your spaces")}</h2></div>
+                <span className="decision-list-count">{filteredBallots.length} {t("résultat(s)", "result(s)")}</span>
+              </div>
+              <div className="decision-list-controls">
+                <div className="decision-filter-tabs" role="group" aria-label={t("Filtrer par type", "Filter by type")}>
+                  {([
+                    ["all", t("Tout", "All")],
+                    ["consultation", t("Sondages", "Polls")],
+                    ["decision", t("Décisions", "Decisions")],
+                    ["election", t("Élections", "Elections")]
+                  ] as const).map(([value, label]) => (
+                    <button type="button" key={value} className={typeFilter === value ? "active" : ""} aria-pressed={typeFilter === value} onClick={() => setTypeFilter(value)}>{label}</button>
+                  ))}
+                </div>
+                <label className="decision-status-control"><span>{t("État", "Status")}</span><select value={statusFilter} onChange={e => setStatusFilter(e.target.value as typeof statusFilter)}>
+                  <option value="all">{t("Tous les états", "All statuses")}</option>
+                  <option value="open">{t("En cours", "Open")}</option>
+                  <option value="draft">{t("À venir", "Upcoming")}</option>
+                  <option value="closed">{t("Terminés / annulés", "Closed / cancelled")}</option>
+                </select></label>
+              </div>
+              {!filteredBallots.length ? <div className="decision-empty"><span aria-hidden="true">☑</span><h3>{ballots.length ? t("Aucun résultat pour ces filtres", "No results for these filters") : t("Aucun scrutin pour le moment", "No ballots yet")}</h3><p>{ballots.length ? t("Essaie un autre type ou un autre état pour retrouver les scrutins.", "Try another type or status to find a ballot.") : t("Les sondages, décisions et élections lancés dans tes espaces apparaîtront ici.", "Polls, decisions and elections launched in your spaces will appear here.")}</p></div> : filteredBallots.map(ballot => {
                 const result = results[ballot.id];
-                const effectiveStatus = result?.status || ballot.status;
+                const effectiveStatus = ballotState(ballot);
                 const expired = new Date(ballot.closes_at).getTime() <= Date.now();
                 const open = effectiveStatus === "open" && !expired && new Date(ballot.opens_at).getTime() <= Date.now();
                 const canVote = open && Boolean(result?.is_eligible) && !result?.has_voted;
@@ -399,13 +506,13 @@ export default function DecisionsPage() {
                 const totalVotes = options.reduce((sum, option) => sum + Number(option.votes || 0), 0);
                 const voteCount = result?.voter_count;
                 const turnout = result && voteCount !== null && result.eligible_count > 0 ? Math.round(voteCount / result.eligible_count * 100) : null;
-                const statusLabel = effectiveStatus === "open" ? t("Ouvert", "Open") : effectiveStatus === "draft" ? t("Programmé", "Scheduled") : effectiveStatus === "cancelled" ? t("Annulé", "Cancelled") : t("Clôturé", "Closed");
+                const statusLabel = effectiveStatus === "open" ? t("En cours", "Open") : effectiveStatus === "draft" ? t("À venir", "Upcoming") : effectiveStatus === "cancelled" ? t("Annulé", "Cancelled") : t("Terminé", "Closed");
                 return <article className="collab-card decision-poll-card" key={ballot.id}>
                   <div className="decision-poll-top"><div>
-                    <span className={"decision-type-tag " + ballot.ballot_type}>{ballot.ballot_type === "election" ? t("ÉLECTION", "ELECTION") : ballot.ballot_type === "decision" ? t("VOTE DÉCISIONNEL", "FORMAL DECISION") : t("CONSULTATION", "CONSULTATION")}</span>
+                    <span className={"decision-type-tag " + ballot.ballot_type}>{ballot.ballot_type === "election" ? t("ÉLECTION", "ELECTION") : ballot.ballot_type === "decision" ? t("VOTE DÉCISIONNEL", "FORMAL DECISION") : t("SONDAGE", "POLL")}</span>
                     <p className="decision-workspace-name">{workspaceName(ballot.workspace_id)}{ballot.meeting_id ? " · " + t("Lié à une réunion", "Linked to a meeting") : ""}</p>
                     <h3>{ballot.title}</h3>
-                  </div><span className={"project-status " + (open ? "scheduled" : effectiveStatus === "cancelled" ? "cancelled" : "completed")}>{statusLabel}</span></div>
+                  </div><span className={"decision-status " + effectiveStatus}>{statusLabel}</span></div>
                   {ballot.description && <p className="decision-description">{ballot.description}</p>}
                   <div className="decision-meta">
                     <span>{t("Ouverture", "Opens")} : {dateLabel(ballot.opens_at, en)}</span>
