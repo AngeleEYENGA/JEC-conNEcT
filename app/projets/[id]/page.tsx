@@ -148,8 +148,16 @@ export default function ProjectDetailPage(){
  return <main className="collab-page">
   <header className="account-header"><Link href="/" className="brand-lockup"><span className="brand-mark"><span>JEC</span><i>✳</i></span><span>conNEcT</span></Link><div><LanguageSwitcher/><Link href="/projets" className="back-link-inline">{en?"All projects":"Tous les projets"}</Link></div></header>
   <div className="collab-content project-detail-content">
-   <p className="eyebrow">{en?"PROJECT MANAGEMENT":"GESTION DE PROJET"}</p>
-   <div className="project-detail-heading"><div><h1>{project.title}</h1><p className="collab-lead">{project.objective|| (en?"No objective defined.":"Aucun objectif défini.")}</p></div><span className={"project-status "+project.project_status}>{project.project_status}</span></div>
+   <section className="project-detail-hero">
+    <div className="project-detail-hero-copy">
+     <p className="eyebrow">{en?"PROJECT IN MOTION":"UN PROJET EN MOUVEMENT"}</p>
+     <h1>{project.title}</h1>
+     <p className="collab-lead">{project.objective|| (en?"No objective defined yet. Bring the team together around a shared goal.":"Aucun objectif défini pour le moment. Réunissons l'équipe autour d'un but commun.")}</p>
+     <div className="project-detail-hero-meta"><span className={"project-status "+project.project_status}>{project.project_status.replace("_"," ")}</span><span>✦ {en?"Shared goal · Collective action":"Objectif commun · Action collective"}</span></div>
+     <div className="project-detail-mini-stats"><span><b>{tasks.length}</b>{en?"tasks":"tâches"}</span><span><b>{completed}</b>{en?"completed":"terminées"}</span><span><b>{progress}%</b>{en?"progress":"avancement"}</span></div>
+    </div>
+    <div className="project-detail-hero-art"><img src="/images/news-learning.svg" alt={en?"Young people learning and building together":"Des jeunes qui apprennent et construisent ensemble"}/><div className="project-detail-art-badge"><strong>{progress}%</strong><small>{en?"moving forward":"d'avancement"}</small></div></div>
+   </section>
    {error&&<p className="alert error">{error}</p>}{notice&&<p className="alert success">{notice}</p>}
    <div className="project-kpi-grid">
     <article className="project-kpi"><strong>{tasks.length}</strong><span>{en?"Tasks":"Tâches"}</span></article>
