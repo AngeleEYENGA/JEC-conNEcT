@@ -114,7 +114,21 @@ type PublicContentRecord = {
   source_name: string; source_label: string; source_label_en: string | null;
   source_kind: string; source_url: string | null; image_url: string | null; detail_path: string | null;
 };
-type NewsItem = typeof news[number];
+type NewsItem = {
+  date: string;
+  image: string;
+  category: string;
+  categoryEn: string;
+  title: string;
+  titleEn: string;
+  summary: string;
+  summaryEn: string;
+  url: string | null;
+  publisher: string;
+  sourceKind: string;
+  sourceLabel: string;
+  detailPath: string | null;
+};
 function formatPublicDate(value: string, en: boolean) {
   return new Date(value + "T12:00:00").toLocaleDateString(en ? "en-GB" : "fr-FR", { day: "numeric", month: "long", year: "numeric" });
 }
@@ -134,11 +148,14 @@ export default function Home() {
     const supabase=getSupabaseBrowserClient();
     if(!supabase)return;
     let active=true;
-    void supabase.from("jec_public_content")
-      .select("id,content_type,title,title_en,summary,summary_en,category,category_en,content_date,date_label,date_label_en,starts_on,ends_on,source_name,source_label,source_label_en,source_kind,source_url,image_url,detail_path")
-      .eq("is_published",true)
-      .order("content_date",{ascending:false})
-      .then(({data,error})=>{if(!active||error||!data)return;setPublicContent(data as PublicContentRecord[]);});
+    void (async()=>{
+      const {data,error}=await supabase.from("jec_public_content")
+        .select("id,content_type,title,title_en,summary,summary_en,category,category_en,content_date,date_label,date_label_en,starts_on,ends_on,source_name,source_label,source_label_en,source_kind,source_url,image_url,detail_path")
+        .eq("is_published",true)
+        .order("content_date",{ascending:false});
+      if(!active||error||!data)return;
+      setPublicContent(data as PublicContentRecord[]);
+    })();
     return ()=>{active=false;};
   },[]);
 
@@ -273,7 +290,7 @@ export default function Home() {
 
   const filteredNews=useMemo<NewsItem[]>(()=>{
     const records=publicContent===null?news:publicContent.filter(item=>item.content_type==="news").map(item=>({
-      date:en?(item.date_label_en||item.date_label||formatPublicDate(item.content_date,en)):(item.date_label||formatPublicDate(item.content_date,en)),
+      date:en?(item.date_label_en||formatPublicDate(item.content_date,en)):(item.date_label||formatPublicDate(item.content_date,en)),
       image:item.image_url||"/images/news-learning.svg",
       category:item.category||(en?"JEC news":"Actualité JEC"),
       categoryEn:item.category_en||item.category||"JEC news",
