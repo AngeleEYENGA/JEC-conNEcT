@@ -6,11 +6,12 @@ import { useEffect, useMemo, useState } from "react";
 import { LanguageSwitcher, useLanguage } from "@/components/language-provider";
 import { PWAInstallButton } from "@/components/pwa-install-button";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
+import { jecPhotos } from "@/lib/image-library";
 
 const news = [
   {
     date: "13 avril 2026",
-    image: "/images/news-wellbeing.svg",
+    image: jecPhotos.peerStudy.src,
     category: "Santé et mieux-vivre",
     categoryEn: "Health & well-being",
     title: "3 vidéos pour un mieux-être et un mieux-vivre ensemble !",
@@ -22,7 +23,7 @@ const news = [
   },
   {
     date: "7 avril 2026",
-    image: "/images/news-learning.svg",
+    image: jecPhotos.library.src,
     category: "Ressources pédagogiques",
     categoryEn: "Learning resources",
     title: "Un jeu pour découvrir l’utilisation des compétences psychosociales",
@@ -34,7 +35,7 @@ const news = [
   },
   {
     date: "7 avril 2026",
-    image: "/images/news-leaders.svg",
+    image: jecPhotos.studentTeam.src,
     category: "Vie du mouvement",
     categoryEn: "Movement life",
     title: "Les responsables se rencontrent et se forment !",
@@ -46,7 +47,7 @@ const news = [
   },
   {
     date: "26 juillet – 2 août 2026",
-    image: "/images/jec-community-illustration.svg",
+    image: jecPhotos.community.src,
     category: "Vie du mouvement · Cameroun",
     categoryEn: "Movement life · Cameroon",
     title: "Camp National Universitaire de Garoua 2026 : spiritualité active et citoyenneté responsable",
@@ -145,7 +146,9 @@ export default function Home() {
       eyebrow:t("LA JEC EN MOUVEMENT","YCS IN MOTION"),
       title:t("Grandir ensemble. Agir pour transformer le monde.","Grow together. Act to transform the world."),
       description:t("Un mouvement de jeunes qui apprennent à lire leur réalité, à dialoguer et à construire des réponses collectives.","A youth movement learning to understand its reality, share ideas and build collective responses."),
-      image:"/images/jec-community-illustration.svg",
+      image:jecPhotos.community.src,
+      photoUrl:jecPhotos.community.sourceUrl,
+      photoCredit:en?jecPhotos.community.captionEn:jecPhotos.community.captionFr,
       imageAlt:t("Des jeunes de la JEC échangent autour d’une table","Young people from YCS sharing ideas around a table"),
       action:t("Découvrir la JEC","Discover YCS")
     },
@@ -153,7 +156,9 @@ export default function Home() {
       eyebrow:t("PRENDRE SOIN DE SOI ET DES AUTRES","CARE FOR OURSELVES AND OTHERS"),
       title:news[0].title,
       description:news[0].summary,
-      image:news[0].image,
+      image:jecPhotos.peerStudy.src,
+      photoUrl:jecPhotos.peerStudy.sourceUrl,
+      photoCredit:en?jecPhotos.peerStudy.captionEn:jecPhotos.peerStudy.captionFr,
       imageAlt:t("Illustration sur le mieux-être et le vivre ensemble","Illustration about well-being and living together"),
       action:t("Lire les actualités","Explore the news")
     },
@@ -161,7 +166,9 @@ export default function Home() {
       eyebrow:t("APPRENDRE ET PARTAGER","LEARN AND SHARE"),
       title:news[1].title,
       description:news[1].summary,
-      image:news[1].image,
+      image:jecPhotos.library.src,
+      photoUrl:jecPhotos.library.sourceUrl,
+      photoCredit:en?jecPhotos.library.captionEn:jecPhotos.library.captionFr,
       imageAlt:t("Illustration d’étudiants qui apprennent ensemble","Illustration of students learning together"),
       action:t("Explorer les ressources","Explore resources")
     },
@@ -169,7 +176,9 @@ export default function Home() {
       eyebrow:t("S’ENGAGER ET SE FORMER","LEAD AND LEARN"),
       title:news[2].title,
       description:news[2].summary,
-      image:news[2].image,
+      image:jecPhotos.studentTeam.src,
+      photoUrl:jecPhotos.studentTeam.sourceUrl,
+      photoCredit:en?jecPhotos.studentTeam.captionEn:jecPhotos.studentTeam.captionFr,
       imageAlt:t("Illustration de responsables qui dialoguent","Illustration of youth leaders in conversation"),
       action:t("Voir les actualités","View the news")
     }
@@ -333,7 +342,7 @@ export default function Home() {
   const filteredNews=useMemo<NewsItem[]>(()=>{
     const records=publicContent===null?news:publicContent.filter(item=>item.content_type==="news").map(item=>({
       date:en?(item.date_label_en||formatPublicDate(item.content_date,en)):(item.date_label||formatPublicDate(item.content_date,en)),
-      image:item.image_url||"/images/news-learning.svg",
+      image:item.image_url||jecPhotos.community.src,
       category:item.category||(en?"JEC news":"Actualité JEC"),
       categoryEn:item.category_en||item.category||"JEC news",
       title:item.title,titleEn:item.title_en||item.title,
@@ -395,7 +404,9 @@ export default function Home() {
         <div className="post-author"><strong>{item.publisher}</strong><small>{item.sourceKind==="booklet"?(en?"Source document · event dates":"Document source · dates de l’événement"):t("Publication publique vérifiée","Verified public publication")} · {item.date}</small></div>
         <span className="verified-pill">{t("Source","Source")}</span>
       </div>
-      <div className="verified-news-thumb"><img src={item.image} alt="" loading="lazy"/></div>
+      <div className="verified-news-thumb"><img src={item.image} alt="" loading="lazy"/>
+        {Object.values(jecPhotos).some(photo=>photo.src===item.image)&&<a className="photo-credit" href={Object.values(jecPhotos).find(photo=>photo.src===item.image)?.sourceUrl} target="_blank" rel="noreferrer">{en?"Illustrative photo · Pexels":"Photo d’illustration · Pexels"}</a>}
+      </div>
       <span className="post-tag violet">{en?item.categoryEn:item.category}</span>
       <h3 className="verified-news-title">{en?item.titleEn:item.title}</h3>
       <p className="post-text">{en?item.summaryEn:item.summary}</p>
@@ -532,6 +543,7 @@ export default function Home() {
               <div className="welcome-slide-visual">
                 <div className="welcome-visual-glow"/>
                 <img src={slide.image} alt={slide.imageAlt} loading={index===0?"eager":"lazy"}/>
+                <a className="photo-credit hero-photo-credit" href={slide.photoUrl} target="_blank" rel="noreferrer">{slide.photoCredit}</a>
                 <div className="welcome-visual-stamp"><span>✝</span><b>JEC</b><small>{t("Voir · Juger · Agir","See · Judge · Act")}</small></div>
               </div>
             </article>)}
