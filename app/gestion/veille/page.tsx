@@ -370,37 +370,37 @@ export default function EditorialWatchPage() {
               {sources.length > 0 && candidates.length === 0 && !scanning && <p className="muted">{en ? "No item available. Try again later." : "Aucun contenu disponible. Réessaie ultérieurement."}</p>}
             </section>
 
-            {draft && selected && <section className="admin-section" id="editorial-draft-review">
+            {draft && selected && <section className="admin-section editorial-review-section" id="editorial-draft-review">
               <div className="directory-section-heading"><div><p className="eyebrow">{en ? "HUMAN REVIEW REQUIRED" : "VALIDATION HUMAINE OBLIGATOIRE"}</p><h2>{en ? "Review the AI proposal" : "Vérifier la proposition de l’IA"}</h2></div><span>{en ? "Unpublished" : "Non publié"}</span></div>
               <p className="admin-help">{en
                 ? "Verify names, dates and meaning against the original article before saving."
                 : "Vérifie les noms, les dates et le sens dans l’article d’origine avant l’enregistrement."}</p>
               {draft.evidence_note && <p className="admin-help"><strong>{en ? "Model note: " : "Note du modèle : "}</strong>{draft.evidence_note}</p>}
-              <form className="account-form public-content-form" onSubmit={(event) => { event.preventDefault(); void saveDraft(); }}>
+              <form className="account-form public-content-form editorial-review-form" onSubmit={(event) => { event.preventDefault(); void saveDraft(); }}>
                 <label>{en ? "Content type" : "Type de contenu"}
                   <select value={draft.content_type} onChange={(event) => updateDraft("content_type", event.target.value as "news" | "event")}>
                     <option value="news">{en ? "News" : "Actualité"}</option>
                     <option value="event">{en ? "Event" : "Événement"}</option>
                   </select>
                 </label>
-                <div className="public-content-two-cols">
+                <div className="public-content-two-cols editorial-field-group">
                   <label>{en ? "Title (French)" : "Titre (français)"}<input required maxLength={200} value={draft.title_fr} onChange={(event) => updateDraft("title_fr", event.target.value)} /></label>
                   <label>{en ? "Title (English)" : "Titre (anglais)"}<input required maxLength={200} value={draft.title_en} onChange={(event) => updateDraft("title_en", event.target.value)} /></label>
                 </div>
-                <div className="public-content-two-cols">
+                <div className="public-content-two-cols editorial-field-group">
                   <label>{en ? "Summary (French)" : "Résumé (français)"}<textarea required rows={4} maxLength={1400} value={draft.summary_fr} onChange={(event) => updateDraft("summary_fr", event.target.value)} /></label>
                   <label>{en ? "Summary (English)" : "Résumé (anglais)"}<textarea required rows={4} maxLength={1400} value={draft.summary_en} onChange={(event) => updateDraft("summary_en", event.target.value)} /></label>
                 </div>
-                <div className="public-content-two-cols">
+                <div className="public-content-two-cols editorial-field-group">
                   <label>{en ? "Category (French)" : "Catégorie (français)"}<input maxLength={100} value={draft.category_fr} onChange={(event) => updateDraft("category_fr", event.target.value)} /></label>
                   <label>{en ? "Category (English)" : "Catégorie (anglais)"}<input maxLength={100} value={draft.category_en} onChange={(event) => updateDraft("category_en", event.target.value)} /></label>
                 </div>
                 {draft.content_type === "event" && <>
-                  <div className="public-content-two-cols">
+                  <div className="public-content-two-cols editorial-field-group">
                     <label>{en ? "Event start date" : "Date de début"}<input type="date" required value={draft.starts_on} onChange={(event) => updateDraft("starts_on", event.target.value)} /></label>
                     <label>{en ? "Event end date" : "Date de fin (facultative)"}<input type="date" min={draft.starts_on || undefined} value={draft.ends_on} onChange={(event) => updateDraft("ends_on", event.target.value)} /></label>
                   </div>
-                  <div className="public-content-two-cols">
+                  <div className="public-content-two-cols editorial-field-group">
                     <label>{en ? "Date label (French)" : "Libellé de date (français)"}<input maxLength={120} value={draft.date_label_fr} onChange={(event) => updateDraft("date_label_fr", event.target.value)} /></label>
                     <label>{en ? "Date label (English)" : "Libellé de date (anglais)"}<input maxLength={120} value={draft.date_label_en} onChange={(event) => updateDraft("date_label_en", event.target.value)} /></label>
                   </div>
