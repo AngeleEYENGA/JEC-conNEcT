@@ -51,8 +51,19 @@ export default function PhotoLibraryAdminPage() {
     const {data:admin,error:adminError}=await supabase.rpc("is_jec_admin");
     if(adminError||admin!==true){setIsAdmin(false);setLoading(false);return;}
     setIsAdmin(true);
-    const {data,error:queryError}=await supabase.from("jec_photo_assets").select("*").order("created_at",{ascending:false});
-    if(queryError)setError(queryError.message);else setItems((data??[]) as PhotoAsset[]);
+    const [{data,error:queryError},{data:rightsRows,error:rightsError}]=await Promise.all([
+      supabase.from("jec_photo_assets").select("*").order("created_at",{ascending:false}),
+      supabase.from("jec_photo_rights").select("photo_id,rights_evidence,rights_notes,approved_by,approved_at")
+    ]);
+    if(queryError)setError(queryError.message);
+    if(rightsError)setError(rightsError.message);
+    type RightsRow={photo_id:string;rights_evidence:string|null;rights_notes:string|null;approved_by:string|null;approved_at:string|null};
+    const rightsByPhoto=new Map<string,RightsRow>(((rightsRows??[]) as RightsRow[]).map(row=>[row.photo_id,row]));
+    const photoRows=(data??[]) as Array<Omit<PhotoAsset,"rights_evidence"|"rights_notes">>;
+    setItems(photoRows.map(item=>{
+      const rights=rightsByPhoto.get(item.id);
+      return {...item,rights_evidence:rights?.rights_evidence??null,rights_notes:rights?.rights_notes??null};
+    }));
     setLoading(false);
   }
   useEffect(()=>{void load();},[]);
@@ -103,19 +114,32 @@ export default function PhotoLibraryAdminPage() {
         event_name:form.event_name.trim()||null,event_date:form.event_date||null,country:form.country.trim()||null,
         image_url:form.image_url.trim(),source_name:form.source_name.trim(),source_url:form.source_url.trim(),
         photographer:form.photographer.trim(),license_name:form.license_name.trim(),license_url:form.license_url.trim()||null,
-        rights_evidence:form.rights_evidence.trim()||null,rights_status:form.rights_status,rights_confirmed:form.rights_confirmed,
-        subject_consent_status:form.subject_consent_status,rights_notes:form.rights_notes.trim()||null,
-        is_featured:form.is_featured,sort_order:Number(form.sort_order)||100,updated_at:new Date().toISOString()
+        rights_status:form.rights_status,rights_confirmed:form.rights_confirmed,
+        subject_consent_status:form.subject_consent_status,
+        is_featured:form.is_featured,sort_order:Number(form.sort_order)||100,
+        is_published:false,updated_at:new Date().toISOString()
       };
+      let photoId=editingId;
       if(editingId){
         const {error:updateError}=await supabase.from("jec_photo_assets").update(payload).eq("id",editingId);
         if(updateError)throw updateError;
-        setMessage(en?"Photo record updated.":"Fiche photo mise à jour.");
+        setMessage(en?"Photo record updated and unpublished pending review.":"Fiche photo mise à jour et dépubliée en attente d’une nouvelle vérification.");
       }else{
-        const {error:insertError}=await supabase.from("jec_photo_assets").insert({...payload,is_published:false,created_by:user?.id??null});
+        const {data:inserted,error:insertError}=await supabase.from("jec_photo_assets").insert(payload).select("id").single();
         if(insertError)throw insertError;
+        photoId=inserted.id;
         setMessage(en?"Photo saved as an unpublished draft.":"Photo enregistrée en brouillon non publié.");
       }
+      if(!photoId)throw new Error("Photo record id is missing.");
+      const {error:rightsSaveError}=await supabase.from("jec_photo_rights").upsert({
+        photo_id:photoId,
+        rights_evidence:form.rights_evidence.trim()||null,
+        rights_notes:form.rights_notes.trim()||null,
+        approved_by:null,
+        approved_at:null,
+        updated_at:new Date().toISOString()
+      },{onConflict:"photo_id"});
+      if(rightsSaveError)throw rightsSaveError;
       resetForm();await load();
     }catch(saveError){
       setError(saveError instanceof Error?saveError.message:(en?"Unable to save the photo record.":"Impossible d’enregistrer la fiche photo."));
@@ -130,11 +154,26 @@ export default function PhotoLibraryAdminPage() {
     }
     setBusyId(item.id);setError("");setMessage("");
     const {data:{user}}=await supabase.auth.getUser();
+    if(next){
+      const {error:rightsApprovalError}=await supabase.from("jec_photo_rights").update({
+        approved_by:user?.id??null,approved_at:new Date().toISOString(),updated_at:new Date().toISOString()
+      }).eq("photo_id",item.id);
+      if(rightsApprovalError){setError(rightsApprovalError.message);setBusyId(null);return;}
+    }
     const {error:updateError}=await supabase.from("jec_photo_assets").update({
-      is_published:next,approved_by:next?(user?.id??null):null,approved_at:next?new Date().toISOString():null,updated_at:new Date().toISOString()
+      is_published:next,updated_at:new Date().toISOString()
     }).eq("id",item.id);
     if(updateError)setError(updateError.message);
-    else{setMessage(next?(en?"Photo published to the public gallery.":"Photo publiée dans la galerie publique."):(en?"Photo unpublished.":"Photo dépubliée."));await load();}
+    else{
+      if(!next){
+        const {error:clearApprovalError}=await supabase.from("jec_photo_rights").update({
+          approved_by:null,approved_at:null,updated_at:new Date().toISOString()
+        }).eq("photo_id",item.id);
+        if(clearApprovalError)setError(clearApprovalError.message);
+      }
+      setMessage(next?(en?"Photo published to the public gallery.":"Photo publiée dans la galerie publique."):(en?"Photo unpublished.":"Photo dépubliée."));
+      await load();
+    }
     setBusyId(null);
   }
 
